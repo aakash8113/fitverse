@@ -1,292 +1,288 @@
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, Package, MapPin, Calendar, Truck, CheckCircle, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Package, Truck, CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
-
-interface OrderItem {
-  name: string;
-  image: string;
-  size: string;
-  quantity: number;
-  price: number;
-}
-
-interface TrackingStep {
-  status: string;
-  date: string;
-  description: string;
-  completed: boolean;
-}
 
 export default function OrderDetail() {
-  const { orderId } = useParams();
+  const { id } = useParams();
 
-  // Mock order data
-  const order = {
-    id: orderId || "ORD-2024-001",
-    date: "Feb 20, 2026",
+  const orderDetails = {
+    orderNumber: "FV-2024-001234",
+    date: "Feb 24, 2026",
     status: "Delivered",
-    estimatedDelivery: "Feb 25, 2026",
+    estimatedDelivery: "Feb 27, 2026",
+    actualDelivery: "Feb 26, 2026",
+    carrier: "FedEx Express",
+    trackingNumber: "1Z999AA10123456784",
+    shippingAddress: {
+      name: "John Doe",
+      street: "123 Fashion Street",
+      city: "New York",
+      state: "NY",
+      zip: "10001",
+    },
     items: [
       {
+        id: 1,
         name: "Premium Cotton T-Shirt",
         image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
         size: "L",
-        quantity: 1,
+        color: "Navy Blue",
+        quantity: 2,
         price: 149.0,
       },
       {
+        id: 2,
         name: "Slim Fit Jeans",
         image: "https://images.unsplash.com/photo-1542272604-787c3835535d?w=400",
         size: "32",
+        color: "Dark Wash",
         quantity: 1,
         price: 180.0,
       },
-    ] as OrderItem[],
-    shippingAddress: {
-      name: "John Doe",
-      street: "123 Main Street, Apt 4B",
-      city: "New York, NY 10001",
-      phone: "+1 (555) 123-4567",
-    },
-    payment: {
-      method: "Credit Card",
-      last4: "4242",
-    },
-    subtotal: 329.0,
-    shipping: 0,
-    tax: 26.32,
-    total: 355.32,
+    ],
+    subtotal: 478.0,
+    shipping: 12.99,
+    tax: 46.8,
+    total: 537.79,
   };
 
-  const trackingSteps: TrackingStep[] = [
+  const trackingSteps = [
     {
-      status: "Order Placed",
-      date: "Feb 20, 2026 - 10:30 AM",
-      description: "Your order has been confirmed",
-      completed: true,
-    },
-    {
-      status: "Processing",
-      date: "Feb 20, 2026 - 2:15 PM",
-      description: "Your order is being prepared",
-      completed: true,
-    },
-    {
-      status: "Shipped",
-      date: "Feb 21, 2026 - 9:00 AM",
-      description: "Package handed to courier",
+      status: "Delivered",
+      date: "Feb 26, 2026",
+      time: "3:45 PM",
+      location: "New York, NY",
       completed: true,
     },
     {
       status: "Out for Delivery",
-      date: "Feb 23, 2026 - 8:30 AM",
-      description: "Package is out for delivery",
+      date: "Feb 26, 2026",
+      time: "8:30 AM",
+      location: "New York Distribution Center",
       completed: true,
     },
     {
-      status: "Delivered",
-      date: "Feb 23, 2026 - 2:45 PM",
-      description: "Package delivered successfully",
+      status: "In Transit",
+      date: "Feb 25, 2026",
+      time: "2:15 PM",
+      location: "Newark, NJ",
+      completed: true,
+    },
+    {
+      status: "Shipped",
+      date: "Feb 24, 2026",
+      time: "5:00 PM",
+      location: "Los Angeles, CA",
+      completed: true,
+    },
+    {
+      status: "Order Confirmed",
+      date: "Feb 24, 2026",
+      time: "2:30 PM",
+      location: "Order Placed",
       completed: true,
     },
   ];
-
-  const getStatusIcon = (status: string, completed: boolean) => {
-    if (completed) {
-      return <CheckCircle className="w-6 h-6 text-green-600" />;
-    }
-    
-    switch (status) {
-      case "Shipped":
-      case "Out for Delivery":
-        return <Truck className="w-6 h-6 text-blue-600" />;
-      case "Processing":
-        return <Clock className="w-6 h-6 text-yellow-600" />;
-      default:
-        return <Package className="w-6 h-6 text-gray-400" />;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="section-container py-8 lg:py-12">
-        {/* Back Button */}
-        <Link to="/orders">
-          <Button variant="ghost" className="mb-6 gap-2">
-            <ChevronLeft className="w-4 h-4" />
+        <div className="max-w-6xl mx-auto">
+          <Link
+            to="/orders"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          >
+            <ArrowLeft className="h-4 w-4" />
             Back to Orders
-          </Button>
-        </Link>
+          </Link>
 
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl lg:text-4xl font-bold mb-2">Order Details</h1>
-          <div className="flex flex-wrap items-center gap-4 text-muted-foreground">
-            <span className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              Placed on {order.date}
-            </span>
-            <span>•</span>
-            <span className="font-medium">Order #{order.id}</span>
-          </div>
-        </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Order Details */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Order Header */}
+              <div className="glass rounded-2xl border border-border/50 p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h1 className="text-2xl font-bold mb-1">
+                      Order {orderDetails.orderNumber}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Placed on {orderDetails.date}
+                    </p>
+                  </div>
+                  <Badge className="bg-green-500/10 text-green-700 border-green-200">
+                    {orderDetails.status}
+                  </Badge>
+                </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Tracking & Items */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Order Tracking */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="text-xl font-semibold mb-6">Order Tracking</h2>
-              
-              <div className="relative space-y-8">
-                {trackingSteps.map((step, idx) => (
-                  <div key={idx} className="relative flex gap-4">
-                    {/* Timeline Line */}
-                    {idx < trackingSteps.length - 1 && (
-                      <div
-                        className={cn(
-                          "absolute left-3 top-10 w-0.5 h-full",
-                          step.completed ? "bg-green-600" : "bg-gray-200"
-                        )}
-                      />
-                    )}
-                    
-                    {/* Icon */}
-                    <div className="relative z-10 bg-background">
-                      {getStatusIcon(step.status, step.completed)}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 pb-4">
-                      <div className="flex items-start justify-between gap-4 mb-1">
-                        <h3
-                          className={cn(
-                            "font-semibold",
-                            step.completed ? "text-foreground" : "text-muted-foreground"
+                <Separator className="my-4" />
+
+                {/* Tracking Timeline */}
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold">Order Tracking</h2>
+                  <div className="space-y-3">
+                    {trackingSteps.map((step, index) => (
+                      <div key={index} className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                              step.completed
+                                ? "bg-green-500"
+                                : "bg-muted border-2 border-border"
+                            }`}
+                          >
+                            {step.completed && (
+                              <CheckCircle className="h-5 w-5 text-white" />
+                            )}
+                          </div>
+                          {index < trackingSteps.length - 1 && (
+                            <div
+                              className={`w-0.5 h-12 ${
+                                step.completed ? "bg-green-500" : "bg-border"
+                              }`}
+                            />
                           )}
-                        >
-                          {step.status}
-                        </h3>
-                        <span className="text-sm text-muted-foreground whitespace-nowrap">
-                          {step.date}
-                        </span>
+                        </div>
+                        <div className="flex-1 pb-4">
+                          <div className="flex items-start justify-between mb-1">
+                            <h3
+                              className={`font-semibold ${
+                                step.completed ? "text-foreground" : "text-muted-foreground"
+                              }`}
+                            >
+                              {step.status}
+                            </h3>
+                            <span className="text-sm text-muted-foreground">
+                              {step.time}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{step.location}</p>
+                          <p className="text-xs text-muted-foreground">{step.date}</p>
+                        </div>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        {step.description}
-                      </p>
-                    </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
 
-            {/* Order Items */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="text-xl font-semibold mb-6">Order Items</h2>
-              
-              <div className="space-y-4">
-                {order.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-border"
-                  >
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                    <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{item.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Size: {item.size} • Quantity: {item.quantity}
-                      </p>
+              {/* Order Items */}
+              <div className="glass rounded-2xl border border-border/50 p-6">
+                <h2 className="text-lg font-semibold mb-4">Order Items</h2>
+                <div className="space-y-4">
+                  {orderDetails.items.map((item) => (
+                    <div key={item.id} className="flex gap-4">
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-20 h-20 object-cover rounded-lg"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold mb-1">{item.name}</h3>
+                        <div className="text-sm text-muted-foreground space-y-0.5">
+                          <p>Size: {item.size}</p>
+                          <p>Color: {item.color}</p>
+                          <p>Quantity: {item.quantity}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold">${item.price.toFixed(2)}</p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold">${item.price.toFixed(2)}</p>
-                      {item.quantity > 1 && (
-                        <p className="text-xs text-muted-foreground">
-                          ${(item.price / item.quantity).toFixed(2)} each
-                        </p>
-                      )}
-                    </div>
+                  ))}
+                </div>
+
+                <Separator className="my-4" />
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>${orderDetails.subtotal.toFixed(2)}</span>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column - Summary & Address */}
-          <div className="space-y-6">
-            {/* Order Summary */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="text-xl font-semibold mb-6">Order Summary</h2>
-              
-              <div className="space-y-3 mb-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Subtotal</span>
-                  <span className="font-medium">${order.subtotal.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium">
-                    {order.shipping === 0 ? "FREE" : `$${order.shipping.toFixed(2)}`}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Tax</span>
-                  <span className="font-medium">${order.tax.toFixed(2)}</span>
-                </div>
-                
-                <Separator className="my-3" />
-                
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold">Total</span>
-                  <span className="font-bold text-lg">${order.total.toFixed(2)}</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span>${orderDetails.shipping.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span>${orderDetails.tax.toFixed(2)}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-semibold text-lg">
+                    <span>Total</span>
+                    <span>${orderDetails.total.toFixed(2)}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Shipping Address */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                Shipping Address
-              </h2>
-              
-              <div className="space-y-1 text-sm">
-                <p className="font-medium">{order.shippingAddress.name}</p>
-                <p className="text-muted-foreground">{order.shippingAddress.street}</p>
-                <p className="text-muted-foreground">{order.shippingAddress.city}</p>
-                <p className="text-muted-foreground">{order.shippingAddress.phone}</p>
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* Shipping Info */}
+              <div className="glass rounded-2xl border border-border/50 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <Truck className="h-5 w-5 text-accent" />
+                  </div>
+                  <h2 className="text-lg font-semibold">Shipping Details</h2>
+                </div>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground mb-1">Carrier</p>
+                    <p className="font-medium">{orderDetails.carrier}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Tracking Number</p>
+                    <p className="font-mono text-xs">{orderDetails.trackingNumber}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground mb-1">Delivered On</p>
+                    <p className="font-medium">{orderDetails.actualDelivery}</p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Payment Method */}
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <h2 className="text-xl font-semibold mb-4">Payment Method</h2>
-              
-              <div className="text-sm">
-                <p className="font-medium">{order.payment.method}</p>
-                <p className="text-muted-foreground">•••• {order.payment.last4}</p>
+              {/* Delivery Address */}
+              <div className="glass rounded-2xl border border-border/50 p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <MapPin className="h-5 w-5 text-accent" />
+                  </div>
+                  <h2 className="text-lg font-semibold">Delivery Address</h2>
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium mb-1">{orderDetails.shippingAddress.name}</p>
+                  <p className="text-muted-foreground">
+                    {orderDetails.shippingAddress.street}
+                  </p>
+                  <p className="text-muted-foreground">
+                    {orderDetails.shippingAddress.city}, {orderDetails.shippingAddress.state}{" "}
+                    {orderDetails.shippingAddress.zip}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full">
-                Download Invoice
-              </Button>
-              <Link to="/contact">
-                <Button variant="outline" className="w-full">
-                  Contact Support
-                </Button>
-              </Link>
+              {/* Actions */}
+              <div className="space-y-3">
+                <Link to="/track-order">
+                  <Button variant="outline" className="w-full">
+                    Track Package
+                  </Button>
+                </Link>
+                <Link to="/contact">
+                  <Button variant="outline" className="w-full">
+                    Contact Support
+                  </Button>
+                </Link>
+                <Link to={`/product/${orderDetails.items[0].id}`}>
+                  <Button className="w-full">Buy Again</Button>
+                </Link>
+              </div>
             </div>
           </div>
         </div>

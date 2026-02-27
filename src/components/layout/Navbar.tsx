@@ -1,30 +1,57 @@
-import { Link, useLocation } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import logoImage from "@/assets/logo.jpg";
 
 const navLinks = [
   { href: "/shop", label: "Shop" },
-  { href: "/fitverse-ai", label: "Fitverse AI", isAI: true },
+  { href: "/fitverse-ai", label: "FitVerse AI", isAI: true },
   { href: "/thrift", label: "Thrift" },
-  { href: "/", label: "About" },
+  // { href: "/about", label: "About" },  
 ];
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsSearchOpen(false);
+      setSearchQuery("");
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full glass border-b border-border/50">
       <div className="section-container">
-        <nav className="flex h-16 items-center justify-between lg:h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="gradient-ai rounded-lg p-2">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-tight">Fitverse</span>
+        <nav className="flex h-16 items-center justify-between lg:h-20">{/* Logo */}
+          <Link to="/" className="flex items-center gap-3">
+            <img 
+              src={logoImage} 
+              alt="Fitverse Logo" 
+              className="h-10 w-10 object-contain sm:translate-x-[-120px]"
+            />
+            <span
+  className="text-[26px] font-bold tracking-wider leading-none sm:translate-y-[4.5px] sm:translate-x-[-120px]"
+  style={{ fontFamily: 'Mokoto, sans-serif' }}>FITVERSE</span>
+
           </Link>
 
           {/* Desktop Navigation */}
@@ -47,18 +74,76 @@ export function Navbar() {
 
           {/* Right Actions */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="hidden sm:flex">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="hidden sm:flex hover:bg-gray-100 hover:text-foreground"
+              onClick={() => setIsSearchOpen(true)}
+            >
               <Search className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-accent text-[10px] font-medium text-accent-foreground flex items-center justify-center">
-                2
-              </span>
-            </Button>
-            <Button variant="ghost" size="icon" className="hidden sm:flex">
-              <User className="h-5 w-5" />
-            </Button>
+            <Link to="/cart">
+              <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 hover:text-foreground">
+                <ShoppingBag className="h-5 w-5" />
+                <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-accent-foreground flex items-center justify-center">
+                  2
+                </span>
+              </Button>
+            </Link>
+            
+            {/* Profile Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-gray-100 hover:text-foreground">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link to="/account" className="flex items-center cursor-pointer">
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Account</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/wishlist" className="flex items-center cursor-pointer">
+                    <Heart className="mr-2 h-4 w-4" />
+                    <span>Wishlist</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/orders" className="flex items-center cursor-pointer">
+                    <Package className="mr-2 h-4 w-4" />
+                    <span>Orders</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/addresses" className="flex items-center cursor-pointer">
+                    <MapPin className="mr-2 h-4 w-4" />
+                    <span>Addresses</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/payment-methods" className="flex items-center cursor-pointer">
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Payment Methods</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="flex items-center cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive focus:text-destructive cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             {/* Mobile Menu Toggle */}
             <Button 
@@ -98,6 +183,12 @@ export function Navbar() {
                   <Search className="h-4 w-4 mr-2" />
                   Search
                 </Button>
+                <Link to="/wishlist" className="flex-1" onClick={() => setIsMenuOpen(false)}>
+                  <Button variant="ghost" size="sm" className="w-full">
+                    <Heart className="h-4 w-4 mr-2" />
+                    Wishlist
+                  </Button>
+                </Link>
                 <Button variant="ghost" size="sm" className="flex-1">
                   <User className="h-4 w-4 mr-2" />
                   Account
@@ -107,6 +198,62 @@ export function Navbar() {
           </div>
         )}
       </div>
+
+      {/* Search Dialog */}
+      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Search Products</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSearch} className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Search for products, brands, categories..."
+                className="pl-10 h-12"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">Search</Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  setIsSearchOpen(false);
+                  setSearchQuery("");
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+            
+            {/* Quick Links */}
+            <div className="pt-4 border-t">
+              <p className="text-sm text-muted-foreground mb-3">Popular Searches</p>
+              <div className="flex flex-wrap gap-2">
+                {["Jackets", "Dresses", "Sneakers", "Jeans"].map((term) => (
+                  <button
+                    key={term}
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery(term);
+                      navigate(`/search?q=${term.toLowerCase()}`);
+                      setIsSearchOpen(false);
+                      setSearchQuery("");
+                    }}
+                    className="px-3 py-1.5 rounded-full bg-muted hover:bg-accent hover:text-accent-foreground transition-colors text-sm"
+                  >
+                    {term}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 }

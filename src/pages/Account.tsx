@@ -10,6 +10,7 @@ import {
   Edit2,
   ChevronRight,
   Calendar,
+  CreditCard,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -51,6 +52,7 @@ export default function Account() {
     totalOrders: 12,
     wishlistItems: 4,
     savedAddresses: 2,
+    paymentMethods: 2,
   };
 
   const recentOrders: OrderSummary[] = [
@@ -176,6 +178,22 @@ export default function Account() {
                     <div>
                       <p className="text-sm text-muted-foreground">Addresses</p>
                       <p className="font-semibold">{stats.savedAddresses} saved</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                </Link>
+
+                <Link
+                  to="/payment-methods"
+                  className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-muted-foreground">Payment Methods</p>
+                      <p className="font-semibold">{stats.paymentMethods} cards</p>
                     </div>
                   </div>
                   <ChevronRight className="w-5 h-5 text-muted-foreground" />

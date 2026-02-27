@@ -1,304 +1,212 @@
-import { useState } from "react";
-import { Search, Package, CreditCard, Truck, RefreshCw, HelpCircle } from "lucide-react";
+import { HelpCircle, Package, Truck, CreditCard, RefreshCw } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function FAQ() {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const faqData = {
-    orders: [
+const faqCategories = [
+  {
+    title: "Orders & Payment",
+    icon: CreditCard,
+    questions: [
       {
-        question: "How can I track my order?",
+        question: "What payment methods do you accept?",
         answer:
-          "You can track your order by logging into your account and visiting the Orders page. Each order has a tracking number that provides real-time updates on your package location. You'll also receive email notifications at each stage of delivery.",
+          "We accept all major credit cards (Visa, MasterCard, American Express, Discover), PayPal, Apple Pay, Google Pay, and Shop Pay. All payments are securely processed and encrypted.",
       },
       {
         question: "Can I modify or cancel my order?",
         answer:
-          "You can modify or cancel your order within 1 hour of placing it. After that, the order enters processing and cannot be changed. Please contact our support team immediately if you need assistance with a recent order.",
+          "You can modify or cancel your order within 1 hour of placement by contacting our customer service. After this window, your order enters processing and cannot be changed. However, you can always return items according to our return policy.",
       },
       {
-        question: "What are the shipping times?",
+        question: "Do you offer gift cards?",
         answer:
-          "Standard shipping takes 3-5 business days. Express shipping (2-3 days) and overnight shipping options are available at checkout. International orders typically take 7-14 business days depending on the destination country.",
+          "Yes! Gift cards are available in denominations of $25, $50, $100, and $200. They can be purchased on our website and delivered via email instantly.",
       },
       {
-        question: "Do you offer international shipping?",
+        question: "Why was my payment declined?",
         answer:
-          "Yes, we ship to over 100 countries worldwide. International shipping rates and delivery times vary by location. You can see the exact shipping cost and estimated delivery date at checkout.",
+          "Payment declines can occur for various reasons including insufficient funds, incorrect card information, or security flags from your bank. Please verify your information and contact your bank if the issue persists.",
       },
     ],
-    payment: [
+  },
+  {
+    title: "Shipping & Delivery",
+    icon: Truck,
+    questions: [
       {
-        question: "What payment methods do you accept?",
+        question: "How long does shipping take?",
         answer:
-          "We accept all major credit cards (Visa, Mastercard, American Express, Discover), PayPal, Apple Pay, and Google Pay. All transactions are processed securely through our encrypted payment gateway.",
+          "Standard shipping takes 5-7 business days, Express shipping takes 2-3 business days, and Next Day delivery is available for orders placed before 2 PM EST. International shipping varies by destination (7-14 business days).",
       },
       {
-        question: "Is my payment information secure?",
+        question: "Do you ship internationally?",
         answer:
-          "Absolutely. We use industry-standard SSL encryption to protect your payment information. We never store your complete credit card details on our servers. All payments are processed through PCI-compliant payment processors.",
+          "Yes! We ship to over 100 countries worldwide. International shipping costs and delivery times vary by destination. Customs duties and taxes are the responsibility of the recipient.",
       },
       {
-        question: "Can I use multiple payment methods?",
+        question: "How can I track my order?",
         answer:
-          "Currently, we only support one payment method per order. However, you can use gift cards or store credit in combination with a credit card.",
+          "Once your order ships, you'll receive a tracking number via email. You can track your package on our Track Order page or directly through the carrier's website (FedEx, UPS, USPS).",
       },
       {
-        question: "Do you offer payment plans?",
+        question: "What if my package is lost or damaged?",
         answer:
-          "Yes, we partner with Affirm and Klarna to offer flexible payment plans on orders over $100. You can choose to pay in 4 interest-free installments or monthly payments with approved credit.",
+          "If your package is lost or arrives damaged, please contact us immediately with photos (for damaged items). We'll work with the carrier to resolve the issue and either reship your order or provide a full refund.",
       },
     ],
-    returns: [
+  },
+  {
+    title: "Returns & Exchanges",
+    icon: RefreshCw,
+    questions: [
       {
         question: "What is your return policy?",
         answer:
-          "We offer a 30-day return policy for unworn, unwashed items with original tags attached. Returns are free for store credit or exchange, with a small fee for refunds to original payment method. Sale items and final sale merchandise cannot be returned.",
+          "We offer 30-day returns for unworn, unwashed items with original tags attached. Returns are free for most items. Sale and final sale items cannot be returned. Refunds are processed within 5-7 business days of receiving your return.",
       },
       {
         question: "How do I initiate a return?",
         answer:
-          "Log into your account, go to Orders, and select the order containing the item you want to return. Click 'Return Item' and follow the prompts. You'll receive a prepaid return label via email within 24 hours.",
-      },
-      {
-        question: "When will I receive my refund?",
-        answer:
-          "Refunds are processed within 5-7 business days after we receive your return. The time it takes for the refund to appear in your account depends on your financial institution, typically 3-5 business days.",
+          "Log into your account, go to Order History, and select 'Request Return' for the item you wish to return. Print the prepaid shipping label and drop off your package at any authorized carrier location.",
       },
       {
         question: "Can I exchange an item?",
         answer:
-          "Yes! Exchanges are free and easy. Simply initiate a return and select 'Exchange' instead of 'Refund'. We'll ship your new item as soon as we receive your return, usually within 48 hours.",
+          "Yes! We offer free exchanges for different sizes or colors. Follow the same process as returns and indicate you want an exchange. We'll ship your replacement item as soon as we receive your return.",
+      },
+      {
+        question: "How long do refunds take?",
+        answer:
+          "Refunds are processed within 5-7 business days after we receive and inspect your return. Please allow an additional 3-5 business days for the refund to appear on your statement, depending on your bank.",
       },
     ],
-    products: [
+  },
+  {
+    title: "Products & Sizing",
+    icon: Package,
+    questions: [
       {
         question: "How do I find my size?",
         answer:
-          "Visit our Size Guide page for detailed measurements and fitting recommendations for each product category. We also include customer reviews with fit information. If you're between sizes, we generally recommend sizing up.",
+          "Check our comprehensive Size Guide which includes detailed measurements for all product categories. We recommend measuring yourself and comparing to our size charts for the best fit. Customer reviews often mention sizing accuracy too.",
       },
       {
-        question: "Are your products sustainable?",
+        question: "Are your products true to size?",
         answer:
-          "Many of our products are made from sustainable materials and ethical manufacturing processes. Look for the 'Sustainable' badge on product pages. We're committed to increasing our sustainable offerings and reducing our environmental impact.",
+          "Most of our products run true to size, but this can vary by brand and style. Each product page includes fit information (e.g., 'runs small,' 'relaxed fit') and customer reviews with sizing feedback.",
       },
       {
-        question: "Do you restock sold-out items?",
+        question: "Do you offer plus sizes?",
         answer:
-          "Popular items are often restocked. You can sign up for 'Back in Stock' notifications on any sold-out product page. We'll email you as soon as the item becomes available again in your size.",
+          "Yes! We're committed to inclusivity and offer extended sizing (XS-3XL) across most of our collections. Look for the 'Extended Sizes' filter when shopping.",
       },
       {
-        question: "Can I see how products look on different body types?",
+        question: "How do I care for my garments?",
         answer:
-          "Yes! Many of our product pages feature customer photos and our models represent a range of body types and sizes. You can also use our FitVerse AI feature to virtually try on items.",
+          "Care instructions are included on the tag of each garment and on the product page. Generally, we recommend washing in cold water, gentle cycle, and air drying to maintain quality and longevity.",
       },
     ],
-    account: [
+  },
+  {
+    title: "Account & General",
+    icon: HelpCircle,
+    questions: [
       {
-        question: "How do I create an account?",
+        question: "Do I need an account to place an order?",
         answer:
-          "Click the user icon in the top right corner and select 'Sign Up'. Enter your email, create a password, and fill in your basic information. You can also sign up during checkout when placing your first order.",
+          "No, you can checkout as a guest. However, creating an account allows you to track orders, save addresses, view order history, and receive exclusive member benefits and early access to sales.",
       },
       {
-        question: "I forgot my password. What should I do?",
+        question: "How do I reset my password?",
         answer:
-          "Click 'Forgot Password' on the login page. Enter your email address and we'll send you a secure link to reset your password. The link is valid for 24 hours.",
+          "Click 'Forgot Password' on the login page, enter your email address, and we'll send you a password reset link. If you don't receive it within 5 minutes, check your spam folder.",
       },
       {
-        question: "How do I update my account information?",
+        question: "Can I save items for later?",
         answer:
-          "Log into your account and go to Settings. From there you can update your personal information, email preferences, saved addresses, and payment methods.",
+          "Yes! Use the Wishlist feature to save items you're interested in. Simply click the heart icon on any product. Your wishlist is saved to your account and accessible across devices.",
       },
       {
-        question: "Can I delete my account?",
+        question: "Do you have a loyalty program?",
         answer:
-          "Yes, you can delete your account from Settings > Privacy > Delete Account. Please note this action is permanent and will remove all your order history, saved items, and personal information.",
+          "Yes! Our Fitverse Rewards program offers points for every purchase, birthday bonuses, early access to sales, and exclusive member-only events. Sign up is free and automatic when you create an account.",
       },
     ],
-  };
+  },
+];
 
-  const filterFAQs = (category: keyof typeof faqData) => {
-    if (!searchQuery) return faqData[category];
-    
-    return faqData[category].filter(
-      (faq) =>
-        faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
+export default function FAQ() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="section-container py-8 lg:py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-3xl lg:text-5xl font-bold mb-4">
-            Frequently Asked Questions
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Find answers to common questions about orders, shipping, returns, and
-            more.
-          </p>
-
-          {/* Search */}
-          <div className="max-w-xl mx-auto relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              placeholder="Search for answers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-12 text-base"
-            />
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl lg:text-5xl font-bold mb-4">
+              Frequently Asked Questions
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Find answers to common questions about orders, shipping, returns, and more
+            </p>
           </div>
-        </div>
 
-        {/* FAQ Categories */}
-        <Tabs defaultValue="orders" className="space-y-8">
-          <TabsList className="w-full grid grid-cols-2 lg:grid-cols-5 h-auto">
-            <TabsTrigger value="orders" className="gap-2">
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Orders</span>
-            </TabsTrigger>
-            <TabsTrigger value="payment" className="gap-2">
-              <CreditCard className="w-4 h-4" />
-              <span className="hidden sm:inline">Payment</span>
-            </TabsTrigger>
-            <TabsTrigger value="shipping" className="gap-2">
-              <Truck className="w-4 h-4" />
-              <span className="hidden sm:inline">Shipping</span>
-            </TabsTrigger>
-            <TabsTrigger value="returns" className="gap-2">
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Returns</span>
-            </TabsTrigger>
-            <TabsTrigger value="account" className="gap-2">
-              <HelpCircle className="w-4 h-4" />
-              <span className="hidden sm:inline">Account</span>
-            </TabsTrigger>
-          </TabsList>
+          <div className="space-y-8">
+            {faqCategories.map((category, categoryIndex) => (
+              <div
+                key={categoryIndex}
+                className="glass rounded-2xl border border-border/50 p-6 lg:p-8"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                    <category.icon className="h-5 w-5 text-accent" />
+                  </div>
+                  <h2 className="text-2xl font-semibold">{category.title}</h2>
+                </div>
 
-          {/* Orders FAQs */}
-          <TabsContent value="orders">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <Accordion type="single" collapsible className="space-y-4">
-                {filterFAQs("orders").map((faq, index) => (
-                  <AccordionItem key={index} value={`order-${index}`}>
-                    <AccordionTrigger className="text-left hover:no-underline">
-                      <span className="font-semibold">{faq.question}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
+                <Accordion type="single" collapsible className="w-full">
+                  {category.questions.map((item, itemIndex) => (
+                    <AccordionItem
+                      key={itemIndex}
+                      value={`item-${categoryIndex}-${itemIndex}`}
+                    >
+                      <AccordionTrigger className="text-left">
+                        {item.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground">
+                        {item.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 glass rounded-2xl border border-border/50 p-8 text-center bg-gradient-to-br from-accent/10 to-transparent">
+            <h3 className="text-xl font-semibold mb-2">Still Have Questions?</h3>
+            <p className="text-muted-foreground mb-6">
+              Can't find the answer you're looking for? Our customer support team is here
+              to help.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="/contact">
+                <button className="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
+                  Contact Support
+                </button>
+              </a>
+              <a href="mailto:support@fitverse.com">
+                <button className="px-6 py-3 border border-border rounded-lg hover:bg-accent/5 transition-colors">
+                  Email Us
+                </button>
+              </a>
             </div>
-          </TabsContent>
-
-          {/* Payment FAQs */}
-          <TabsContent value="payment">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <Accordion type="single" collapsible className="space-y-4">
-                {filterFAQs("payment").map((faq, index) => (
-                  <AccordionItem key={index} value={`payment-${index}`}>
-                    <AccordionTrigger className="text-left hover:no-underline">
-                      <span className="font-semibold">{faq.question}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </TabsContent>
-
-          {/* Shipping FAQs (using orders data) */}
-          <TabsContent value="shipping">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <Accordion type="single" collapsible className="space-y-4">
-                {filterFAQs("orders").map((faq, index) => (
-                  <AccordionItem key={index} value={`shipping-${index}`}>
-                    <AccordionTrigger className="text-left hover:no-underline">
-                      <span className="font-semibold">{faq.question}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </TabsContent>
-
-          {/* Returns FAQs */}
-          <TabsContent value="returns">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <Accordion type="single" collapsible className="space-y-4">
-                {filterFAQs("returns").map((faq, index) => (
-                  <AccordionItem key={index} value={`return-${index}`}>
-                    <AccordionTrigger className="text-left hover:no-underline">
-                      <span className="font-semibold">{faq.question}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </TabsContent>
-
-          {/* Account FAQs */}
-          <TabsContent value="account">
-            <div className="bg-card border border-border rounded-2xl p-6">
-              <Accordion type="single" collapsible className="space-y-4">
-                {filterFAQs("account").map((faq, index) => (
-                  <AccordionItem key={index} value={`account-${index}`}>
-                    <AccordionTrigger className="text-left hover:no-underline">
-                      <span className="font-semibold">{faq.question}</span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-muted-foreground">
-                      {faq.answer}
-                    </AccordionContent>
-                  </AccordionItem>
-                ))}
-              </Accordion>
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* Still Need Help Section */}
-        <div className="mt-12 text-center bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-border rounded-2xl p-8 lg:p-12">
-          <HelpCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-2xl font-bold mb-3">Still have questions?</h2>
-          <p className="text-muted-foreground mb-6 max-w-xl mx-auto">
-            Can't find what you're looking for? Our customer support team is here
-            to help you.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/contact">
-              <button className="bg-foreground text-background px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity">
-                Contact Support
-              </button>
-            </a>
-            <a href="mailto:support@fitverse.com">
-              <button className="border border-border px-6 py-3 rounded-lg font-medium hover:bg-secondary transition-colors">
-                Email Us
-              </button>
-            </a>
           </div>
         </div>
       </div>

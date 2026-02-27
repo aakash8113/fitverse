@@ -1,274 +1,238 @@
-import { FileText, Scale, AlertTriangle, CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { Separator } from "@/components/ui/separator";
+import { FileText, Shield, ShoppingCart, CreditCard, AlertCircle } from "lucide-react";
 
 export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <div className="section-container py-8 lg:py-12 max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-foreground rounded-full flex items-center justify-center mx-auto mb-4">
-            <FileText className="w-8 h-8 text-background" />
+      <div className="section-container py-8 lg:py-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl lg:text-5xl font-bold mb-4">Terms of Service</h1>
+            <p className="text-muted-foreground">Last updated: February 2026</p>
           </div>
-          <h1 className="text-3xl lg:text-5xl font-bold mb-4">Terms of Service</h1>
-          <p className="text-muted-foreground">
-            Last updated: February 27, 2026
-          </p>
-        </div>
 
-        {/* Content */}
-        <div className="bg-card border border-border rounded-2xl p-8 space-y-8">
-          {/* Introduction */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Agreement to Terms</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              By accessing or using Fitverse's website and services, you agree to be
-              bound by these Terms of Service and all applicable laws and regulations.
-              If you do not agree with any of these terms, you are prohibited from
-              using our services.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Use of Service */}
-          <section>
-            <div className="flex items-center gap-3 mb-4">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-              <h2 className="text-2xl font-bold">Use of Service</h2>
-            </div>
-            
-            <div className="space-y-4 text-muted-foreground">
-              <p className="leading-relaxed">
-                You must be at least 18 years old to use our services. By using
-                Fitverse, you represent and warrant that you meet this age requirement.
-              </p>
-              
-              <h3 className="font-semibold text-foreground pt-2">
-                You agree to:
-              </h3>
-              <ul className="space-y-2 list-disc list-inside">
-                <li>Provide accurate and complete information</li>
-                <li>Maintain the security of your account credentials</li>
-                <li>Notify us immediately of any unauthorized use</li>
-                <li>Use our services only for lawful purposes</li>
-                <li>Not interfere with or disrupt the service</li>
-              </ul>
-            </div>
-          </section>
-
-          <Separator />
-
-          {/* Accounts */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Account Registration</h2>
-            
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              When you create an account with us, you must provide accurate,
-              complete, and current information. You are responsible for maintaining
-              the confidentiality of your account and password.
-            </p>
-
-            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4">
-              <div className="flex gap-3">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-muted-foreground">
-                  You are responsible for all activities that occur under your account.
-                  We reserve the right to refuse service, terminate accounts, or remove
-                  content at our discretion.
+          <div className="space-y-8">
+            {/* Introduction */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold">1. Introduction</h2>
+              </div>
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  Welcome to Fitverse ("Company," "we," "our," "us")! These Terms of
+                  Service ("Terms," "Terms of Service") govern your use of our website
+                  located at fitverse.com (together or individually "Service") operated
+                  by Fitverse.
+                </p>
+                <p>
+                  Our Privacy Policy also governs your use of our Service and explains how
+                  we collect, safeguard and disclose information that results from your use
+                  of our web pages.
+                </p>
+                <p>
+                  Your agreement with us includes these Terms and our Privacy Policy
+                  ("Agreements"). You acknowledge that you have read and understood
+                  Agreements, and agree to be bound by them.
+                </p>
+                <p>
+                  If you do not agree with (or cannot comply with) Agreements, then you may
+                  not use the Service, but please let us know by emailing at
+                  support@fitverse.com so we can try to find a solution.
                 </p>
               </div>
             </div>
-          </section>
 
-          <Separator />
-
-          {/* Orders and Payments */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Orders and Payments</h2>
-            
-            <div className="space-y-4 text-muted-foreground">
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Order Acceptance</h3>
-                <p className="leading-relaxed">
-                  All orders are subject to acceptance and availability. We reserve the
-                  right to refuse or cancel any order for any reason, including product
-                  availability, errors in pricing or product information, or suspected
-                  fraud.
-                </p>
+            {/* Account */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold">2. Accounts</h2>
               </div>
-
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Pricing</h3>
-                <p className="leading-relaxed">
-                  All prices are in USD and are subject to change without notice.
-                  Despite our best efforts, a small number of items may be mispriced.
-                  If an item's correct price is higher than stated, we will contact you
-                  before shipping.
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  When you create an account with us, you guarantee that you are above the
+                  age of 18, and that the information you provide us is accurate, complete,
+                  and current at all times. Inaccurate, incomplete, or obsolete information
+                  may result in the immediate termination of your account on Service.
                 </p>
-              </div>
-
-              <div>
-                <h3 className="font-semibold text-foreground mb-2">Payment</h3>
-                <p className="leading-relaxed">
-                  We accept major credit cards, PayPal, and other payment methods as
-                  displayed at checkout. By providing payment information, you
-                  represent that you are authorized to use the payment method.
+                <p>
+                  You are responsible for maintaining the confidentiality of your account
+                  and password, including but not limited to the restriction of access to
+                  your computer and/or account. You agree to accept responsibility for any
+                  and all activities or actions that occur under your account and/or
+                  password, whether your password is with our Service or a third-party
+                  service.
+                </p>
+                <p>
+                  You must notify us immediately upon becoming aware of any breach of
+                  security or unauthorized use of your account. You may not use as a
+                  username the name of another person or entity or that is not lawfully
+                  available for use.
                 </p>
               </div>
             </div>
-          </section>
 
-          <Separator />
-
-          {/* Intellectual Property */}
-          <section>
-            <div className="flex items-center gap-3 mb-4">
-              <Scale className="w-6 h-6 text-blue-600" />
-              <h2 className="text-2xl font-bold">Intellectual Property</h2>
+            {/* Purchases */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold">3. Products & Purchases</h2>
+              </div>
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  We reserve the right to refuse any order you place with us. We may, in
+                  our sole discretion, limit or cancel quantities purchased per person, per
+                  household or per order. These restrictions may include orders placed by
+                  or under the same customer account, the same credit card, and/or orders
+                  that use the same billing and/or shipping address.
+                </p>
+                <p>
+                  In the event that we make a change to or cancel an order, we may attempt
+                  to notify you by contacting the email and/or billing address/phone number
+                  provided at the time the order was made.
+                </p>
+                <p>
+                  We reserve the right to limit or prohibit orders that, in our sole
+                  judgment, appear to be placed by dealers, resellers or distributors.
+                </p>
+                <p>
+                  All descriptions of products or product pricing are subject to change at
+                  anytime without notice, at our sole discretion. We reserve the right to
+                  discontinue any product at any time.
+                </p>
+              </div>
             </div>
-            
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              All content on this website, including text, graphics, logos, images,
-              and software, is the property of Fitverse or its content suppliers and
-              is protected by intellectual property laws.
-            </p>
 
-            <p className="text-muted-foreground leading-relaxed">
-              You may not reproduce, distribute, modify, or create derivative works
-              from any content without our express written permission.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Product Information */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Product Information</h2>
-            
-            <p className="text-muted-foreground leading-relaxed">
-              We strive to provide accurate product descriptions and images. However,
-              we do not warrant that product descriptions, colors, or other content is
-              accurate, complete, or error-free. Actual product colors may vary from
-              those displayed on your screen.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Returns and Refunds */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Returns and Refunds</h2>
-            
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              Our return and refund policy is outlined in our separate Return Policy
-              document. Please review it carefully before making a purchase.
-            </p>
-
-            <a
-              href="/returns"
-              className="inline-block text-sm font-medium hover:underline"
-            >
-              View Return Policy →
-            </a>
-          </section>
-
-          <Separator />
-
-          {/* Limitation of Liability */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Limitation of Liability</h2>
-            
-            <p className="text-muted-foreground leading-relaxed">
-              To the fullest extent permitted by law, Fitverse shall not be liable
-              for any indirect, incidental, special, consequential, or punitive
-              damages, including loss of profits, data, or goodwill, arising from your
-              use or inability to use our services.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Indemnification */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Indemnification</h2>
-            
-            <p className="text-muted-foreground leading-relaxed">
-              You agree to indemnify and hold harmless Fitverse and its affiliates
-              from any claims, losses, damages, liabilities, and expenses arising from
-              your use of our services or violation of these Terms.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Termination */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Termination</h2>
-            
-            <p className="text-muted-foreground leading-relaxed">
-              We may terminate or suspend your account and access to our services
-              immediately, without prior notice, for any reason, including breach of
-              these Terms. Upon termination, your right to use the service will cease
-              immediately.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Governing Law */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Governing Law</h2>
-            
-            <p className="text-muted-foreground leading-relaxed">
-              These Terms shall be governed by and construed in accordance with the
-              laws of the State of New York, without regard to its conflict of law
-              provisions. Any disputes shall be resolved in the courts located in New
-              York, NY.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Changes to Terms */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Changes to Terms</h2>
-            
-            <p className="text-muted-foreground leading-relaxed">
-              We reserve the right to modify these Terms at any time. We will notify
-              you of any changes by posting the new Terms on this page and updating
-              the "Last updated" date. Your continued use of the service after changes
-              constitutes acceptance of the new Terms.
-            </p>
-          </section>
-
-          <Separator />
-
-          {/* Contact */}
-          <section>
-            <h2 className="text-2xl font-bold mb-4">Contact Information</h2>
-            
-            <p className="text-muted-foreground leading-relaxed mb-4">
-              If you have questions about these Terms, please contact us:
-            </p>
-
-            <div className="bg-secondary/50 rounded-lg p-4 space-y-2 text-sm">
-              <p>
-                <span className="font-medium">Email:</span> legal@fitverse.com
-              </p>
-              <p>
-                <span className="font-medium">Phone:</span> +1 (555) 123-4567
-              </p>
-              <p>
-                <span className="font-medium">Address:</span> 123 Fashion Avenue, New
-                York, NY 10001
-              </p>
+            {/* Payment */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <CreditCard className="h-5 w-5 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold">4. Payment Terms</h2>
+              </div>
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  We accept various payment methods including credit cards, debit cards,
+                  PayPal, and other digital payment methods. By submitting your payment
+                  information, you authorize us to charge the applicable fees to your
+                  selected payment method.
+                </p>
+                <p>
+                  All prices are listed in US Dollars unless otherwise specified. Prices
+                  are subject to change without notice. You agree to pay all fees and
+                  applicable taxes incurred by you or anyone using your account.
+                </p>
+                <p>
+                  In the event of payment processing errors, we reserve the right to
+                  correct such errors and will notify you of the correction. If payment is
+                  not received within 30 days of the invoice date, we reserve the right to
+                  suspend or terminate your access to the Service.
+                </p>
+              </div>
             </div>
-          </section>
+
+            {/* Intellectual Property */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <Shield className="h-5 w-5 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold">5. Intellectual Property</h2>
+              </div>
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  Service and its original content (excluding Content provided by users),
+                  features and functionality are and will remain the exclusive property of
+                  Fitverse and its licensors. Service is protected by copyright, trademark,
+                  and other laws of foreign countries.
+                </p>
+                <p>
+                  Our trademarks may not be used in connection with any product or service
+                  without the prior written consent of Fitverse.
+                </p>
+              </div>
+            </div>
+
+            {/* Limitation of Liability */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                  <AlertCircle className="h-5 w-5 text-accent" />
+                </div>
+                <h2 className="text-2xl font-semibold">6. Limitation of Liability</h2>
+              </div>
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  Except as prohibited by law, you will hold us and our officers,
+                  directors, employees, and agents harmless for any indirect, punitive,
+                  special, incidental, or consequential damage, however it arises
+                  (including attorneys' fees and all related costs and expenses of
+                  litigation and arbitration).
+                </p>
+                <p>
+                  In no event shall Fitverse, nor its directors, employees, partners,
+                  agents, suppliers, or affiliates, be liable for any indirect, incidental,
+                  special, consequential or punitive damages, including without limitation,
+                  loss of profits, data, use, goodwill, or other intangible losses.
+                </p>
+              </div>
+            </div>
+
+            {/* Changes */}
+            <div className="glass rounded-2xl border border-border/50 p-8">
+              <h2 className="text-2xl font-semibold mb-4">7. Changes to Terms</h2>
+              <div className="space-y-4 text-muted-foreground">
+                <p>
+                  We reserve the right, at our sole discretion, to modify or replace these
+                  Terms at any time. If a revision is material we will provide at least 30
+                  days notice prior to any new terms taking effect. What constitutes a
+                  material change will be determined at our sole discretion.
+                </p>
+                <p>
+                  By continuing to access or use our Service after any revisions become
+                  effective, you agree to be bound by the revised terms. If you do not
+                  agree to the new terms, you are no longer authorized to use Service.
+                </p>
+              </div>
+            </div>
+
+            {/* Contact */}
+            <div className="glass rounded-2xl border border-border/50 p-8 bg-gradient-to-br from-accent/10 to-transparent">
+              <h2 className="text-2xl font-semibold mb-4">Contact Us</h2>
+              <p className="text-muted-foreground mb-4">
+                If you have any questions about these Terms, please contact us:
+              </p>
+              <div className="space-y-2 text-sm">
+                <p>
+                  <span className="font-semibold">Email:</span>{" "}
+                  <a
+                    href="mailto:legal@fitverse.com"
+                    className="text-accent hover:text-accent/80"
+                  >
+                    legal@fitverse.com
+                  </a>
+                </p>
+                <p>
+                  <span className="font-semibold">Address:</span> 123 Fashion Street, New
+                  York, NY 10001
+                </p>
+                <p>
+                  <span className="font-semibold">Phone:</span> +1 (555) 123-4567
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

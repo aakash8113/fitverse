@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, MapPin, Plus, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, MapPin, Plus, Check, CreditCard } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -23,11 +23,22 @@ interface Address {
   isDefault: boolean;
 }
 
+interface PaymentMethod {
+  id: string;
+  cardNumber: string;
+  cardholderName: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cardType: "visa" | "mastercard" | "amex" | "discover";
+  isDefault: boolean;
+}
+
 export default function Checkout() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(2); // Address step
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>("1");
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string>("1"); // Default to first card
   const [sameAsBilling, setSameAsBilling] = useState(true);
 
   // Saved addresses for testing
@@ -55,6 +66,28 @@ export default function Checkout() {
       state: "CA",
       zipCode: "90001",
       country: "United States",
+      isDefault: false,
+    },
+  ]);
+
+  // Saved payment methods for testing
+  const [savedPaymentMethods] = useState<PaymentMethod[]>([
+    {
+      id: "1",
+      cardNumber: "**** **** **** 4242",
+      cardholderName: "John Doe",
+      expiryMonth: "12",
+      expiryYear: "2025",
+      cardType: "visa",
+      isDefault: true,
+    },
+    {
+      id: "2",
+      cardNumber: "**** **** **** 5555",
+      cardholderName: "John Doe",
+      expiryMonth: "08",
+      expiryYear: "2026",
+      cardType: "mastercard",
       isDefault: false,
     },
   ]);
@@ -103,9 +136,19 @@ export default function Checkout() {
       alert("Please select an address or add a new one");
       return;
     }
-    // Navigate to payment page (to be created)
-    console.log("Proceeding to payment with address:", selectedAddressId || newAddress);
-    // navigate("/payment");
+    
+    // Validate that a payment method is selected
+    if (!selectedPaymentId) {
+      alert("Please select a payment method");
+      return;
+    }
+    
+    // Navigate to order confirmation page
+    console.log("Processing order with:", {
+      address: selectedAddressId || newAddress,
+      payment: selectedPaymentId
+    });
+    navigate("/order-confirmation");
   };
 
   return (
@@ -113,16 +156,6 @@ export default function Checkout() {
       <Navbar />
 
       <div className="section-container md:max-w-full md:px-8 lg:px-12 xl:px-16 py-8 lg:py-12">
-        {/* Back to Cart Button - Top */}
-        <div className="mb-6">
-          <Link to="/cart">
-            <Button variant="outline" className="gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Cart
-            </Button>
-          </Link>
-        </div>
-
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-4 lg:gap-8 mb-8">
           {steps.map((step, idx) => (
@@ -156,9 +189,9 @@ export default function Checkout() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-7 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           {/* Left: Address Section */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             <div>
               <h2 className="text-2xl font-bold mb-2">Shipping Address</h2>
               <p className="text-muted-foreground">
@@ -499,15 +532,108 @@ export default function Checkout() {
               )}
             </div>
 
-            {/* Continue to Payment Button */}
+            {/* Payment Method */}
             <div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h2 className="text-2xl font-bold">Payment Method</h2>
+                  <p className="text-muted-foreground">
+                    Select a saved card or add a new one
+                  </p>
+                </div>
+                <Link to="/payment-methods">
+                  <Button variant="link" className="text-purple-600 hover:text-purple-700">
+                    Manage Cards
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="space-y-4">
+                {savedPaymentMethods.map((payment) => (
+                  <div
+                    key={payment.id}
+                    onClick={() => setSelectedPaymentId(payment.id)}
+                    className={cn(
+                      "bg-card border-2 rounded-2xl p-6 cursor-pointer transition-all hover:shadow-md",
+                      selectedPaymentId === payment.id
+                        ? "border-foreground"
+                        : "border-border"
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-4">
+                        <div
+                          className={cn(
+                            "w-6 h-6 rounded-full border-2 flex items-center justify-center mt-0.5",
+                            selectedPaymentId === payment.id
+                              ? "border-foreground bg-foreground"
+                              : "border-border"
+                          )}
+                        >
+                          {selectedPaymentId === payment.id && (
+                            <Check className="w-4 h-4 text-background" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <p className="font-semibold">{payment.cardNumber}</p>
+                            <span className={cn(
+                              "px-2 py-0.5 rounded text-xs font-medium uppercase",
+                              payment.cardType === "visa" && "bg-blue-500/10 text-blue-700",
+                              payment.cardType === "mastercard" && "bg-orange-500/10 text-orange-700",
+                              payment.cardType === "amex" && "bg-green-500/10 text-green-700",
+                              payment.cardType === "discover" && "bg-purple-500/10 text-purple-700"
+                            )}>
+                              {payment.cardType === "visa" && "💳 Visa"}
+                              {payment.cardType === "mastercard" && "💳 Mastercard"}
+                              {payment.cardType === "amex" && "💳 Amex"}
+                              {payment.cardType === "discover" && "💳 Discover"}
+                            </span>
+                            {payment.isDefault && (
+                              <span className="px-2 py-0.5 rounded-full bg-green-500/10 text-green-700 text-xs font-medium">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            {payment.cardholderName}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            Expires {payment.expiryMonth}/{payment.expiryYear}
+                          </p>
+                        </div>
+                      </div>
+                      <CreditCard className="w-5 h-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Add New Card Button */}
+                <Link to="/payment-methods">
+                  <button className="w-full border-2 border-dashed border-border rounded-2xl p-6 hover:border-foreground hover:bg-secondary/50 transition-all">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+                      <Plus className="w-5 h-5" />
+                      <span className="font-medium">Add New Card</span>
+                    </div>
+                  </button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="flex gap-4">
+              <Link to="/cart" className="flex-1 sm:flex-none">
+                <Button variant="outline" className="w-full sm:w-auto gap-2">
+                  <ArrowLeft className="w-4 h-4" />
+                  Back to Cart
+                </Button>
+              </Link>
               <Button
                 onClick={handleContinueToPayment}
-                size="lg"
-                className="w-full gap-2"
+                className="flex-1 sm:flex-auto gap-2"
               >
-                Continue to Payment
-                <ArrowRight className="w-5 h-5" />
+                Place Order
+                <ArrowRight className="w-4 h-4" />
               </Button>
             </div>
           </div>

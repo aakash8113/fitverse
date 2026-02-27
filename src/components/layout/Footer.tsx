@@ -20,8 +20,10 @@ export function Footer() {
               Revolutionizing fashion with AI-powered virtual try-ons. See how clothes fit before you buy.
             </p>
             <div className="flex gap-4">
-              <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10">
-                <Instagram className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10" asChild>
+                <a href="https://www.instagram.com/fitverse.fof" target="_blank" rel="noopener noreferrer">
+                  <Instagram className="h-5 w-5" />
+                </a>
               </Button>
               <Button variant="ghost" size="icon" className="hover:bg-primary-foreground/10">
                 <Twitter className="h-5 w-5" />
@@ -38,6 +40,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li><Link to="/shop?category=women" className="hover:text-primary-foreground transition-colors">Women</Link></li>
               <li><Link to="/shop?category=men" className="hover:text-primary-foreground transition-colors">Men</Link></li>
+              <li><Link to="/collections" className="hover:text-primary-foreground transition-colors">Collections</Link></li>
               <li><Link to="/shop?category=new" className="hover:text-primary-foreground transition-colors">New Arrivals</Link></li>
               <li><Link to="/shop?category=sale" className="hover:text-primary-foreground transition-colors">Sale</Link></li>
             </ul>
@@ -49,8 +52,19 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li><Link to="/" className="hover:text-primary-foreground transition-colors">About Us</Link></li>
               <li><Link to="/careers" className="hover:text-primary-foreground transition-colors">Careers</Link></li>
-              <li><Link to="/sustainability" className="hover:text-primary-foreground transition-colors">Sustainability</Link></li>
-              <li><Link to="/press" className="hover:text-primary-foreground transition-colors">Press</Link></li>
+              <li><Link to="/contact" className="hover:text-primary-foreground transition-colors">Contact</Link></li>
+              <li><Link to="/faq" className="hover:text-primary-foreground transition-colors">FAQ</Link></li>
+            </ul>
+          </div>
+
+          {/* Customer Service */}
+          <div className="space-y-4">
+            <h4 className="font-semibold">Customer Service</h4>
+            <ul className="space-y-3 text-sm text-primary-foreground/70">
+              <li><Link to="/track-order" className="hover:text-primary-foreground transition-colors">Track Order</Link></li>
+              <li><Link to="/shipping" className="hover:text-primary-foreground transition-colors">Shipping Info</Link></li>
+              <li><Link to="/returns" className="hover:text-primary-foreground transition-colors">Returns</Link></li>
+              <li><Link to="/size-guide" className="hover:text-primary-foreground transition-colors">Size Guide</Link></li>
             </ul>
           </div>
 
@@ -80,7 +94,8 @@ export function Footer() {
           <div className="flex gap-6 text-sm text-primary-foreground/50">
             <Link to="/privacy" className="hover:text-primary-foreground transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-primary-foreground transition-colors">Terms</Link>
-            <Link to="/cookies" className="hover:text-primary-foreground transition-colors">Cookies</Link>
+            <Link to="/returns" className="hover:text-primary-foreground transition-colors">Returns</Link>
+            <Link to="/shipping" className="hover:text-primary-foreground transition-colors">Shipping</Link>
           </div>
         </div>
       </div>

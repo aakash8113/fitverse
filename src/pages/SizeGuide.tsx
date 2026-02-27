@@ -1,284 +1,418 @@
-import { Ruler, User, ShoppingBag } from "lucide-react";
+import { Ruler, User } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 
 export default function SizeGuide() {
-  const mensShirts = [
-    { size: "XS", chest: "34-36", waist: "28-30", length: "27" },
-    { size: "S", chest: "36-38", waist: "30-32", length: "28" },
-    { size: "M", chest: "38-40", waist: "32-34", length: "29" },
-    { size: "L", chest: "40-42", waist: "34-36", length: "30" },
-    { size: "XL", chest: "42-44", waist: "36-38", length: "31" },
-    { size: "XXL", chest: "44-46", waist: "38-40", length: "32" },
-  ];
-
-  const mensPants = [
-    { size: "28", waist: "28", hip: "34-36", inseam: "30-32" },
-    { size: "30", waist: "30", hip: "36-38", inseam: "30-32" },
-    { size: "32", waist: "32", hip: "38-40", inseam: "30-32" },
-    { size: "34", waist: "34", hip: "40-42", inseam: "30-32" },
-    { size: "36", waist: "36", hip: "42-44", inseam: "30-32" },
-    { size: "38", waist: "38", hip: "44-46", inseam: "30-32" },
-  ];
-
-  const womensClothing = [
-    { size: "XS", bust: "32-34", waist: "24-26", hip: "34-36" },
-    { size: "S", bust: "34-36", waist: "26-28", hip: "36-38" },
-    { size: "M", bust: "36-38", waist: "28-30", hip: "38-40" },
-    { size: "L", bust: "38-40", waist: "30-32", hip: "40-42" },
-    { size: "XL", bust: "40-42", waist: "32-34", hip: "42-44" },
-    { size: "XXL", bust: "42-44", waist: "34-36", hip: "44-46" },
-  ];
-
-  const shoeSize = [
-    { us: "6", eu: "39", uk: "5.5", cm: "23.5" },
-    { us: "6.5", eu: "39.5", uk: "6", cm: "24" },
-    { us: "7", eu: "40", uk: "6.5", cm: "24.5" },
-    { us: "7.5", eu: "40.5", uk: "7", cm: "25" },
-    { us: "8", eu: "41", uk: "7.5", cm: "25.5" },
-    { us: "8.5", eu: "42", uk: "8", cm: "26" },
-    { us: "9", eu: "42.5", uk: "8.5", cm: "26.5" },
-    { us: "9.5", eu: "43", uk: "9", cm: "27" },
-    { us: "10", eu: "44", uk: "9.5", cm: "27.5" },
-    { us: "10.5", eu: "44.5", uk: "10", cm: "28" },
-    { us: "11", eu: "45", uk: "10.5", cm: "28.5" },
-    { us: "11.5", eu: "45.5", uk: "11", cm: "29" },
-    { us: "12", eu: "46", uk: "11.5", cm: "29.5" },
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="section-container py-8 lg:py-12">
-        {/* Header */}
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-foreground rounded-full flex items-center justify-center mx-auto mb-4">
-            <Ruler className="w-8 h-8 text-background" />
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-3xl lg:text-5xl font-bold mb-4">Size Guide</h1>
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              Find your perfect fit with our comprehensive sizing charts and measurement
+              guide
+            </p>
           </div>
-          <h1 className="text-3xl lg:text-5xl font-bold mb-4">Size Guide</h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Find your perfect fit with our comprehensive size charts and
-            measurement guide.
-          </p>
-        </div>
 
-        {/* How to Measure Section */}
-        <div className="bg-card border border-border rounded-2xl p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-6">How to Measure</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <div className="w-12 h-12 bg-blue-500/10 rounded-lg flex items-center justify-center mb-4">
-                <User className="w-6 h-6 text-blue-600" />
+          <div className="glass rounded-2xl border border-border/50 p-6 lg:p-8 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
+                <Ruler className="h-5 w-5 text-accent" />
               </div>
-              <h3 className="font-semibold mb-2">Chest / Bust</h3>
-              <p className="text-sm text-muted-foreground">
-                Measure around the fullest part of your chest, keeping the tape
-                measure horizontal and snug but not tight.
-              </p>
+              <h2 className="text-2xl font-semibold">How to Measure</h2>
             </div>
 
-            <div>
-              <div className="w-12 h-12 bg-green-500/10 rounded-lg flex items-center justify-center mb-4">
-                <Ruler className="w-6 h-6 text-green-600" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h3 className="font-semibold mb-2">Chest</h3>
+                <p className="text-sm text-muted-foreground">
+                  Measure around the fullest part of your chest, keeping the tape parallel
+                  to the floor
+                </p>
               </div>
-              <h3 className="font-semibold mb-2">Waist</h3>
-              <p className="text-sm text-muted-foreground">
-                Measure around your natural waistline, which is the narrowest part
-                of your torso, about 1 inch above your belly button.
-              </p>
-            </div>
-
-            <div>
-              <div className="w-12 h-12 bg-purple-500/10 rounded-lg flex items-center justify-center mb-4">
-                <ShoppingBag className="w-6 h-6 text-purple-600" />
+              <div>
+                <h3 className="font-semibold mb-2">Waist</h3>
+                <p className="text-sm text-muted-foreground">
+                  Measure around your natural waistline, keeping the tape comfortably
+                  loose
+                </p>
               </div>
-              <h3 className="font-semibold mb-2">Hips</h3>
-              <p className="text-sm text-muted-foreground">
-                Measure around the fullest part of your hips, approximately 8
-                inches below your natural waistline.
-              </p>
+              <div>
+                <h3 className="font-semibold mb-2">Hips</h3>
+                <p className="text-sm text-muted-foreground">
+                  Measure around the fullest part of your hips, approximately 8 inches
+                  below your waist
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Size Charts */}
-        <Tabs defaultValue="mens-tops" className="space-y-6">
-          <TabsList className="w-full grid grid-cols-2 lg:grid-cols-4 h-auto">
-            <TabsTrigger value="mens-tops">Men's Tops</TabsTrigger>
-            <TabsTrigger value="mens-bottoms">Men's Bottoms</TabsTrigger>
-            <TabsTrigger value="womens">Women's</TabsTrigger>
-            <TabsTrigger value="shoes">Shoes</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="tops" className="space-y-6">
+            <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full">
+              <TabsTrigger value="tops">Tops</TabsTrigger>
+              <TabsTrigger value="bottoms">Bottoms</TabsTrigger>
+              <TabsTrigger value="dresses">Dresses</TabsTrigger>
+              <TabsTrigger value="shoes">Shoes</TabsTrigger>
+              <TabsTrigger value="accessories">Accessories</TabsTrigger>
+            </TabsList>
 
-          {/* Men's Tops */}
-          <TabsContent value="mens-tops">
-            <div className="bg-card border border-border rounded-2xl p-6 overflow-x-auto">
-              <h3 className="text-xl font-semibold mb-4">Men's Shirts & Tops</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                All measurements are in inches
-              </p>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-semibold">Size</TableHead>
-                    <TableHead className="font-semibold">Chest</TableHead>
-                    <TableHead className="font-semibold">Waist</TableHead>
-                    <TableHead className="font-semibold">Length</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mensShirts.map((row) => (
-                    <TableRow key={row.size}>
-                      <TableCell className="font-medium">{row.size}</TableCell>
-                      <TableCell>{row.chest}</TableCell>
-                      <TableCell>{row.waist}</TableCell>
-                      <TableCell>{row.length}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+            {/* Tops */}
+            <TabsContent value="tops">
+              <div className="glass rounded-2xl border border-border/50 overflow-hidden">
+                <div className="p-6 bg-accent/5 border-b border-border/50">
+                  <h3 className="text-xl font-semibold">Tops & T-Shirts</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    US sizing - Measurements in inches
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left p-4 font-semibold">Size</th>
+                        <th className="text-left p-4 font-semibold">Chest</th>
+                        <th className="text-left p-4 font-semibold">Waist</th>
+                        <th className="text-left p-4 font-semibold">Length</th>
+                        <th className="text-left p-4 font-semibold">Sleeve</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">XS</td>
+                        <td className="p-4 text-muted-foreground">32-34</td>
+                        <td className="p-4 text-muted-foreground">26-28</td>
+                        <td className="p-4 text-muted-foreground">26</td>
+                        <td className="p-4 text-muted-foreground">32</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">S</td>
+                        <td className="p-4 text-muted-foreground">34-36</td>
+                        <td className="p-4 text-muted-foreground">28-30</td>
+                        <td className="p-4 text-muted-foreground">27</td>
+                        <td className="p-4 text-muted-foreground">33</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">M</td>
+                        <td className="p-4 text-muted-foreground">38-40</td>
+                        <td className="p-4 text-muted-foreground">32-34</td>
+                        <td className="p-4 text-muted-foreground">28</td>
+                        <td className="p-4 text-muted-foreground">34</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">L</td>
+                        <td className="p-4 text-muted-foreground">42-44</td>
+                        <td className="p-4 text-muted-foreground">36-38</td>
+                        <td className="p-4 text-muted-foreground">29</td>
+                        <td className="p-4 text-muted-foreground">35</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">XL</td>
+                        <td className="p-4 text-muted-foreground">46-48</td>
+                        <td className="p-4 text-muted-foreground">40-42</td>
+                        <td className="p-4 text-muted-foreground">30</td>
+                        <td className="p-4 text-muted-foreground">36</td>
+                      </tr>
+                      <tr>
+                        <td className="p-4">XXL</td>
+                        <td className="p-4 text-muted-foreground">50-52</td>
+                        <td className="p-4 text-muted-foreground">44-46</td>
+                        <td className="p-4 text-muted-foreground">31</td>
+                        <td className="p-4 text-muted-foreground">37</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
 
-          {/* Men's Bottoms */}
-          <TabsContent value="mens-bottoms">
-            <div className="bg-card border border-border rounded-2xl p-6 overflow-x-auto">
-              <h3 className="text-xl font-semibold mb-4">Men's Pants & Jeans</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                All measurements are in inches
-              </p>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-semibold">Size</TableHead>
-                    <TableHead className="font-semibold">Waist</TableHead>
-                    <TableHead className="font-semibold">Hip</TableHead>
-                    <TableHead className="font-semibold">Inseam</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {mensPants.map((row) => (
-                    <TableRow key={row.size}>
-                      <TableCell className="font-medium">{row.size}</TableCell>
-                      <TableCell>{row.waist}</TableCell>
-                      <TableCell>{row.hip}</TableCell>
-                      <TableCell>{row.inseam}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+            {/* Bottoms */}
+            <TabsContent value="bottoms">
+              <div className="glass rounded-2xl border border-border/50 overflow-hidden">
+                <div className="p-6 bg-accent/5 border-b border-border/50">
+                  <h3 className="text-xl font-semibold">Pants & Jeans</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    US sizing - Measurements in inches
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left p-4 font-semibold">Size</th>
+                        <th className="text-left p-4 font-semibold">Waist</th>
+                        <th className="text-left p-4 font-semibold">Hips</th>
+                        <th className="text-left p-4 font-semibold">Inseam</th>
+                        <th className="text-left p-4 font-semibold">Rise</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">26</td>
+                        <td className="p-4 text-muted-foreground">26</td>
+                        <td className="p-4 text-muted-foreground">34-35</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">9</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">28</td>
+                        <td className="p-4 text-muted-foreground">28</td>
+                        <td className="p-4 text-muted-foreground">36-37</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">9.5</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">30</td>
+                        <td className="p-4 text-muted-foreground">30</td>
+                        <td className="p-4 text-muted-foreground">38-39</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">10</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">32</td>
+                        <td className="p-4 text-muted-foreground">32</td>
+                        <td className="p-4 text-muted-foreground">40-41</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">10.5</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">34</td>
+                        <td className="p-4 text-muted-foreground">34</td>
+                        <td className="p-4 text-muted-foreground">42-43</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">11</td>
+                      </tr>
+                      <tr>
+                        <td className="p-4">36</td>
+                        <td className="p-4 text-muted-foreground">36</td>
+                        <td className="p-4 text-muted-foreground">44-45</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">11.5</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
 
-          {/* Women's Clothing */}
-          <TabsContent value="womens">
-            <div className="bg-card border border-border rounded-2xl p-6 overflow-x-auto">
-              <h3 className="text-xl font-semibold mb-4">Women's Clothing</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                All measurements are in inches
-              </p>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-semibold">Size</TableHead>
-                    <TableHead className="font-semibold">Bust</TableHead>
-                    <TableHead className="font-semibold">Waist</TableHead>
-                    <TableHead className="font-semibold">Hip</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {womensClothing.map((row) => (
-                    <TableRow key={row.size}>
-                      <TableCell className="font-medium">{row.size}</TableCell>
-                      <TableCell>{row.bust}</TableCell>
-                      <TableCell>{row.waist}</TableCell>
-                      <TableCell>{row.hip}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
+            {/* Dresses */}
+            <TabsContent value="dresses">
+              <div className="glass rounded-2xl border border-border/50 overflow-hidden">
+                <div className="p-6 bg-accent/5 border-b border-border/50">
+                  <h3 className="text-xl font-semibold">Dresses</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    US sizing - Measurements in inches
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left p-4 font-semibold">Size</th>
+                        <th className="text-left p-4 font-semibold">Bust</th>
+                        <th className="text-left p-4 font-semibold">Waist</th>
+                        <th className="text-left p-4 font-semibold">Hips</th>
+                        <th className="text-left p-4 font-semibold">Length</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">XS (0-2)</td>
+                        <td className="p-4 text-muted-foreground">32-33</td>
+                        <td className="p-4 text-muted-foreground">24-25</td>
+                        <td className="p-4 text-muted-foreground">34-35</td>
+                        <td className="p-4 text-muted-foreground">35</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">S (4-6)</td>
+                        <td className="p-4 text-muted-foreground">34-35</td>
+                        <td className="p-4 text-muted-foreground">26-27</td>
+                        <td className="p-4 text-muted-foreground">36-37</td>
+                        <td className="p-4 text-muted-foreground">36</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">M (8-10)</td>
+                        <td className="p-4 text-muted-foreground">36-37</td>
+                        <td className="p-4 text-muted-foreground">28-29</td>
+                        <td className="p-4 text-muted-foreground">38-39</td>
+                        <td className="p-4 text-muted-foreground">37</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">L (12-14)</td>
+                        <td className="p-4 text-muted-foreground">38-40</td>
+                        <td className="p-4 text-muted-foreground">30-32</td>
+                        <td className="p-4 text-muted-foreground">40-42</td>
+                        <td className="p-4 text-muted-foreground">38</td>
+                      </tr>
+                      <tr>
+                        <td className="p-4">XL (16-18)</td>
+                        <td className="p-4 text-muted-foreground">42-44</td>
+                        <td className="p-4 text-muted-foreground">34-36</td>
+                        <td className="p-4 text-muted-foreground">44-46</td>
+                        <td className="p-4 text-muted-foreground">39</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
 
-          {/* Shoes */}
-          <TabsContent value="shoes">
-            <div className="bg-card border border-border rounded-2xl p-6 overflow-x-auto">
-              <h3 className="text-xl font-semibold mb-4">
-                International Shoe Size Conversion
-              </h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                Find your size across different regions
-              </p>
-              
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="font-semibold">US</TableHead>
-                    <TableHead className="font-semibold">EU</TableHead>
-                    <TableHead className="font-semibold">UK</TableHead>
-                    <TableHead className="font-semibold">CM</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shoeSize.map((row) => (
-                    <TableRow key={row.us}>
-                      <TableCell className="font-medium">{row.us}</TableCell>
-                      <TableCell>{row.eu}</TableCell>
-                      <TableCell>{row.uk}</TableCell>
-                      <TableCell>{row.cm}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-        </Tabs>
+            {/* Shoes */}
+            <TabsContent value="shoes">
+              <div className="glass rounded-2xl border border-border/50 overflow-hidden">
+                <div className="p-6 bg-accent/5 border-b border-border/50">
+                  <h3 className="text-xl font-semibold">Footwear</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    International size conversion
+                  </p>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border/50">
+                        <th className="text-left p-4 font-semibold">US</th>
+                        <th className="text-left p-4 font-semibold">UK</th>
+                        <th className="text-left p-4 font-semibold">EU</th>
+                        <th className="text-left p-4 font-semibold">Length (cm)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">6</td>
+                        <td className="p-4 text-muted-foreground">3.5</td>
+                        <td className="p-4 text-muted-foreground">36</td>
+                        <td className="p-4 text-muted-foreground">22.9</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">7</td>
+                        <td className="p-4 text-muted-foreground">4.5</td>
+                        <td className="p-4 text-muted-foreground">37</td>
+                        <td className="p-4 text-muted-foreground">23.5</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">8</td>
+                        <td className="p-4 text-muted-foreground">5.5</td>
+                        <td className="p-4 text-muted-foreground">38.5</td>
+                        <td className="p-4 text-muted-foreground">24.1</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">9</td>
+                        <td className="p-4 text-muted-foreground">6.5</td>
+                        <td className="p-4 text-muted-foreground">40</td>
+                        <td className="p-4 text-muted-foreground">25.1</td>
+                      </tr>
+                      <tr className="border-b border-border/50">
+                        <td className="p-4">10</td>
+                        <td className="p-4 text-muted-foreground">7.5</td>
+                        <td className="p-4 text-muted-foreground">41.5</td>
+                        <td className="p-4 text-muted-foreground">26.2</td>
+                      </tr>
+                      <tr>
+                        <td className="p-4">11</td>
+                        <td className="p-4 text-muted-foreground">8.5</td>
+                        <td className="p-4 text-muted-foreground">43</td>
+                        <td className="p-4 text-muted-foreground">27.3</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </TabsContent>
 
-        {/* Fit Tips */}
-        <div className="mt-8 bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-border rounded-2xl p-8">
-          <h2 className="text-2xl font-bold mb-4">Fit Tips</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-            <div>
-              <h3 className="font-semibold mb-2">Between Sizes?</h3>
-              <p className="text-muted-foreground">
-                If you're between sizes, we generally recommend sizing up for a more
-                comfortable fit. Check the product description for specific fit notes.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Need Help?</h3>
-              <p className="text-muted-foreground">
-                Still unsure about sizing? Contact our customer service team or check
-                customer reviews for real fit feedback.
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Virtual Try-On</h3>
-              <p className="text-muted-foreground">
-                Use our FitVerse AI feature to virtually try on items and see how they
-                look before you buy!
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold mb-2">Easy Returns</h3>
-              <p className="text-muted-foreground">
-                Don't worry if the fit isn't perfect - we offer free returns and
-                exchanges within 30 days.
-              </p>
+            {/* Accessories */}
+            <TabsContent value="accessories">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="glass rounded-2xl border border-border/50 overflow-hidden">
+                  <div className="p-6 bg-accent/5 border-b border-border/50">
+                    <h3 className="text-xl font-semibold">Belts</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border/50">
+                          <th className="text-left p-4 font-semibold">Size</th>
+                          <th className="text-left p-4 font-semibold">Waist (in)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-border/50">
+                          <td className="p-4">S</td>
+                          <td className="p-4 text-muted-foreground">28-30</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="p-4">M</td>
+                          <td className="p-4 text-muted-foreground">32-34</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="p-4">L</td>
+                          <td className="p-4 text-muted-foreground">36-38</td>
+                        </tr>
+                        <tr>
+                          <td className="p-4">XL</td>
+                          <td className="p-4 text-muted-foreground">40-42</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="glass rounded-2xl border border-border/50 overflow-hidden">
+                  <div className="p-6 bg-accent/5 border-b border-border/50">
+                    <h3 className="text-xl font-semibold">Hats</h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border/50">
+                          <th className="text-left p-4 font-semibold">Size</th>
+                          <th className="text-left p-4 font-semibold">Head (cm)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-border/50">
+                          <td className="p-4">S/M</td>
+                          <td className="p-4 text-muted-foreground">54-57</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="p-4">M/L</td>
+                          <td className="p-4 text-muted-foreground">57-60</td>
+                        </tr>
+                        <tr>
+                          <td className="p-4">L/XL</td>
+                          <td className="p-4 text-muted-foreground">60-63</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <div className="mt-8 glass rounded-2xl border border-border/50 p-8 bg-gradient-to-br from-accent/10 to-transparent">
+            <h3 className="text-xl font-semibold mb-4">Still Not Sure About Your Size?</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <h4 className="font-semibold mb-2">Check Reviews</h4>
+                <p className="text-sm text-muted-foreground">
+                  Customer reviews often include fit feedback and sizing recommendations
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Free Returns</h4>
+                <p className="text-sm text-muted-foreground">
+                  Enjoy hassle-free returns within 30 days if the fit isn't perfect
+                </p>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Contact Us</h4>
+                <p className="text-sm text-muted-foreground">
+                  Our team can help with sizing questions - just reach out!
+                </p>
+              </div>
             </div>
           </div>
         </div>
