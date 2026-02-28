@@ -301,7 +301,7 @@ export default function Account() {
                             {order.items?.length === 1 ? "item" : "items"}
                           </span>
                           <span className="font-semibold text-foreground">
-                            ${order.totalAmount.toFixed(2)}
+                            ${Number(order.total).toFixed(2)}
                           </span>
                         </div>
                       </div>

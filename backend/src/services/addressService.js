@@ -121,15 +121,6 @@ class AddressService {
   async deleteAddress(userId, addressId) {
     const address = await this.getAddressById(userId, addressId);
 
-    // Check if address is used in any orders
-    const ordersWithAddress = await prisma.order.count({
-      where: { addressId },
-    });
-
-    if (ordersWithAddress > 0) {
-      throw new BadRequestError('Cannot delete address used in orders');
-    }
-
     await prisma.address.delete({
       where: { id: addressId },
     });

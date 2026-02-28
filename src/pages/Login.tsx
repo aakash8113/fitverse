@@ -28,8 +28,10 @@ export default function Login() {
     
     try {
       await login(formData.email, formData.password);
-      // Navigate to the page they tried to visit or home
-      navigate(from, { replace: true });
+      // Redirect admins straight to dashboard, users to their intended page
+      const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+      const destination = storedUser?.role === 'ADMIN' ? '/admin/dashboard' : from;
+      navigate(destination, { replace: true });
     } catch (error) {
       console.error("Login failed:", error);
     } finally {
@@ -128,7 +130,7 @@ export default function Login() {
                 htmlFor="remember"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Remember me for 30 days
+                Remember me
               </label>
             </div>
 

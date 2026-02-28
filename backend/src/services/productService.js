@@ -63,12 +63,15 @@ class ProductService {
       }
     }
 
-    // Search by name
+    // Search across name and description
     if (query.search) {
-      where.name = {
-        contains: query.search,
-        mode: 'insensitive',
-      };
+      const terms = query.search.trim().split(/\s+/).filter(Boolean);
+      where.AND = terms.map((term) => ({
+        OR: [
+          { name: { contains: term, mode: 'insensitive' } },
+          { description: { contains: term, mode: 'insensitive' } },
+        ],
+      }));
     }
 
     // Get products with total count

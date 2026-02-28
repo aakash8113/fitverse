@@ -2,9 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
@@ -38,16 +39,25 @@ import Collections from "./pages/Collections";
 import SearchResults from "./pages/SearchResults";
 import Careers from "./pages/Careers";
 import NotFound from "./pages/NotFound";
+import { AdminGuard } from "@/components/admin/AdminGuard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminShopInventory from "./pages/admin/AdminShopInventory";
+import AdminThriftRequests from "./pages/admin/AdminThriftRequests";
+import AdminRefurbishment from "./pages/admin/AdminRefurbishment";
+import AdminThriftInventory from "./pages/admin/AdminThriftInventory";
+import AdminAIMonitoring from "./pages/admin/AdminAIMonitoring";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
+      <WishlistProvider>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <ScrollToTop />
           <Routes>
           {/* Main Pages */}
@@ -97,11 +107,22 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/returns" element={<ReturnPolicy />} />
           
+          {/* Admin Panel */}
+          <Route path="/admin" element={<AdminGuard><Navigate to="/admin/dashboard" replace /></AdminGuard>} />
+          <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+          <Route path="/admin/shop" element={<AdminGuard><AdminShopInventory /></AdminGuard>} />
+          <Route path="/admin/thrift-requests" element={<AdminGuard><AdminThriftRequests /></AdminGuard>} />
+          <Route path="/admin/refurbishment" element={<AdminGuard><AdminRefurbishment /></AdminGuard>} />
+          <Route path="/admin/thrift-inventory" element={<AdminGuard><AdminThriftInventory /></AdminGuard>} />
+          <Route path="/admin/ai-monitoring" element={<AdminGuard><AdminAIMonitoring /></AdminGuard>} />
+          <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+
           {/* 404 - Must be last */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
+      </WishlistProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

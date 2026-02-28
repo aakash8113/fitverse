@@ -180,7 +180,7 @@ export default function Orders() {
                         </span>
                         <span>•</span>
                         <span className="font-semibold text-foreground">
-                          ${order.total.toFixed(2)}
+                          ${Number(order.total).toFixed(2)}
                         </span>
                       </div>
                     </div>

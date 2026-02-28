@@ -133,7 +133,7 @@ const createOrderSchema = Joi.object({
 
 const createAddressSchema = Joi.object({
   name: Joi.string().min(2).max(100).required(),
-  phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).required(),
+  phone: Joi.string().pattern(/^[+]?[\d\s\-().]{6,20}$/).required(),
   addressLine1: Joi.string().min(5).max(200).required(),
   addressLine2: Joi.string().max(200).optional().allow('', null),
   city: Joi.string().min(2).max(100).required(),
@@ -145,7 +145,7 @@ const createAddressSchema = Joi.object({
 
 const updateAddressSchema = Joi.object({
   name: Joi.string().min(2).max(100).optional(),
-  phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional(),
+  phone: Joi.string().pattern(/^[+]?[\d\s\-().]{6,20}$/).optional(),
   addressLine1: Joi.string().min(5).max(200).optional(),
   addressLine2: Joi.string().max(200).optional().allow('', null),
   city: Joi.string().min(2).max(100).optional(),

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,12 +39,15 @@ interface FilterSidebarProps {
   onClose?: () => void;
   onCategoryChange?: (category: string | undefined) => void;
   onPriceRangeChange?: (min: number, max: number) => void;
+  onSizeChange?: (sizes: string[]) => void;
 }
 
 const categories: FilterOption[] = [
-  { id: "women", label: "Women", count: 245 },
-  { id: "men", label: "Men", count: 189 },
-  { id: "unisex", label: "Unisex", count: 67 },
+  { id: "mens",        label: "Men" },
+  { id: "womens",      label: "Women" },
+  { id: "activewear",  label: "Activewear" },
+  { id: "footwear",    label: "Footwear" },
+  { id: "accessories", label: "Accessories" },
 ];
 
 const sizes: FilterOption[] = [
@@ -64,11 +67,21 @@ const brands: FilterOption[] = [
   { id: "adidas", label: "Adidas", count: 24 },
 ];
 
-export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRangeChange }: FilterSidebarProps) {
-  const [priceRange, setPriceRange] = useState([0, 500]);
+export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRangeChange, onSizeChange }: FilterSidebarProps) {
+  const [minInput, setMinInput] = useState("");
+  const [maxInput, setMaxInput] = useState("");
+  const [priceApplied, setPriceApplied] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+
+  const handleSizeToggle = (id: string) => {
+    const next = selectedSizes.includes(id)
+      ? selectedSizes.filter((s) => s !== id)
+      : [...selectedSizes, id];
+    setSelectedSizes(next);
+    if (onSizeChange) onSizeChange(next);
+  };
 
   const toggleFilter = (
     id: string,
@@ -95,12 +108,21 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
     }
   };
 
-  const handlePriceChange = (value: number[]) => {
-    setPriceRange(value);
-    
-    // Call the callback with the new price range
+  const handleApplyPrice = () => {
+    const min = minInput === "" ? 0 : Math.max(0, Number(minInput));
+    const max = maxInput === "" ? undefined : Math.max(min, Number(maxInput));
     if (onPriceRangeChange) {
-      onPriceRangeChange(value[0], value[1]);
+      onPriceRangeChange(min, max ?? 999999);
+    }
+    setPriceApplied(minInput !== "" || maxInput !== "");
+  };
+
+  const handleClearPrice = () => {
+    setMinInput("");
+    setMaxInput("");
+    setPriceApplied(false);
+    if (onPriceRangeChange) {
+      onPriceRangeChange(0, 999999);
     }
   };
 
@@ -108,23 +130,19 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
     setSelectedCategories([]);
     setSelectedSizes([]);
     setSelectedBrands([]);
-    setPriceRange([0, 500]);
-    
-    // Reset filters in parent component
-    if (onCategoryChange) {
-      onCategoryChange(undefined);
-    }
-    if (onPriceRangeChange) {
-      onPriceRangeChange(0, 500);
-    }
+    setMinInput("");
+    setMaxInput("");
+    setPriceApplied(false);
+    if (onCategoryChange) onCategoryChange(undefined);
+    if (onPriceRangeChange) onPriceRangeChange(0, 999999);
+    if (onSizeChange) onSizeChange([]);
   };
 
-  const hasFilters = 
+  const hasFilters =
     selectedCategories.length > 0 ||
-    selectedSizes.length > 0 || 
+    selectedSizes.length > 0 ||
     selectedBrands.length > 0 ||
-    priceRange[0] > 0 ||
-    priceRange[1] < 500;
+    priceApplied;
 
   return (
     <div className={cn("bg-background", className)}>
@@ -150,12 +168,9 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
           <label key={category.id} className="flex items-center gap-3 cursor-pointer">
             <Checkbox
               checked={selectedCategories.includes(category.id)}
-              onCheckedChange={() => toggleFilter(category.id, selectedCategories, setSelectedCategories)}
+              onCheckedChange={() => handleCategoryToggle(category.id)}
             />
             <span className="text-sm flex-1">{category.label}</span>
-            {category.count && (
-              <span className="text-xs text-muted-foreground">{category.count}</span>
-            )}
           </label>
         ))}
       </FilterSection>
@@ -166,7 +181,7 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
           {sizes.map((size) => (
             <button
               key={size.id}
-              onClick={() => toggleFilter(size.id, selectedSizes, setSelectedSizes)}
+              onClick={() => handleSizeToggle(size.id)}
               className={cn(
                 "px-3 py-1.5 text-sm border rounded-lg transition-colors",
                 selectedSizes.includes(size.id)
@@ -182,17 +197,42 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
 
       {/* Price Range */}
       <FilterSection title="Price Range">
-        <div className="px-1">
-          <Slider
-            value={priceRange}
-            onValueChange={handlePriceChange}
-            max={500}
-            step={10}
-            className="mb-4"
-          />
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>${priceRange[0]}</span>
-            <span>${priceRange[1]}+</span>
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Min"
+                value={minInput}
+                onChange={(e) => setMinInput(e.target.value)}
+                className="pl-6 h-8 text-sm"
+              />
+            </div>
+            <span className="text-muted-foreground text-sm flex-shrink-0">–</span>
+            <div className="relative flex-1">
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <Input
+                type="number"
+                min={0}
+                placeholder="Max"
+                value={maxInput}
+                onChange={(e) => setMaxInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleApplyPrice()}
+                className="pl-6 h-8 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" className="flex-1 h-8 text-xs" onClick={handleApplyPrice}>
+              Apply
+            </Button>
+            {priceApplied && (
+              <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={handleClearPrice}>
+                Clear
+              </Button>
+            )}
           </div>
         </div>
       </FilterSection>

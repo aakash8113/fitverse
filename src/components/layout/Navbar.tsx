@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn } from "lucide-react";
-import { useState } from "react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { cartApi } from "@/services/api";
@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -28,9 +27,23 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+
+  // Auto-focus when search opens
+  useEffect(() => {
+    if (isSearchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  }, [isSearchOpen]);
+
+  const openSearch = () => setIsSearchOpen(true);
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  };
 
   const { data: cartData } = useQuery({
     queryKey: ["cart"],
@@ -47,8 +60,7 @@ export function Navbar() {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setIsSearchOpen(false);
-      setSearchQuery("");
+      closeSearch();
     }
   };
 
@@ -75,7 +87,11 @@ export function Navbar() {
             </span>
           </Link>
 
-          <div className="hidden lg:flex items-center gap-8">
+          {/* Nav links — hidden when search is open */}
+          <div className={cn(
+            "hidden lg:flex items-center gap-8 transition-all duration-200",
+            isSearchOpen && "!hidden"
+          )}>
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -92,14 +108,37 @@ export function Navbar() {
             ))}
           </div>
 
+          {/* Inline expanding search bar */}
+          <form
+            onSubmit={handleSearch}
+            className={cn(
+              "hidden lg:flex items-center gap-2 transition-all duration-300 overflow-hidden",
+              isSearchOpen ? "flex-1 mx-8 opacity-100" : "w-0 opacity-0 pointer-events-none mx-0"
+            )}
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Search products..."
+                className="pl-9 pr-4 h-9 w-full rounded-full border-border/60 bg-muted/50 focus:bg-background text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && closeSearch()}
+              />
+            </div>
+          </form>
+
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            {/* Search icon toggles; becomes X when open */}
+            <Button
+              variant="ghost"
+              size="icon"
               className="hidden sm:flex hover:bg-gray-100 hover:text-foreground"
-              onClick={() => setIsSearchOpen(true)}
+              onClick={isSearchOpen ? closeSearch : openSearch}
             >
-              <Search className="h-5 w-5" />
+              {isSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
             </Button>
             
             <Link to="/cart">
@@ -130,42 +169,55 @@ export function Navbar() {
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link to="/account" className="flex items-center cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Account</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/wishlist" className="flex items-center cursor-pointer">
-                      <Heart className="mr-2 h-4 w-4" />
-                      <span>Wishlist</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/orders" className="flex items-center cursor-pointer">
-                      <Package className="mr-2 h-4 w-4" />
-                      <span>Orders</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/addresses" className="flex items-center cursor-pointer">
-                      <MapPin className="mr-2 h-4 w-4" />
-                      <span>Addresses</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/payment-methods" className="flex items-center cursor-pointer">
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      <span>Payment Methods</span>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/settings" className="flex items-center cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </DropdownMenuItem>
+                  {user?.role === 'ADMIN' ? (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard" className="flex items-center cursor-pointer">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/account" className="flex items-center cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          <span>Account</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/wishlist" className="flex items-center cursor-pointer">
+                          <Heart className="mr-2 h-4 w-4" />
+                          <span>Wishlist</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/orders" className="flex items-center cursor-pointer">
+                          <Package className="mr-2 h-4 w-4" />
+                          <span>Orders</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/addresses" className="flex items-center cursor-pointer">
+                          <MapPin className="mr-2 h-4 w-4" />
+                          <span>Addresses</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/payment-methods" className="flex items-center cursor-pointer">
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          <span>Payment Methods</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/settings" className="flex items-center cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          <span>Settings</span>
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
                     className="text-destructive focus:text-destructive cursor-pointer"
@@ -224,8 +276,8 @@ export function Navbar() {
                   size="sm" 
                   className="flex-1"
                   onClick={() => {
-                    setIsSearchOpen(true);
                     setIsMenuOpen(false);
+                    openSearch();
                   }}
                 >
                   <Search className="h-4 w-4 mr-2" />
@@ -258,60 +310,6 @@ export function Navbar() {
         )}
       </div>
 
-      <Dialog open={isSearchOpen} onOpenChange={setIsSearchOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Search Products</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSearch} className="space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="Search for products, brands, categories..."
-                className="pl-10 h-12"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">Search</Button>
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => {
-                  setIsSearchOpen(false);
-                  setSearchQuery("");
-                }}
-              >
-                Cancel
-              </Button>
-            </div>
-            
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-3">Popular Searches</p>
-              <div className="flex flex-wrap gap-2">
-                {["Jackets", "Dresses", "Sneakers", "Jeans"].map((term) => (
-                  <button
-                    key={term}
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery(term);
-                      const searchUrl = '/search?q=' + term.toLowerCase();
-                      navigate(searchUrl);
-                      setIsSearchOpen(false);
-                      setSearchQuery("");
-                    }}
-                    className="px-3 py-1.5 rounded-full bg-muted hover:bg-accent hover:text-accent-foreground transition-colors text-sm"
-                  >
-                    {term}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </header>
   );
 }

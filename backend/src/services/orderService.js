@@ -207,7 +207,10 @@ class OrderService {
       },
     });
 
-    return orders;
+    return orders.map(order => {
+      const { orderItems, ...rest } = order;
+      return { ...rest, items: orderItems };
+    });
   }
 
   /**
@@ -244,7 +247,8 @@ class OrderService {
       throw new BadRequestError('Unauthorized access to order');
     }
 
-    return order;
+    const { orderItems, ...rest } = order;
+    return { ...rest, items: orderItems };
   }
 
   /**

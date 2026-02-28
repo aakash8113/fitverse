@@ -177,7 +177,7 @@ model Order {
   id            String        @id @default(uuid())
   orderNumber   String        @unique // e.g., "FV20260228001"
   userId        String
-  addressId     String
+  addressId     String?
   
   // Payment
   paymentMethod PaymentMethod
@@ -195,7 +195,7 @@ model Order {
   
   // Relations
   user       User        @relation(fields: [userId], references: [id])
-  address    Address     @relation(fields: [addressId], references: [id])
+  address    Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
   
   // Timestamps

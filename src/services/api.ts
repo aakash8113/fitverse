@@ -213,6 +213,12 @@ export const authApi = {
     return response.data;
   },
 
+  // Change password
+  changePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    const response = await api.put<ApiResponse>('/auth/change-password', data);
+    return response.data;
+  },
+
   // Logout
   logout: () => {
     localStorage.removeItem('token');
@@ -401,6 +407,162 @@ export const addressesApi = {
   // Delete address
   deleteAddress: async (id: string) => {
     const response = await api.delete<ApiResponse>(`/addresses/${id}`);
+    return response.data;
+  },
+};
+
+// ============================================
+// ADMIN API
+// ============================================
+
+export interface AdminUser extends User {
+  _count?: { orders: number };
+  isBlocked?: boolean;
+}
+
+export interface DashboardStats {
+  totalUsers: number;
+  totalProducts: number;
+  totalOrders: number;
+  monthlyRevenue: number;
+  thriftRequestCount: number;
+  aiTryOnCount: number;
+  revenueByMonth: { month: string; revenue: number }[];
+  recentOrders: Order[];
+}
+
+export interface ThriftRequest {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  address: string;
+  pickupDate: string;
+  pickupTime: string;
+  itemDescription: string;
+  images: string[];
+  status: 'PENDING' | 'PICKED_UP' | 'UNDER_REFURBISHMENT' | 'APPROVED' | 'REJECTED';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RefurbishmentItem {
+  id: string;
+  thriftRequestId: string;
+  itemName: string;
+  originalImages: string[];
+  refurbishedImages: string[];
+  notes: string;
+  cost: number;
+  finalPrice: number;
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'IN_INVENTORY';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ThriftInventoryItem {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  images: string[];
+  category: string;
+  condition: 'GOOD' | 'VERY_GOOD' | 'EXCELLENT';
+  isSold: boolean;
+  createdAt: string;
+}
+
+export interface AIStats {
+  totalRequests: number;
+  requestsToday: number;
+  avgProcessingTimeMs: number;
+  successRate: number;
+  errorCount: number;
+  isMaintenanceMode: boolean;
+  requestsByDay: { date: string; count: number }[];
+  recentErrors: { timestamp: string; message: string; userId?: string }[];
+}
+
+export const adminApi = {
+  // Dashboard
+  getDashboardStats: async () => {
+    const response = await api.get<ApiResponse<DashboardStats>>('/admin/stats');
+    return response.data;
+  },
+
+  // Users
+  getUsers: async () => {
+    const response = await api.get<ApiResponse<AdminUser[]>>('/admin/users');
+    return response.data;
+  },
+
+  blockUser: async (id: string) => {
+    const response = await api.put<ApiResponse<AdminUser>>(`/admin/users/${id}/block`);
+    return response.data;
+  },
+
+  unblockUser: async (id: string) => {
+    const response = await api.put<ApiResponse<AdminUser>>(`/admin/users/${id}/unblock`);
+    return response.data;
+  },
+
+  getUserOrders: async (userId: string) => {
+    const response = await api.get<ApiResponse<Order[]>>(`/admin/users/${userId}/orders`);
+    return response.data;
+  },
+
+  // Thrift Requests
+  getThriftRequests: async () => {
+    const response = await api.get<ApiResponse<ThriftRequest[]>>('/admin/thrift/requests');
+    return response.data;
+  },
+
+  updateThriftRequestStatus: async (id: string, status: ThriftRequest['status']) => {
+    const response = await api.put<ApiResponse<ThriftRequest>>(`/admin/thrift/requests/${id}/status`, { status });
+    return response.data;
+  },
+
+  // Refurbishment
+  getRefurbishmentItems: async () => {
+    const response = await api.get<ApiResponse<RefurbishmentItem[]>>('/admin/refurbishment');
+    return response.data;
+  },
+
+  updateRefurbishmentItem: async (id: string, data: Partial<RefurbishmentItem>) => {
+    const response = await api.put<ApiResponse<RefurbishmentItem>>(`/admin/refurbishment/${id}`, data);
+    return response.data;
+  },
+
+  moveToInventory: async (id: string) => {
+    const response = await api.post<ApiResponse<ThriftInventoryItem>>(`/admin/refurbishment/${id}/move-to-inventory`);
+    return response.data;
+  },
+
+  // Thrift Inventory
+  getThriftInventory: async () => {
+    const response = await api.get<ApiResponse<ThriftInventoryItem[]>>('/admin/thrift/inventory');
+    return response.data;
+  },
+
+  updateThriftItem: async (id: string, data: Partial<ThriftInventoryItem>) => {
+    const response = await api.put<ApiResponse<ThriftInventoryItem>>(`/admin/thrift/inventory/${id}`, data);
+    return response.data;
+  },
+
+  deleteThriftItem: async (id: string) => {
+    const response = await api.delete<ApiResponse>(`/admin/thrift/inventory/${id}`);
+    return response.data;
+  },
+
+  // AI Monitoring
+  getAIStats: async () => {
+    const response = await api.get<ApiResponse<AIStats>>('/admin/ai/stats');
+    return response.data;
+  },
+
+  toggleAIMaintenanceMode: async (enabled: boolean) => {
+    const response = await api.put<ApiResponse>('/admin/ai/maintenance', { enabled });
     return response.data;
   },
 };

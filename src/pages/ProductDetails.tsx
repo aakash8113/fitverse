@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
   Heart, 
-  Bookmark, 
   Star, 
   ChevronRight, 
   Minus, 
@@ -20,11 +19,13 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { cn } from "@/lib/utils";
 import { productsApi, cartApi, Product as ApiProduct } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useWishlistContext } from "@/contexts/WishlistContext";
 
 const getImageUrl = (imagePath: string) => {
   if (!imagePath) return "";
@@ -86,8 +87,11 @@ const ratingDistribution = [
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const { toggleWishlist, isWishlisted } = useWishlistContext();
+  const [showSizeChart, setShowSizeChart] = useState(false);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
@@ -139,6 +143,7 @@ export default function ProductDetails() {
     setAddingToCart(true);
     try {
       await cartApi.addToCart({ productId: id!, quantity });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast({
         title: "Added to cart",
         description: `${product?.name} has been added to your cart.`,
@@ -221,12 +226,31 @@ export default function ProductDetails() {
               )}
               {/* Action buttons */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-sm">
-                  <Bookmark className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-sm">
-                  <Heart className="h-5 w-5" />
-                </Button>
+                <button
+                  onClick={() => {
+                    if (!product) return;
+                    toggleWishlist({
+                      id: product.id,
+                      name: product.name,
+                      image: productImages[0] || "",
+                      price: Number(product.price),
+                      category: product.category,
+                      stock: product.stock,
+                    });
+                    toast({
+                      title: isWishlisted(product.id) ? "Removed from wishlist" : "Added to wishlist",
+                      description: isWishlisted(product.id)
+                        ? `${product.name} removed.`
+                        : `${product.name} saved to wishlist.`,
+                    });
+                  }}
+                  className={cn(
+                    "h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors",
+                    isWishlisted(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"
+                  )}
+                >
+                  <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-red-500")} />
+                </button>
               </div>
             </div>
 
@@ -325,7 +349,7 @@ export default function ProductDetails() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold">Size: <span className="text-muted-foreground font-normal">{selectedSize}</span></h3>
-                <button className="text-sm text-primary hover:underline">View Size Chart</button>
+                <button onClick={() => setShowSizeChart(true)} className="text-sm text-primary hover:underline">View Size Chart</button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {AVAILABLE_SIZES.map((size) => (
@@ -553,6 +577,45 @@ export default function ProductDetails() {
       </div>
 
       <Footer />
+
+      {/* Size Chart Dialog */}
+      <Dialog open={showSizeChart} onOpenChange={setShowSizeChart}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Size Chart</DialogTitle>
+          </DialogHeader>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-secondary/50">
+                  <th className="px-4 py-2 text-left font-semibold border border-border">Size</th>
+                  <th className="px-4 py-2 text-left font-semibold border border-border">Chest (in)</th>
+                  <th className="px-4 py-2 text-left font-semibold border border-border">Waist (in)</th>
+                  <th className="px-4 py-2 text-left font-semibold border border-border">Hips (in)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[
+                  { size: "XS",  chest: "32–34", waist: "24–26", hips: "34–36" },
+                  { size: "S",   chest: "34–36", waist: "26–28", hips: "36–38" },
+                  { size: "M",   chest: "36–38", waist: "28–30", hips: "38–40" },
+                  { size: "L",   chest: "38–40", waist: "30–32", hips: "40–42" },
+                  { size: "XL",  chest: "40–42", waist: "32–34", hips: "42–44" },
+                  { size: "XXL", chest: "42–44", waist: "34–36", hips: "44–46" },
+                ].map((row) => (
+                  <tr key={row.size} className="odd:bg-background even:bg-secondary/20">
+                    <td className="px-4 py-2 font-medium border border-border">{row.size}</td>
+                    <td className="px-4 py-2 border border-border">{row.chest}</td>
+                    <td className="px-4 py-2 border border-border">{row.waist}</td>
+                    <td className="px-4 py-2 border border-border">{row.hips}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">All measurements are in inches. For best results, measure yourself and compare.</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

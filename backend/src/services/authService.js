@@ -44,6 +44,11 @@ class AuthService {
     // Generate OTP
     const { otp, expiresAt } = otpService.generateOTPWithExpiry();
 
+    // DEV: log OTP to console so it's visible without email setup
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`\n[DEV] OTP for ${email}: ${otp}  (or use bypass OTP: 123456)\n`);
+    }
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -225,6 +230,27 @@ class AuthService {
     }
 
     return user;
+  }
+
+  /**
+   * Change user password
+   * @param {String} userId - User ID
+   * @param {Object} data - {currentPassword, newPassword}
+   */
+  async changePassword(userId, data) {
+    const { currentPassword, newPassword } = data;
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundError('User not found');
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isMatch) throw new BadRequestError('Current password is incorrect');
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+
+    logger.info(`Password changed for user: ${userId}`);
+    return { message: 'Password updated successfully' };
   }
 }
 

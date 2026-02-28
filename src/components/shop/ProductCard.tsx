@@ -2,6 +2,8 @@ import { Link } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useWishlistContext } from "@/contexts/WishlistContext";
+import { useToast } from "@/hooks/use-toast";
 
 export interface Product {
   id: string;
@@ -12,6 +14,7 @@ export interface Product {
   image: string;
   sizes: string[];
   category: string;
+  stock?: number;
   isNew?: boolean;
   isThrift?: boolean;
   condition?: string;
@@ -27,6 +30,27 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, className }: ProductCardProps) {
+  const { toggleWishlist, isWishlisted } = useWishlistContext();
+  const { toast } = useToast();
+  const wishlisted = isWishlisted(product.id);
+
+  const handleWishlist = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toggleWishlist({
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.category,
+      stock: product.stock ?? 0,
+    });
+    toast({
+      title: wishlisted ? "Removed from wishlist" : "Added to wishlist",
+      description: wishlisted ? `${product.name} removed.` : `${product.name} saved to wishlist.`,
+    });
+  };
+
   const discount = product.originalPrice 
     ? Math.round((1 - Number(product.price) / Number(product.originalPrice)) * 100) 
     : 0;
@@ -56,14 +80,15 @@ export function ProductCard({ product, className }: ProductCardProps) {
         </div>
 
         {/* Wishlist */}
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="absolute top-3 right-3 h-9 w-9 rounded-full bg-white/90 hover:bg-white shadow-soft opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={(e) => e.preventDefault()}
+        <button
+          onClick={handleWishlist}
+          className={cn(
+            "absolute top-3 right-3 h-9 w-9 rounded-full bg-white shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200",
+            wishlisted ? "text-red-500" : "text-gray-400 hover:text-red-500"
+          )}
         >
-          <Heart className="h-4 w-4" />
-        </Button>
+          <Heart className={cn("h-4 w-4", wishlisted && "fill-red-500")} />
+        </button>
 
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">

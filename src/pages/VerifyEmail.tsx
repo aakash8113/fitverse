@@ -77,7 +77,7 @@ export default function VerifyEmail() {
             </p>
             <p className="text-foreground font-medium mt-1">{email}</p>
             <p className="text-sm text-muted-foreground mt-2">
-              Check your console for the OTP code (development mode)
+              Check your backend console for the OTP code
             </p>
           </div>
 

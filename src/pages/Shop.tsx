@@ -49,6 +49,7 @@ export default function Shop() {
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [search, setSearch] = useState<string | undefined>();
   const [sortBy, setSortBy] = useState<string>("newest");
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   
   const limit = 12;
 
@@ -67,9 +68,18 @@ export default function Shop() {
   });
 
   const products = data?.data?.map(convertProduct) || [];
+  const filteredProducts = selectedSizes.length > 0
+    ? products.filter((p) => p.sizes.some((s) => selectedSizes.includes(s.toLowerCase())))
+    : products;
   const totalPages = data?.pagination?.totalPages || 1;
   const hasNextPage = data?.pagination?.hasNextPage || false;
   const totalItems = data?.pagination?.totalItems || 0;
+
+  const handlePriceChange = (min: number, max: number) => {
+    setMinPrice(min > 0 ? min : undefined);
+    setMaxPrice(max < 999999 ? max : undefined);
+    setPage(1);
+  };
 
   const handleLoadMore = () => {
     if (hasNextPage) {
@@ -98,11 +108,8 @@ export default function Shop() {
             <div className="sticky top-24">
               <FilterSidebar 
                 onCategoryChange={setCategory}
-                onPriceRangeChange={(min, max) => {
-                  setMinPrice(min);
-                  setMaxPrice(max);
-                  setPage(1);
-                }}
+                onPriceRangeChange={handlePriceChange}
+                onSizeChange={setSelectedSizes}
               />
             </div>
           </aside>
@@ -124,11 +131,8 @@ export default function Shop() {
                     <FilterSidebar 
                       onClose={() => setIsFilterOpen(false)}
                       onCategoryChange={setCategory}
-                      onPriceRangeChange={(min, max) => {
-                        setMinPrice(min);
-                        setMaxPrice(max);
-                        setPage(1);
-                      }}
+                      onPriceRangeChange={handlePriceChange}
+                      onSizeChange={setSelectedSizes}
                     />
                   </SheetContent>
                 </Sheet>
@@ -199,14 +203,14 @@ export default function Shop() {
                   ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
                   : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               )}>
-                {products.map((product) => (
+                {filteredProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
             )}
 
             {/* No Products */}
-            {!isLoading && !isError && products.length === 0 && (
+            {!isLoading && !isError && filteredProducts.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">No products found</p>
                 <Button 

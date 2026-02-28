@@ -22,5 +22,6 @@ router.post('/resend-otp', authLimiter, validate(resendOTPSchema), authControlle
 
 // Protected routes
 router.get('/me', protect, authController.getMe);
+router.put('/change-password', protect, authController.changePassword);
 
 module.exports = router;

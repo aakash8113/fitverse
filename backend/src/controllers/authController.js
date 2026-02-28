@@ -88,10 +88,21 @@ const getMe = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * @route   PUT /api/auth/change-password
+ * @desc    Change current user password
+ * @access  Private
+ */
+const changePassword = asyncHandler(async (req, res) => {
+  const result = await authService.changePassword(req.user.id, req.body);
+  return ApiResponse.success(res, 200, null, result.message);
+});
+
 module.exports = {
   signup,
   verifyEmail,
   login,
   resendOTP,
   getMe,
+  changePassword,
 };
