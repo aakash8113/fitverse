@@ -1,6 +1,9 @@
 // Admin Controller
 // Production admin endpoints: stats, users, and order management
 
+// Round a value to 2 decimal places — avoids floating point drift (e.g. 200 → 199.97)
+const toMoney = (val) => val != null && val !== '' ? Math.round(parseFloat(val) * 100) / 100 : null;
+
 const asyncHandler = require('../utils/asyncHandler');
 const prisma = require('../config/database');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
@@ -299,7 +302,7 @@ const reviewThriftListing = asyncHandler(async (req, res) => {
           where: { id: item.id },
           data: {
             status: item.approved ? 'APPROVED' : 'REJECTED',
-            estimatedValue: item.estimatedValue != null ? parseFloat(item.estimatedValue) : null,
+            estimatedValue: item.estimatedValue != null ? toMoney(item.estimatedValue) : null,
             rejectionReason: item.rejectionReason || null,
             adminNotes: item.adminNotes || null,
           },
@@ -401,7 +404,7 @@ const listThriftItem = asyncHandler(async (req, res) => {
     throw new BadRequestError('Item must be PICKED_UP or UNDER_REFURBISHMENT to list');
   }
 
-  const finalPrice = parseFloat(listedPrice) || parseFloat(item.estimatedValue?.toString() || '0');
+  const finalPrice = toMoney(listedPrice) || toMoney(item.estimatedValue?.toString()) || 0;
   if (!finalPrice || finalPrice <= 0) {
     throw new BadRequestError('A valid listing price is required');
   }

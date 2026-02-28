@@ -7,6 +7,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ProductCard, Product } from "@/components/shop/ProductCard";
 import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlidersHorizontal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
@@ -22,10 +23,13 @@ const stats = [
 export default function Thrift() {
   const navigate = useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [sortBy, setSortBy] = useState("newest");
+  const [minPrice, setMinPrice] = useState<number | undefined>();
+  const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ["products", "THRIFT"],
-    queryFn: () => productsApi.getProducts({ category: "THRIFT", limit: 50 }),
+    queryKey: ["products", "THRIFT", sortBy, minPrice, maxPrice],
+    queryFn: () => productsApi.getProducts({ category: "THRIFT", limit: 50, sortBy, minPrice, maxPrice }),
   });
 
   const thriftProducts: Product[] = (productsData?.data || []).map((p) => ({
@@ -121,7 +125,12 @@ export default function Thrift() {
             {/* Desktop Filters */}
             <aside className="hidden lg:block w-56 flex-shrink-0">
               <div className="sticky top-24">
-                <FilterSidebar />
+                <FilterSidebar
+                  onPriceRangeChange={(min, max) => {
+                    setMinPrice(min > 0 ? min : undefined);
+                    setMaxPrice(max < 999999 ? max : undefined);
+                  }}
+                />
               </div>
             </aside>
 
@@ -137,14 +146,32 @@ export default function Thrift() {
                       </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="w-80 p-6">
-                      <FilterSidebar onClose={() => setIsFilterOpen(false)} />
+                      <FilterSidebar
+                        onClose={() => setIsFilterOpen(false)}
+                        onPriceRangeChange={(min, max) => {
+                          setMinPrice(min > 0 ? min : undefined);
+                          setMaxPrice(max < 999999 ? max : undefined);
+                        }}
+                      />
                     </SheetContent>
                   </Sheet>
                   <h2 className="text-2xl font-bold">Pre-Loved Finds</h2>
                 </div>
-                <span className="text-sm text-muted-foreground">
-                  {thriftProducts.length} items
-                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-muted-foreground">
+                    {thriftProducts.length} items
+                  </span>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40 h-8">
+                      <SelectValue placeholder="Sort by" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest">Newest</SelectItem>
+                      <SelectItem value="price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {isLoading ? (

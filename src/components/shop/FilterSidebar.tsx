@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, X } from "lucide-react";
@@ -40,14 +39,14 @@ interface FilterSidebarProps {
   onCategoryChange?: (category: string | undefined) => void;
   onPriceRangeChange?: (min: number, max: number) => void;
   onSizeChange?: (sizes: string[]) => void;
+  defaultCategory?: string;
 }
 
+// Only 3 gender categories; IDs match backend enum values exactly
 const categories: FilterOption[] = [
-  { id: "mens",        label: "Men" },
-  { id: "womens",      label: "Women" },
-  { id: "activewear",  label: "Activewear" },
-  { id: "footwear",    label: "Footwear" },
-  { id: "accessories", label: "Accessories" },
+  { id: "MEN",    label: "Men" },
+  { id: "WOMEN",  label: "Women" },
+  { id: "UNISEX", label: "Unisex" },
 ];
 
 const sizes: FilterOption[] = [
@@ -59,21 +58,13 @@ const sizes: FilterOption[] = [
   { id: "xxl", label: "XXL" },
 ];
 
-const brands: FilterOption[] = [
-  { id: "zara", label: "Zara", count: 56 },
-  { id: "hm", label: "H&M", count: 43 },
-  { id: "uniqlo", label: "Uniqlo", count: 38 },
-  { id: "nike", label: "Nike", count: 29 },
-  { id: "adidas", label: "Adidas", count: 24 },
-];
-
-export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRangeChange, onSizeChange }: FilterSidebarProps) {
+export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRangeChange, onSizeChange, defaultCategory }: FilterSidebarProps) {
   const [minInput, setMinInput] = useState("");
   const [maxInput, setMaxInput] = useState("");
   const [priceApplied, setPriceApplied] = useState(false);
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  // Single-select: null means "All"
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(defaultCategory ?? null);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
 
   const handleSizeToggle = (id: string) => {
     const next = selectedSizes.includes(id)
@@ -83,28 +74,12 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
     if (onSizeChange) onSizeChange(next);
   };
 
-  const toggleFilter = (
-    id: string,
-    selected: string[],
-    setSelected: React.Dispatch<React.SetStateAction<string[]>>
-  ) => {
-    setSelected(
-      selected.includes(id)
-        ? selected.filter((item) => item !== id)
-        : [...selected, id]
-    );
-  };
-
+  // Single-select: clicking the same category deselects it
   const handleCategoryToggle = (id: string) => {
-    const newCategories = selectedCategories.includes(id)
-      ? selectedCategories.filter((item) => item !== id)
-      : [...selectedCategories, id];
-    
-    setSelectedCategories(newCategories);
-    
-    // Call the callback with the first selected category or undefined
+    const next = selectedCategory === id ? null : id;
+    setSelectedCategory(next);
     if (onCategoryChange) {
-      onCategoryChange(newCategories.length > 0 ? newCategories[0] : undefined);
+      onCategoryChange(next ?? undefined);
     }
   };
 
@@ -127,9 +102,8 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
   };
 
   const clearAll = () => {
-    setSelectedCategories([]);
+    setSelectedCategory(null);
     setSelectedSizes([]);
-    setSelectedBrands([]);
     setMinInput("");
     setMaxInput("");
     setPriceApplied(false);
@@ -139,9 +113,8 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
   };
 
   const hasFilters =
-    selectedCategories.length > 0 ||
+    selectedCategory !== null ||
     selectedSizes.length > 0 ||
-    selectedBrands.length > 0 ||
     priceApplied;
 
   return (
@@ -162,16 +135,21 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
         </div>
       </div>
 
-      {/* Category */}
+      {/* Category — single-select */}
       <FilterSection title="Category">
         {categories.map((category) => (
-          <label key={category.id} className="flex items-center gap-3 cursor-pointer">
-            <Checkbox
-              checked={selectedCategories.includes(category.id)}
-              onCheckedChange={() => handleCategoryToggle(category.id)}
-            />
-            <span className="text-sm flex-1">{category.label}</span>
-          </label>
+          <button
+            key={category.id}
+            onClick={() => handleCategoryToggle(category.id)}
+            className={cn(
+              "w-full text-left px-3 py-1.5 text-sm rounded-lg border transition-colors",
+              selectedCategory === category.id
+                ? "bg-primary text-primary-foreground border-primary"
+                : "border-border hover:border-foreground"
+            )}
+          >
+            {category.label}
+          </button>
         ))}
       </FilterSection>
 

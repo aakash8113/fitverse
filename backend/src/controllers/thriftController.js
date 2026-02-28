@@ -7,6 +7,9 @@ const prisma = require('../config/database');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const logger = require('../config/logger');
 
+// Round a value to 2 decimal places — avoids floating point drift (e.g. 200 → 199.97)
+const toMoney = (val) => val != null && val !== '' ? Math.round(parseFloat(val) * 100) / 100 : null;
+
 // Convert absolute disk path → relative 'uploads/...' path for DB storage
 const toRelativePath = (filePath) => {
   if (!filePath) return null;
@@ -62,7 +65,7 @@ const createListing = asyncHandler(async (req, res) => {
           size: item.size || null,
           condition: item.condition,
           description: item.description,
-          originalPrice: item.originalPrice ? parseFloat(item.originalPrice) : null,
+          originalPrice: item.originalPrice ? toMoney(item.originalPrice) : null,
           images: filesByIndex[idx] || [],
         })),
       },

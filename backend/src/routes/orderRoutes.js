@@ -9,6 +9,8 @@ const validate = require('../middlewares/validate');
 const { createOrderSchema } = require('../utils/validation');
 
 // All order routes require authentication and email verification
+router.get('/track', orderController.trackOrder); // Public - no auth needed
+
 router.use(protect, requireEmailVerification);
 
 // Admin route - Get all orders

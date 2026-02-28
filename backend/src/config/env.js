@@ -68,6 +68,11 @@ const config = {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000, // 15 minutes
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 500,
   },
+
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY,
+    from: process.env.EMAIL_FROM || 'Fitverse <noreply@contact.fitverse.co.in>',
+  },
 };
 
 module.exports = config;

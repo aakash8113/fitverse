@@ -38,11 +38,10 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="font-semibold">Shop</h4>
             <ul className="space-y-3 text-sm text-primary-foreground/70">
-              <li><Link to="/shop?category=women" className="hover:text-primary-foreground transition-colors">Women</Link></li>
-              <li><Link to="/shop?category=men" className="hover:text-primary-foreground transition-colors">Men</Link></li>
+              <li><Link to="/shop?category=WOMEN" className="hover:text-primary-foreground transition-colors">Women</Link></li>
+              <li><Link to="/shop?category=MEN" className="hover:text-primary-foreground transition-colors">Men</Link></li>
+              <li><Link to="/shop?category=UNISEX" className="hover:text-primary-foreground transition-colors">Unisex</Link></li>
               <li><Link to="/collections" className="hover:text-primary-foreground transition-colors">Collections</Link></li>
-              <li><Link to="/shop?category=new" className="hover:text-primary-foreground transition-colors">New Arrivals</Link></li>
-              <li><Link to="/shop?category=sale" className="hover:text-primary-foreground transition-colors">Sale</Link></li>
             </ul>
           </div>
 
@@ -51,7 +50,6 @@ export function Footer() {
             <h4 className="font-semibold">Company</h4>
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li><Link to="/" className="hover:text-primary-foreground transition-colors">About Us</Link></li>
-              <li><Link to="/careers" className="hover:text-primary-foreground transition-colors">Careers</Link></li>
               <li><Link to="/contact" className="hover:text-primary-foreground transition-colors">Contact</Link></li>
               <li><Link to="/faq" className="hover:text-primary-foreground transition-colors">FAQ</Link></li>
             </ul>

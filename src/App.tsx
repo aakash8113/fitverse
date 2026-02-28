@@ -39,11 +39,11 @@ import TrackOrder from "./pages/TrackOrder";
 import Shipping from "./pages/Shipping";
 import Collections from "./pages/Collections";
 import SearchResults from "./pages/SearchResults";
-import Careers from "./pages/Careers";
 import NotFound from "./pages/NotFound";
 import { AdminGuard } from "@/components/admin/AdminGuard";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminShopInventory from "./pages/admin/AdminShopInventory";
+import AdminOrders from "./pages/admin/AdminOrders";
 import AdminThriftRequests from "./pages/admin/AdminThriftRequests";
 import AdminRefurbishment from "./pages/admin/AdminRefurbishment";
 import AdminThriftInventory from "./pages/admin/AdminThriftInventory";
@@ -112,7 +112,6 @@ const App = () => (
           <Route path="/size-guide" element={<SizeGuide />} />
           <Route path="/shipping" element={<Shipping />} />
           <Route path="/track-order" element={<TrackOrder />} />
-          <Route path="/careers" element={<Careers />} />
           
           {/* Legal */}
           <Route path="/terms" element={<TermsOfService />} />
@@ -122,6 +121,7 @@ const App = () => (
           {/* Admin Panel */}
           <Route path="/admin" element={<AdminGuard><Navigate to="/admin/dashboard" replace /></AdminGuard>} />
           <Route path="/admin/dashboard" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+          <Route path="/admin/orders" element={<AdminGuard><AdminOrders /></AdminGuard>} />
           <Route path="/admin/shop" element={<AdminGuard><AdminShopInventory /></AdminGuard>} />
           <Route path="/admin/thrift-requests" element={<AdminGuard><AdminThriftRequests /></AdminGuard>} />
           <Route path="/admin/refurbishment" element={<AdminGuard><AdminRefurbishment /></AdminGuard>} />

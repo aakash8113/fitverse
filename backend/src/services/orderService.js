@@ -7,6 +7,7 @@ const cartService = require('./cartService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const { generateOrderNumber } = require('../utils/helpers');
 const logger = require('../config/logger');
+const emailService = require('./emailService');
 
 class OrderService {
   /**
@@ -167,7 +168,21 @@ class OrderService {
     logger.info(`Order created: ${orderNumber} for user ${userId}`);
 
     // Return order with full details
-    return await this.getOrderById(userId, order.id);
+    const fullOrder = await this.getOrderById(userId, order.id);
+
+    // Fire-and-forget confirmation email (never fails the order response)
+    prisma.user
+      .findUnique({ where: { id: userId }, select: { name: true, email: true } })
+      .then((user) => {
+        if (user?.email) {
+          emailService
+            .sendOrderConfirmationEmail(user.email, user.name, fullOrder)
+            .catch((err) => logger.error(`Order confirmation email failed: ${err.message}`));
+        }
+      })
+      .catch((err) => logger.error(`User fetch for order email failed: ${err.message}`));
+
+    return fullOrder;
   }
 
   /**
@@ -376,6 +391,47 @@ class OrderService {
     });
 
     return orders;
+  }
+
+  /**
+   * Track order publicly by order number + email
+   * @param {String} orderNumber - Order number
+   * @param {String} email - User email (lowercase)
+   * @returns {Promise<Object>} Order tracking info
+   */
+  async trackOrder(orderNumber, email) {
+    const order = await prisma.order.findFirst({
+      where: {
+        orderNumber,
+        user: {
+          email: {
+            equals: email,
+            mode: 'insensitive',
+          },
+        },
+      },
+      include: {
+        orderItems: true,
+        address: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundError('Order not found. Please check your order number and email address.');
+    }
+
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      total: order.total,
+      createdAt: order.createdAt,
+      deliveredAt: order.deliveredAt,
+      address: order.address,
+      items: order.orderItems,
+    };
   }
 }
 

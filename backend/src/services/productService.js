@@ -24,7 +24,7 @@ class ProductService {
     const product = await prisma.product.create({
       data: {
         ...productData,
-        price: parseFloat(productData.price),
+        price: Math.round(parseFloat(productData.price) * 100) / 100,
         stock: parseInt(productData.stock, 10),
         images: imagePaths,
       },
@@ -48,8 +48,11 @@ class ProductService {
     };
 
     // Category filter
+    // Map frontend shorthand (MEN/WOMEN) to Prisma enum values (MENS/WOMENS)
+    const CATEGORY_ALIAS = { MEN: 'MENS', WOMEN: 'WOMENS' };
     if (query.category) {
-      where.category = query.category.toUpperCase();
+      const raw = query.category.toUpperCase();
+      where.category = CATEGORY_ALIAS[raw] || raw;
     } else {
       // Never show thrift items in the regular shop
       where.category = { not: 'THRIFT' };
@@ -77,15 +80,19 @@ class ProductService {
       }));
     }
 
+    // Determine sort order
+    let orderBy = { createdAt: 'desc' }; // default: newest
+    if (query.sortBy === 'price-low')  orderBy = { price: 'asc' };
+    else if (query.sortBy === 'price-high') orderBy = { price: 'desc' };
+    else if (query.sortBy === 'oldest') orderBy = { createdAt: 'asc' };
+
     // Get products with total count
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
         skip,
         take: limit,
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy,
       }),
       prisma.product.count({ where }),
     ]);

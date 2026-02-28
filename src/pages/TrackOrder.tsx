@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Package, MapPin, Truck, CheckCircle, Clock } from "lucide-react";
+import { Search, Package, Truck, CheckCircle, Clock, Loader2, AlertCircle } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,61 +8,81 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { ordersApi } from "@/services/api";
 
 interface TrackingStep {
   status: string;
-  location: string;
-  date: string;
-  time: string;
+  description: string;
   completed: boolean;
 }
+
+// Map backend order status to timeline steps
+function buildTimeline(status: string): TrackingStep[] {
+  const ORDER_STEPS = [
+    { key: 'placed',     status: "Order Placed",       description: "Your order has been received" },
+    { key: 'paid',       status: "Payment Confirmed",   description: "Payment successfully processed" },
+    { key: 'processing', status: "Processing",          description: "Items are being prepared for shipment" },
+    { key: 'shipped',    status: "Shipped",             description: "Your package is on its way" },
+    { key: 'delivered',  status: "Delivered",           description: "Your order has been delivered" },
+  ];
+
+  const reachedIndex = (() => {
+    switch (status) {
+      case 'PENDING':    return 0;
+      case 'PAID':       return 1;
+      case 'PROCESSING': return 2;
+      case 'SHIPPED':    return 3;
+      case 'DELIVERED':  return 4;
+      case 'CANCELLED':  return -1;
+      case 'REFUNDED':   return -1;
+      default:           return 0;
+    }
+  })();
+
+  if (reachedIndex === -1) {
+    return ORDER_STEPS.map((s) => ({ status: s.status, description: s.description, completed: false }));
+  }
+
+  return ORDER_STEPS.map((s, i) => ({
+    status: s.status,
+    description: s.description,
+    completed: i <= reachedIndex,
+  }));
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Order Placed',
+  PAID: 'Payment Confirmed',
+  PROCESSING: 'Processing',
+  SHIPPED: 'Shipped',
+  DELIVERED: 'Delivered',
+  CANCELLED: 'Cancelled',
+  REFUNDED: 'Refunded',
+};
 
 export default function TrackOrder() {
   const [orderNumber, setOrderNumber] = useState("");
   const [email, setEmail] = useState("");
-  const [tracking, setTracking] = useState<TrackingStep[] | null>(null);
+  const [orderData, setOrderData] = useState<any | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock tracking data
-    setTracking([
-      {
-        status: "Order Delivered",
-        location: "New York, NY 10001",
-        date: "Feb 27, 2026",
-        time: "2:45 PM",
-        completed: true,
-      },
-      {
-        status: "Out for Delivery",
-        location: "New York Distribution Center",
-        date: "Feb 27, 2026",
-        time: "8:30 AM",
-        completed: true,
-      },
-      {
-        status: "In Transit",
-        location: "Newark, NJ",
-        date: "Feb 26, 2026",
-        time: "11:20 PM",
-        completed: true,
-      },
-      {
-        status: "Shipped",
-        location: "Warehouse - Philadelphia, PA",
-        date: "Feb 25, 2026",
-        time: "4:15 PM",
-        completed: true,
-      },
-      {
-        status: "Order Confirmed",
-        location: "Processing Center",
-        date: "Feb 24, 2026",
-        time: "10:30 AM",
-        completed: true,
-      },
-    ]);
+    setError(null);
+    setLoading(true);
+    try {
+      const result = await ordersApi.trackOrder(orderNumber.trim(), email.trim());
+      setOrderData(result.data);
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Order not found. Please check your order number and email.");
+      setOrderData(null);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const tracking = orderData ? buildTimeline(orderData.status) : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,9 +135,19 @@ export default function TrackOrder() {
                   />
                 </div>
 
-                <Button type="submit" className="w-full h-11" size="lg">
-                  <Search className="mr-2 h-5 w-5" />
-                  Track Order
+                {error && (
+                  <div className="flex items-start gap-2 text-sm text-destructive bg-destructive/10 rounded-lg px-3 py-2">
+                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    {error}
+                  </div>
+                )}
+
+                <Button type="submit" className="w-full h-11" size="lg" disabled={loading}>
+                  {loading ? (
+                    <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Searching...</>
+                  ) : (
+                    <><Search className="mr-2 h-5 w-5" /> Track Order</>
+                  )}
                 </Button>
               </form>
 
@@ -143,11 +173,11 @@ export default function TrackOrder() {
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <p className="text-sm text-muted-foreground mb-1">Order Number</p>
-                  <p className="text-lg font-semibold">{orderNumber || "FV-2024-001234"}</p>
+                  <p className="text-lg font-semibold">{orderData?.orderNumber}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-muted-foreground mb-1">Estimated Delivery</p>
-                  <p className="text-lg font-semibold text-green-600">Delivered</p>
+                  <p className="text-sm text-muted-foreground mb-1">Current Status</p>
+                  <p className="text-lg font-semibold">{STATUS_LABELS[orderData?.status] || orderData?.status}</p>
                 </div>
               </div>
 
@@ -158,7 +188,7 @@ export default function TrackOrder() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Status</p>
-                    <p className="font-medium">Delivered</p>
+                    <p className="font-medium">{STATUS_LABELS[orderData?.status] || orderData?.status}</p>
                   </div>
                 </div>
 
@@ -167,18 +197,18 @@ export default function TrackOrder() {
                     <Truck className="h-5 w-5 text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Carrier</p>
-                    <p className="font-medium">FedEx Express</p>
+                    <p className="text-sm text-muted-foreground">Payment</p>
+                    <p className="font-medium">{orderData?.paymentMethod === 'COD' ? 'Cash on Delivery' : orderData?.paymentMethod === 'CARD' ? 'Card' : orderData?.paymentMethod}</p>
                   </div>
                 </div>
 
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MapPin className="h-5 w-5 text-accent" />
+                    <Package className="h-5 w-5 text-accent" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Destination</p>
-                    <p className="font-medium">New York, NY</p>
+                    <p className="text-sm text-muted-foreground">Placed On</p>
+                    <p className="font-medium">{orderData?.createdAt ? new Date(orderData.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</p>
                   </div>
                 </div>
               </div>
@@ -186,46 +216,44 @@ export default function TrackOrder() {
 
             {/* Tracking Timeline */}
             <div className="glass rounded-2xl border border-border/50 p-6">
-              <h3 className="text-xl font-semibold mb-6">Tracking History</h3>
+              <h3 className="text-xl font-semibold mb-6">Order Progress</h3>
               
               <div className="space-y-6">
-                {tracking.map((step, index) => (
-                  <div key={index} className="relative pl-8">
-                    {/* Timeline Line */}
-                    {index !== tracking.length - 1 && (
-                      <div className="absolute left-3 top-8 bottom-0 w-0.5 bg-border" />
-                    )}
-                    
-                    {/* Timeline Dot */}
-                    <div
-                      className={cn(
-                        "absolute left-0 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center",
-                        step.completed
-                          ? "bg-green-500 border-green-500"
-                          : "bg-background border-border"
-                      )}
-                    >
-                      {step.completed && (
-                        <CheckCircle className="h-4 w-4 text-white" />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="pb-6">
-                      <div className="flex items-start justify-between mb-1">
-                        <h4 className="font-semibold">{step.status}</h4>
-                        <div className="text-right">
-                          <p className="text-sm font-medium">{step.date}</p>
-                          <p className="text-sm text-muted-foreground">{step.time}</p>
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {step.location}
-                      </p>
-                    </div>
+                {(orderData?.status === 'CANCELLED' || orderData?.status === 'REFUNDED') ? (
+                  <div className="flex items-center gap-3 text-destructive">
+                    <AlertCircle className="h-6 w-6" />
+                    <p className="font-medium">This order has been {orderData.status.toLowerCase()}.</p>
                   </div>
-                ))}
+                ) : (
+                  tracking.map((step, index) => (
+                    <div key={index} className="relative pl-8">
+                      {/* Timeline Line */}
+                      {index !== tracking.length - 1 && (
+                        <div className="absolute left-3 top-8 bottom-0 w-0.5 bg-border" />
+                      )}
+                      
+                      {/* Timeline Dot */}
+                      <div
+                        className={cn(
+                          "absolute left-0 top-1 w-6 h-6 rounded-full border-2 flex items-center justify-center",
+                          step.completed
+                            ? "bg-green-500 border-green-500"
+                            : "bg-background border-border"
+                        )}
+                      >
+                        {step.completed && (
+                          <CheckCircle className="h-4 w-4 text-white" />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="pb-6">
+                        <h4 className={cn("font-semibold", !step.completed && "text-muted-foreground")}>{step.status}</h4>
+                        <p className="text-sm text-muted-foreground mt-0.5">{step.description}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -234,7 +262,7 @@ export default function TrackOrder() {
               <Button
                 variant="outline"
                 className="flex-1"
-                onClick={() => setTracking(null)}
+                onClick={() => { setOrderData(null); setError(null); }}
               >
                 Track Another Order
               </Button>

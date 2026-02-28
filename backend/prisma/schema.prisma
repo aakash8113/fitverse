@@ -85,6 +85,7 @@ model Address {
 enum ProductCategory {
   MENS
   WOMENS
+  UNISEX
   ACCESSORIES
   ACTIVEWEAR
   FOOTWEAR

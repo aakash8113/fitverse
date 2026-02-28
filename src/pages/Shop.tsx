@@ -1,7 +1,8 @@
 // Shop Page - Fetches products from backend API with filtering and pagination
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
@@ -42,21 +43,31 @@ const convertProduct = (apiProduct: ApiProduct) => {
 };
 
 export default function Shop() {
+  const [searchParams] = useSearchParams();
+  const urlCategory = searchParams.get("category")?.toUpperCase() || undefined;
+
   const [gridView, setGridView] = useState<"3" | "4">("4");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [page, setPage] = useState(1);
-  const [category, setCategory] = useState<string | undefined>();
+  const [category, setCategory] = useState<string | undefined>(urlCategory);
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [search, setSearch] = useState<string | undefined>();
   const [sortBy, setSortBy] = useState<string>("newest");
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+
+  // Sync category when URL param changes (e.g. footer links)
+  useEffect(() => {
+    const param = searchParams.get("category")?.toUpperCase() || undefined;
+    setCategory(param);
+    setPage(1);
+  }, [searchParams]);
   
   const limit = 12;
 
   // Fetch products from API
   const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['products', page, limit, category, minPrice, maxPrice, search],
+    queryKey: ['products', page, limit, category, minPrice, maxPrice, search, sortBy],
     queryFn: () => productsApi.getProducts({
       page,
       limit,
@@ -64,6 +75,7 @@ export default function Shop() {
       minPrice,
       maxPrice,
       search,
+      sortBy,
     }),
     keepPreviousData: true,
   });
@@ -108,7 +120,8 @@ export default function Shop() {
           <aside className="hidden lg:block w-56 flex-shrink-0">
             <div className="sticky top-24">
               <FilterSidebar 
-                onCategoryChange={setCategory}
+                defaultCategory={urlCategory}
+                onCategoryChange={(cat) => { setCategory(cat); setPage(1); }}
                 onPriceRangeChange={handlePriceChange}
                 onSizeChange={setSelectedSizes}
               />
@@ -131,7 +144,8 @@ export default function Shop() {
                   <SheetContent side="left" className="w-80 p-6">
                     <FilterSidebar 
                       onClose={() => setIsFilterOpen(false)}
-                      onCategoryChange={setCategory}
+                      defaultCategory={urlCategory}
+                      onCategoryChange={(cat) => { setCategory(cat); setPage(1); }}
                       onPriceRangeChange={handlePriceChange}
                       onSizeChange={setSelectedSizes}
                     />

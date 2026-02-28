@@ -30,6 +30,12 @@ const LISTING_STATUS_CFG: Record<string, { label: string; color: string; icon: a
   COMPLETED: { label: 'Completed',        color: 'bg-green-100 text-green-700',   icon: CheckCircle },
 };
 
+// Format monetary value — strips floating point drift, omits decimals when whole number
+const fmtPrice = (val: any) => {
+  const n = Math.round(Number(val) * 100) / 100;
+  return n % 1 === 0 ? n.toLocaleString('en-IN') : n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 const ITEM_STATUS_CFG: Record<string, { label: string; color: string }> = {
   PENDING:             { label: 'Pending',       color: 'bg-amber-50 text-amber-700'    },
   APPROVED:            { label: 'Approved',       color: 'bg-blue-50 text-blue-700'      },
@@ -184,7 +190,7 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
                           <p className="font-medium text-sm">{item.name}</p>
                           <p className="text-xs text-gray-500">{item.brand && `${item.brand} - `}{CONDITION_LABEL[item.condition]}{item.size && ` - Size ${item.size}`}</p>
                           <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
-                          {item.originalPrice && <p className="text-xs text-gray-500 mt-1">Originally paid: Rs.{Number(item.originalPrice).toLocaleString()}</p>}
+                          {item.originalPrice && <p className="text-xs text-gray-500 mt-1">Originally paid: Rs.{fmtPrice(item.originalPrice)}</p>}
                         </div>
                         <div className="flex items-center gap-2">
                           <Label className="text-xs text-gray-600">Accept</Label>
@@ -198,7 +204,7 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
                       <Label className="text-xs">Estimated Value (Rs.) *</Label>
                       <div className="relative max-w-[160px]">
                         <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                        <Input type="number" min="0" step="0.01" placeholder="0.00" value={rev.estimatedValue}
+                        <Input type="number" min="0" step="1" placeholder="0" value={rev.estimatedValue}
                           onChange={(e) => setItemReview(item.id, 'estimatedValue', e.target.value)} className="h-8 text-sm pl-7" />
                       </div>
                       <p className="text-[10px] text-gray-400">Amount the user receives when items sell</p>
@@ -285,7 +291,7 @@ function ItemPipelineDialog({ item, open, onClose }: { item: ThriftItem | null; 
             <span className={cn('text-xs font-medium px-2 py-0.5 rounded-full', cfg?.color)}>{cfg?.label}</span>
           </div>
           {item.estimatedValue && (
-            <p className="text-sm text-green-700 font-medium">Offer to user: Rs.{Number(item.estimatedValue).toLocaleString()}</p>
+            <p className="text-sm text-green-700 font-medium">Offer to user: Rs.{fmtPrice(item.estimatedValue)}</p>
           )}
           <div className="space-y-1">
             <Label className="text-xs">Admin Notes</Label>
@@ -304,7 +310,7 @@ function ItemPipelineDialog({ item, open, onClose }: { item: ThriftItem | null; 
                 <p className="text-xs font-semibold text-green-700 flex items-center gap-1"><Tag className="h-3.5 w-3.5" /> List in Store</p>
                 <div className="space-y-1">
                   <Label className="text-xs">Listing Price (Rs.) *</Label>
-                  <Input type="number" min="0" step="0.01" placeholder={item.estimatedValue ? String(Number(item.estimatedValue)) : '0.00'}
+                  <Input type="number" min="0" step="1" placeholder={item.estimatedValue ? fmtPrice(item.estimatedValue) : '0'}
                     value={listedPrice} onChange={(e) => setListedPrice(e.target.value)} className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1">
@@ -385,8 +391,8 @@ function ListingRow({ listing, onReview, onMarkPickedUp, onManageItem, isMarking
                     <p className="text-xs text-gray-400">{item.brand && `${item.brand} - `}{CONDITION_LABEL[item.condition]}{item.size && ` - ${item.size}`}</p>
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span className={cn('text-xs px-1.5 py-0.5 rounded', itemCfg?.color)}>{itemCfg?.label}</span>
-                      {item.estimatedValue && <span className="text-xs text-green-700 font-medium">Offer: Rs.{Number(item.estimatedValue).toLocaleString()}</span>}
-                      {item.listedPrice && <span className="text-xs text-gray-500">Listed: Rs.{Number(item.listedPrice).toLocaleString()}</span>}
+                      {item.estimatedValue && <span className="text-xs text-green-700 font-medium">Offer: Rs.{fmtPrice(item.estimatedValue)}</span>}
+                      {item.listedPrice && <span className="text-xs text-gray-500">Listed: Rs.{fmtPrice(item.listedPrice)}</span>}
                     </div>
                     {item.rejectionReason && <p className="text-xs text-red-500 mt-0.5">Rejected: {item.rejectionReason}</p>}
                   </div>

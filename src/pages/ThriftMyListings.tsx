@@ -67,6 +67,12 @@ const CONDITION_LABELS: Record<string, string> = {
   POOR: 'Poor', FAIR: 'Fair', GOOD: 'Good', VERY_GOOD: 'Very Good', LIKE_NEW: 'Like New',
 };
 
+// Format a monetary value: strips floating point drift, no decimals if whole number
+const fmtPrice = (val: any) => {
+  const n = Math.round(Number(val) * 100) / 100;
+  return n % 1 === 0 ? n.toLocaleString('en-IN') : n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+
 // ─── Item Progress Bar ────────────────────────────────────────────────────────
 
 const PIPELINE_STEPS = [
@@ -176,15 +182,15 @@ function ItemTile({ item }: { item: ThriftItem }) {
         {/* Values */}
         <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-gray-500">
           {item.originalPrice && (
-            <span>Paid: <span className="font-medium text-gray-700">₹{Number(item.originalPrice).toLocaleString()}</span></span>
+            <span>Paid: <span className="font-medium text-gray-700">₹{fmtPrice(item.originalPrice)}</span></span>
           )}
           {item.estimatedValue && (
             <span className="text-green-700 font-semibold flex items-center gap-0.5">
-              <IndianRupee className="h-3 w-3" /> Offer: ₹{Number(item.estimatedValue).toLocaleString()}
+              <IndianRupee className="h-3 w-3" /> Offer: ₹{fmtPrice(item.estimatedValue)}
             </span>
           )}
           {item.listedPrice && (
-            <span>Listed at: <span className="font-medium">₹{Number(item.listedPrice).toLocaleString()}</span></span>
+            <span>Listed at: <span className="font-medium">₹{fmtPrice(item.listedPrice)}</span></span>
           )}
         </div>
 
@@ -219,7 +225,7 @@ function ListingCard({ listing, onView, onCancel, isCancelling }: ListingCardPro
   const Icon = cfg?.icon || Clock;
   const approvedItems = listing.items.filter((i) => i.status !== 'REJECTED');
   const rejectedItems = listing.items.filter((i) => i.status === 'REJECTED');
-  const totalOffer = approvedItems.reduce((sum, i) => sum + Number(i.estimatedValue || 0), 0);
+  const totalOffer = approvedItems.reduce((sum, i) => sum + Math.round(Number(i.estimatedValue || 0) * 100) / 100, 0);
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">

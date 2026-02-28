@@ -159,6 +159,32 @@ export default function ProductDetails() {
     }
   };
 
+  const handleBuyNow = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to purchase.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    setAddingToCart(true);
+    try {
+      await cartApi.addToCart({ productId: id!, quantity });
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      navigate("/checkout");
+    } catch (error: any) {
+      toast({
+        title: "Failed to add to cart",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -413,10 +439,10 @@ export default function ProductDetails() {
                   size="lg"
                   variant="outline"
                   className="h-12 text-base font-semibold"
-                  onClick={() => navigate("/checkout")}
-                  disabled={product.stock === 0}
+                  onClick={handleBuyNow}
+                  disabled={addingToCart || product.stock === 0}
                 >
-                  Checkout Now
+                  Buy Now
                 </Button>
               </div>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
@@ -199,7 +200,7 @@ const AdminDashboard: React.FC = () => {
         <div className="bg-white border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">Recent Orders</h2>
-            <a href="/admin/orders" className="text-xs text-blue-600 hover:underline">View all</a>
+            <Link to="/admin/orders" className="text-xs text-blue-600 hover:underline">View all</Link>
           </div>
 
           {ordersLoading ? (
@@ -216,8 +217,7 @@ const AdminDashboard: React.FC = () => {
                     <th className="text-left px-5 py-3 font-medium">Order ID</th>
                     <th className="text-left px-5 py-3 font-medium">Customer</th>
                     <th className="text-left px-5 py-3 font-medium">Items</th>
-                    <th className="text-left px-5 py-3 font-medium">Total</th>
-                    <th className="text-left px-5 py-3 font-medium">Status</th>
+                    <th className="text-left px-5 py-3 font-medium">Total</th>                    <th className="text-left px-5 py-3 font-medium">Payment</th>                    <th className="text-left px-5 py-3 font-medium">Status</th>
                     <th className="text-left px-5 py-3 font-medium">Date</th>
                   </tr>
                 </thead>
@@ -228,6 +228,9 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-5 py-3 text-gray-800">{order.user?.name || '—'}</td>
                       <td className="px-5 py-3 text-gray-600">{(order.orderItems || order.items || []).length} item(s)</td>
                       <td className="px-5 py-3 text-gray-900 font-medium">₹{parseFloat(order.total || '0').toFixed(2)}</td>
+                      <td className="px-5 py-3 text-gray-600 text-xs">
+                        {order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod === 'CARD' ? 'Card' : order.paymentMethod === 'WALLET' ? 'Wallet' : '—'}
+                      </td>
                       <td className="px-5 py-3">
                         <StatusBadge status={order.status?.toLowerCase() || 'pending'} />
                       </td>

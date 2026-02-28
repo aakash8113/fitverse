@@ -9,6 +9,7 @@ import {
   Tag,
   Bot,
   Users,
+  ClipboardList,
   LogOut,
   Menu,
   X,
@@ -23,6 +24,7 @@ interface AdminLayoutProps {
 
 const navItems = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/admin/orders', label: 'Orders', icon: ClipboardList },
   { to: '/admin/shop', label: 'Shop Inventory', icon: ShoppingBag },
   { to: '/admin/thrift-requests', label: 'Thrift Requests', icon: Recycle },
   { to: '/admin/refurbishment', label: 'Refurbishment', icon: Wrench },

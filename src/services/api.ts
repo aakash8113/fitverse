@@ -257,6 +257,7 @@ export const productsApi = {
     minPrice?: number;
     maxPrice?: number;
     search?: string;
+    sortBy?: string;
   }) => {
     const response = await api.get<PaginatedResponse<Product>>('/products', { params });
     return response.data;
@@ -359,6 +360,14 @@ export const ordersApi = {
   // Cancel order
   cancelOrder: async (id: string) => {
     const response = await api.put<ApiResponse<Order>>(`/orders/${id}/cancel`);
+    return response.data;
+  },
+
+  // Track order by order number + email (public)
+  trackOrder: async (orderNumber: string, email: string) => {
+    const response = await api.get<ApiResponse<any>>('/orders/track', {
+      params: { orderNumber, email },
+    });
     return response.data;
   },
 

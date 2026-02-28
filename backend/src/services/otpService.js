@@ -1,8 +1,8 @@
-// OTP Service Abstraction
-// Currently logs to console, ready for email/SMS integration
+// OTP Service — uses Resend for email delivery
 
 const logger = require('../config/logger');
 const { generateOTP, generateOTPExpiry } = require('../utils/helpers');
+const emailService = require('./emailService');
 
 class OTPService {
   /**
@@ -11,36 +11,24 @@ class OTPService {
    * @param {String} otp - OTP code
    * @returns {Promise<Boolean>}
    */
-  async sendEmailOTP(email, otp) {
+  async sendEmailOTP(email, otp, name) {
     try {
-      // ============================================
-      // 🚀 PRODUCTION UPGRADE POINT: Email Service
-      // ============================================
-      // Replace console.log with actual email service
-      // Options: SendGrid, Mailgun, AWS SES, NodeMailer
-      //
-      // Example SendGrid implementation:
-      // const sgMail = require('@sendgrid/mail');
-      // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-      // await sgMail.send({
-      //   to: email,
-      //   from: process.env.EMAIL_FROM,
-      //   subject: 'Verify Your Email - Fitverse',
-      //   text: `Your OTP is: ${otp}`,
-      //   html: `<strong>Your OTP is: ${otp}</strong>`,
-      // });
-      // ============================================
-
-      console.log('\n📧 ===== EMAIL OTP =====');
-      console.log(`📨 To: ${email}`);
-      console.log(`🔐 OTP: ${otp}`);
-      console.log(`⏰ Expires in: 5 minutes`);
-      console.log('========================\n');
-
-      logger.info(`OTP sent to email: ${email}`);
+      await emailService.sendOTPEmail(email, name, otp);
+      logger.info(`OTP email sent to: ${email}`);
       return true;
     } catch (error) {
       logger.error(`Failed to send email OTP: ${error.message}`);
+      throw error;
+    }
+  }
+
+  async resendEmailOTP(email, otp, name) {
+    try {
+      await emailService.sendResendOTPEmail(email, name, otp);
+      logger.info(`Resend OTP email sent to: ${email}`);
+      return true;
+    } catch (error) {
+      logger.error(`Failed to resend email OTP: ${error.message}`);
       throw error;
     }
   }

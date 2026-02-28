@@ -102,6 +102,28 @@ const getAllOrders = asyncHandler(async (req, res) => {
   );
 });
 
+/**
+ * @route   GET /api/orders/track
+ * @desc    Track order by order number + email (public)
+ * @access  Public
+ */
+const trackOrder = asyncHandler(async (req, res) => {
+  const { orderNumber, email } = req.query;
+  
+  if (!orderNumber || !email) {
+    return res.status(400).json({ success: false, message: 'orderNumber and email are required' });
+  }
+
+  const order = await orderService.trackOrder(orderNumber.trim(), email.trim().toLowerCase());
+  
+  return ApiResponse.success(
+    res,
+    200,
+    order,
+    'Order tracked successfully'
+  );
+});
+
 module.exports = {
   createOrder,
   getMyOrders,
@@ -109,4 +131,5 @@ module.exports = {
   cancelOrder,
   updateOrderStatus,
   getAllOrders,
+  trackOrder,
 };

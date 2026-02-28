@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 const prisma = require('../config/database');
 const config = require('../config/env');
 const otpService = require('./otpService');
+const emailService = require('./emailService');
 const { ConflictError, UnauthorizedError, BadRequestError, NotFoundError } = require('../utils/errors');
 const { sanitizeUser, isOTPExpired } = require('../utils/helpers');
 const logger = require('../config/logger');
@@ -62,7 +63,7 @@ class AuthService {
     });
 
     // Send OTP via email
-    await otpService.sendEmailOTP(email, otp);
+    await otpService.sendEmailOTP(email, otp, name);
 
     logger.info(`New user registered: ${email}`);
 
@@ -115,6 +116,11 @@ class AuthService {
     });
 
     logger.info(`Email verified: ${email}`);
+
+    // Fire-and-forget welcome email
+    emailService
+      .sendWelcomeEmail(email, user.name)
+      .catch((err) => logger.error(`Welcome email failed: ${err.message}`));
 
     return {
       message: 'Email verified successfully. You can now login.',
@@ -194,8 +200,8 @@ class AuthService {
       },
     });
 
-    // Send OTP via email
-    await otpService.sendEmailOTP(email, otp);
+    // Send new OTP via email (uses "New verification code" template)
+    await otpService.resendEmailOTP(email, otp, user.name);
 
     logger.info(`OTP resent to: ${email}`);
 
