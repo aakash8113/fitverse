@@ -99,6 +99,7 @@ export default function ProductDetails() {
   const [quantity, setQuantity] = useState(1);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
 
   // Fetch the specific product by ID from backend
   const { data: productData, isLoading, isError } = useQuery({
@@ -169,19 +170,19 @@ export default function ProductDetails() {
       navigate("/login");
       return;
     }
-    setAddingToCart(true);
+    setBuyingNow(true);
     try {
       await cartApi.addToCart({ productId: id!, quantity });
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       navigate("/checkout");
     } catch (error: any) {
       toast({
-        title: "Failed to add to cart",
+        title: "Couldn't proceed to checkout",
         description: error.response?.data?.message || "Something went wrong.",
         variant: "destructive",
       });
     } finally {
-      setAddingToCart(false);
+      setBuyingNow(false);
     }
   };
 
@@ -440,9 +441,13 @@ export default function ProductDetails() {
                   variant="outline"
                   className="h-12 text-base font-semibold"
                   onClick={handleBuyNow}
-                  disabled={addingToCart || product.stock === 0}
+                  disabled={buyingNow || addingToCart || product.stock === 0}
                 >
-                  Buy Now
+                  {buyingNow ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                  ) : (
+                    "Buy Now"
+                  )}
                 </Button>
               </div>
 

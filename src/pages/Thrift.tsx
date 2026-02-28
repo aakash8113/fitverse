@@ -118,7 +118,7 @@ export default function Thrift() {
       </section>
 
       {/* Products */}
-      <section className="py-12">
+      <section id="thrift-products" className="py-12">
         <div className="w-full px-6">
           <div className="flex gap-6">
 

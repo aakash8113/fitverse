@@ -8,13 +8,14 @@ import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cartApi, ordersApi } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Payment() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const addressId = searchParams.get("addressId") || "";
   const [currentStep] = useState(3);
@@ -31,6 +32,7 @@ export default function Payment() {
   const createOrderMutation = useMutation({
     mutationFn: ordersApi.createOrder,
     onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast({
         title: "Order Placed!",
         description: "Your order has been placed successfully",
@@ -316,7 +318,7 @@ export default function Payment() {
                   size="lg"
                   className="w-full text-base font-semibold gap-2"
                   onClick={handlePlaceOrder}
-                  disabled={isProcessing}
+                  disabled={isProcessing || createOrderMutation.isPending}
                 >
                   {isProcessing ? (
                     <>

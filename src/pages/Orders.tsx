@@ -23,6 +23,7 @@ const statusStyles = {
 export default function Orders() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState("all");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -36,6 +37,7 @@ export default function Orders() {
   const cancelOrderMutation = useMutation({
     mutationFn: ordersApi.cancelOrder,
     onSuccess: () => {
+      setCancellingId(null);
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       toast({
         title: "Success",
@@ -43,6 +45,7 @@ export default function Orders() {
       });
     },
     onError: () => {
+      setCancellingId(null);
       toast({
         title: "Error",
         description: "Failed to cancel order",
@@ -235,17 +238,19 @@ export default function Orders() {
                         size="sm"
                         className="text-destructive hover:text-destructive"
                         onClick={() => {
+                          if (cancellingId) return;
                           if (
                             confirm(
                               "Are you sure you want to cancel this order?"
                             )
                           ) {
+                            setCancellingId(order.id);
                             cancelOrderMutation.mutate(order.id);
                           }
                         }}
-                        disabled={cancelOrderMutation.isPending}
+                        disabled={!!cancellingId}
                       >
-                        {cancelOrderMutation.isPending ? (
+                        {cancellingId === order.id ? (
                           <>
                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                             Cancelling...

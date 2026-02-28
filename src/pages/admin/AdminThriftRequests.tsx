@@ -128,11 +128,11 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
   );
 
   const reviewMutation = useMutation({
-    mutationFn: () =>
+    mutationFn: (d: 'APPROVED' | 'REJECTED') =>
       adminThriftApi.reviewListing(listing.id, {
-        decision,
-        pickupDate: decision === 'APPROVED' ? pickupDate : undefined,
-        pickupSlot: decision === 'APPROVED' ? pickupSlot : undefined,
+        decision: d,
+        pickupDate: d === 'APPROVED' ? pickupDate : undefined,
+        pickupSlot: d === 'APPROVED' ? pickupSlot : undefined,
         adminNotes,
         items: listing.items.map((item) => ({
           id: item.id,
@@ -164,17 +164,6 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-5">
-          <div className="flex gap-3">
-            <Button type="button" variant={decision === 'APPROVED' ? 'default' : 'outline'}
-              className={cn('flex-1', decision === 'APPROVED' && 'bg-green-600 hover:bg-green-700')}
-              onClick={() => setDecision('APPROVED')}>
-              <CheckCircle className="h-4 w-4 mr-1.5" /> Approve Listing
-            </Button>
-            <Button type="button" variant={decision === 'REJECTED' ? 'destructive' : 'outline'} className="flex-1"
-              onClick={() => setDecision('REJECTED')}>
-              <XCircle className="h-4 w-4 mr-1.5" /> Reject All
-            </Button>
-          </div>
           <div className="space-y-3">
             <p className="text-sm font-semibold text-gray-700">Items ({approvedCount}/{listing.items.length} approved)</p>
             {listing.items.map((item) => {
@@ -243,13 +232,34 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
             <Textarea placeholder="Any message to relay to the seller..." value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} rows={2} className="text-sm resize-none" />
           </div>
         </div>
-        <DialogFooter className="mt-4 gap-2">
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => reviewMutation.mutate()}
-            disabled={reviewMutation.isPending || (decision === 'APPROVED' && approvedCount > 0 && !pickupDate)}
-            className={cn(decision === 'APPROVED' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700')}>
-            {reviewMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
-            Submit Review
+        <DialogFooter className="mt-4 flex-col-reverse sm:flex-row gap-2">
+          <Button variant="outline" onClick={onClose} disabled={reviewMutation.isPending}>Cancel</Button>
+          <Button
+            variant="destructive"
+            onClick={() => { setDecision('REJECTED'); reviewMutation.mutate('REJECTED'); }}
+            disabled={reviewMutation.isPending}
+          >
+            {reviewMutation.isPending && decision === 'REJECTED'
+              ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              : <XCircle className="h-4 w-4 mr-1.5" />}
+            Reject All
+          </Button>
+          <Button
+            onClick={() => { setDecision('APPROVED'); reviewMutation.mutate('APPROVED'); }}
+            disabled={
+              reviewMutation.isPending ||
+              (approvedCount > 0 && (
+                !pickupDate ||
+                !pickupSlot ||
+                listing.items.some((item) => itemReviews[item.id]?.approved && !itemReviews[item.id]?.estimatedValue)
+              ))
+            }
+            className="bg-green-600 hover:bg-green-700"
+          >
+            {reviewMutation.isPending && decision === 'APPROVED'
+              ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
+              : <CheckCircle className="h-4 w-4 mr-1.5" />}
+            Approve Listing
           </Button>
         </DialogFooter>
       </DialogContent>

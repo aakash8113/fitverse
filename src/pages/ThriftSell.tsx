@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { Navbar } from '@/components/layout/Navbar';
@@ -307,6 +307,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
 
 function SuccessScreen({ listingId }: { listingId: string }) {
   const navigate = useNavigate();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />

@@ -217,7 +217,7 @@ const AdminDashboard: React.FC = () => {
                     <th className="text-left px-5 py-3 font-medium">Order ID</th>
                     <th className="text-left px-5 py-3 font-medium">Customer</th>
                     <th className="text-left px-5 py-3 font-medium">Items</th>
-                    <th className="text-left px-5 py-3 font-medium">Total</th>                    <th className="text-left px-5 py-3 font-medium">Payment</th>                    <th className="text-left px-5 py-3 font-medium">Status</th>
+                    <th className="text-left px-5 py-3 font-medium">Total</th>                    <th className="text-left px-5 py-3 font-medium">Payment Mode</th>                    <th className="text-left px-5 py-3 font-medium">Status</th>
                     <th className="text-left px-5 py-3 font-medium">Date</th>
                   </tr>
                 </thead>
