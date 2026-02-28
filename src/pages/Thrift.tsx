@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Recycle, Leaf, Heart, TrendingUp, Plus, Upload as UploadIcon } from "lucide-react";
+import { Recycle, Leaf, Heart, TrendingUp, Plus, Upload as UploadIcon, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -12,95 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { SlidersHorizontal } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { productsApi } from "@/services/api";
 
 import thriftHero from "@/assets/thrift-hero.jpg";
-import product1 from "@/assets/products/product-1.jpg";
-import product2 from "@/assets/products/product-2.jpg";
-import product3 from "@/assets/products/product-3.jpg";
-import product4 from "@/assets/products/product-4.jpg";
-import product5 from "@/assets/products/product-5.jpg";
-import product6 from "@/assets/products/product-6.jpg";
-
-const thriftProducts: Product[] = [
-  {
-    id: "t1",
-    name: "Vintage White Blazer",
-    brand: "ZARA",
-    price: 45.00,
-    originalPrice: 189.00,
-    image: product1,
-    sizes: ["S", "M"],
-    category: "women",
-    isThrift: true,
-    condition: "Like New",
-    seller: { name: "Sarah M.", rating: 4.9 },
-  },
-  {
-    id: "t2",
-    name: "Classic Leather Biker",
-    brand: "ALL SAINTS",
-    price: 85.00,
-    originalPrice: 329.00,
-    image: product2,
-    sizes: ["M", "L"],
-    category: "men",
-    isThrift: true,
-    condition: "Excellent",
-    seller: { name: "Mike T.", rating: 4.8 },
-  },
-  {
-    id: "t3",
-    name: "Cozy Cashmere Knit",
-    brand: "UNIQLO",
-    price: 35.00,
-    originalPrice: 149.00,
-    image: product3,
-    sizes: ["XS", "S", "M"],
-    category: "women",
-    isThrift: true,
-    condition: "Like New",
-    seller: { name: "Emma W.", rating: 5.0 },
-  },
-  {
-    id: "t4",
-    name: "Elegant Evening Dress",
-    brand: "H&M",
-    price: 55.00,
-    originalPrice: 199.00,
-    image: product4,
-    sizes: ["S", "M", "L"],
-    category: "women",
-    isThrift: true,
-    condition: "Gently Used",
-    seller: { name: "Lisa K.", rating: 4.7 },
-  },
-  {
-    id: "t5",
-    name: "Utility Cargo Pants",
-    brand: "CARHARTT",
-    price: 40.00,
-    originalPrice: 89.00,
-    image: product5,
-    sizes: ["M", "L", "XL"],
-    category: "men",
-    isThrift: true,
-    condition: "Excellent",
-    seller: { name: "James R.", rating: 4.9 },
-  },
-  {
-    id: "t6",
-    name: "Boho Denim Ensemble",
-    brand: "FREE PEOPLE",
-    price: 65.00,
-    originalPrice: 159.00,
-    image: product6,
-    sizes: ["XS", "S"],
-    category: "women",
-    isThrift: true,
-    condition: "Like New",
-    seller: { name: "Amy C.", rating: 4.8 },
-  },
-];
 
 const stats = [
   { value: "12.5k", label: "kg CO₂ Saved", icon: Leaf },
@@ -111,6 +26,26 @@ const stats = [
 export default function Thrift() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isSellDialogOpen, setIsSellDialogOpen] = useState(false);
+
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ["products", "THRIFT"],
+    queryFn: () => productsApi.getProducts({ category: "THRIFT", limit: 50 }),
+  });
+
+  const thriftProducts: Product[] = (productsData?.data || []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    brand: "THRIFT",
+    price: Number(p.price),
+    image: p.images?.[0]?.startsWith("http")
+      ? p.images[0]
+      : `http://localhost:5000/${p.images?.[0] || ""}`,
+    sizes: ["XS", "S", "M", "L", "XL"],
+    category: "thrift",
+    isThrift: true,
+    condition: "Pre-Loved",
+    seller: { name: "Fitverse", rating: 4.9 },
+  }));
 
   return (
     <div className="min-h-screen bg-background">
@@ -262,11 +197,21 @@ export default function Thrift() {
                 </span>
               </div>
 
+              {isLoading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-thrift-green" />
+                </div>
+              ) : thriftProducts.length === 0 ? (
+                <div className="text-center py-20">
+                  <p className="text-muted-foreground">No thrift products available right now.</p>
+                </div>
+              ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                 {thriftProducts.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
+              )}
             </main>
           </div>
         </div>

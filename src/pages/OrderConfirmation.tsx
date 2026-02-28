@@ -63,7 +63,7 @@ export default function OrderConfirmation() {
     cardType: "Visa",
   };
 
-  const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = orderItems.reduce((sum, item) => sum + Number(item.price) * item.quantity, 0);
   const shipping = 15.0;
   const tax = subtotal * 0.08;
   const total = subtotal + shipping + tax;
@@ -138,7 +138,7 @@ export default function OrderConfirmation() {
                       <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-semibold">${(Number(item.price) * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
                 ))}

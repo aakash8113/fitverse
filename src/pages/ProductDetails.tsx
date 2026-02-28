@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Heart, 
   Bookmark, 
@@ -9,86 +10,42 @@ import {
   Plus, 
   ThumbsUp, 
   MessageCircle,
-  ChevronLeft
+  ChevronLeft,
+  Loader2,
+  ShoppingCart,
+  AlertCircle,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ProductCard, Product } from "@/components/shop/ProductCard";
+import { ProductCard } from "@/components/shop/ProductCard";
 import { cn } from "@/lib/utils";
+import { productsApi, cartApi, Product as ApiProduct } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
-// Import product images
-import product1 from "@/assets/products/product-1.jpg";
-import product2 from "@/assets/products/product-2.jpg";
-import product3 from "@/assets/products/product-3.jpg";
-import product4 from "@/assets/products/product-4.jpg";
-import product5 from "@/assets/products/product-5.jpg";
-import product6 from "@/assets/products/product-6.jpg";
+const getImageUrl = (imagePath: string) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) return imagePath;
+  return `http://localhost:5000/${imagePath}`;
+};
 
-// Mock product data
-const allProducts: Product[] = [
-  {
-    id: "1",
-    name: "Long Sleeve Overshirt, Khaki, 6",
-    brand: "John Lewis ANYDAY",
-    price: 28.00,
-    originalPrice: 40.00,
-    image: product1,
-    sizes: ["6", "8", "10", "14", "18", "20"],
-    category: "women",
-    isNew: false,
-  },
-  {
-    id: "2",
-    name: "Premium Leather Jacket",
-    brand: "URBAN",
-    price: 329.00,
-    image: product2,
-    sizes: ["S", "M", "L", "XL"],
-    category: "men",
-  },
-  {
-    id: "3",
-    name: "Cashmere Turtleneck Sweater",
-    brand: "COZY",
-    price: 149.00,
-    image: product3,
-    sizes: ["XS", "S", "M", "L"],
-    category: "women",
-  },
-  {
-    id: "4",
-    name: "Elegant Navy Midi Dress",
-    brand: "CHIC",
-    price: 199.00,
-    originalPrice: 279.00,
-    image: product4,
-    sizes: ["XS", "S", "M", "L", "XL"],
-    category: "women",
-    isNew: true,
-  },
-  {
-    id: "5",
-    name: "Urban Cargo Joggers",
-    brand: "STREET",
-    price: 89.00,
-    image: product5,
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    category: "men",
-  },
-  {
-    id: "6",
-    name: "Vintage Denim Jacket",
-    brand: "RETRO",
-    price: 159.00,
-    originalPrice: 199.00,
-    image: product6,
-    sizes: ["XS", "S", "M", "L"],
-    category: "women",
-  },
-];
+const convertToCardProduct = (apiProduct: ApiProduct) => ({
+  id: apiProduct.id,
+  name: apiProduct.name,
+  brand: "FITVERSE",
+  price: apiProduct.price,
+  image: getImageUrl(apiProduct.images[0]),
+  sizes: ["XS", "S", "M", "L", "XL"],
+  category: apiProduct.category.toLowerCase(),
+  isNew: false,
+  description: apiProduct.description,
+  stock: apiProduct.stock,
+});
+
+const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
 
 // Mock reviews data
 const reviews = [
@@ -97,68 +54,139 @@ const reviews = [
     author: "Darrell Steward",
     rating: 5,
     date: "June 28, 2024 / 7:04 PM",
-    title: "This is amazing product have.",
-    helpful: 9,
+    title: "Great quality product, highly recommend for workouts!",
+    helpful: 24,
     verified: true,
   },
   {
     id: 2,
-    author: "Darlene Robertson",
-    rating: 5,
-    date: "June 28, 2024 / 3:04 PM",
-    title: "This is amazing product have.",
-    helpful: 10,
-    verified: false,
-  },
-  {
-    id: 3,
-    author: "Kathryn Murphy",
-    rating: 5,
-    date: "June 28, 2024 / 7:04 PM",
-    title: "This is amazing product have.",
-    helpful: 5,
+    author: "Sarah Johnson",
+    rating: 4,
+    date: "May 15, 2024 / 3:22 PM",
+    title: "Very comfortable and fits true to size.",
+    helpful: 18,
     verified: true,
-  },
-  {
-    id: 4,
-    author: "Shawn Kennedy",
-    rating: 5,
-    date: "June 28, 2024 / 12:04 AM",
-    title: "This is amazing product have.",
-    helpful: 124,
-    verified: false,
   },
 ];
 
 const colors = [
-  { name: "Royal Brown", value: "#8B7355", available: true },
-  { name: "Royal Blue", value: "#4169E1", available: true },
-  { name: "Navy", value: "#1E3A8A", available: true },
+  { name: "Midnight Black", value: "#1a1a1a", available: true },
+  { name: "Slate Gray", value: "#708090", available: true },
+  { name: "Pure White", value: "#f5f5f5", available: true },
+];
+
+const ratingDistribution = [
+  { stars: 5, count: 20551 },
+  { stars: 4, count: 30 },
+  { stars: 3, count: 4 },
+  { stars: 2, count: 0 },
+  { stars: 1, count: 0 },
 ];
 
 export default function ProductDetails() {
-  const { id } = useParams();
-  const product = allProducts.find(p => p.id === id) || allProducts[0];
-  
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
-  const [selectedSize, setSelectedSize] = useState("8");
+  const [selectedSize, setSelectedSize] = useState("M");
   const [quantity, setQuantity] = useState(1);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
 
-  const productImages = [product.image, product.image, product.image, product.image, product.image];
-  const relatedProducts = allProducts.filter(p => p.id !== id).slice(0, 5);
+  // Fetch the specific product by ID from backend
+  const { data: productData, isLoading, isError } = useQuery({
+    queryKey: ["product", id],
+    queryFn: () => productsApi.getProduct(id!),
+    enabled: !!id,
+  });
 
-  const ratingDistribution = [
-    { stars: 5, count: 20551 },
-    { stars: 4, count: 30 },
-    { stars: 3, count: 4 },
-    { stars: 2, count: 0 },
-    { stars: 1, count: 0 },
-  ];
+  // Fetch related products (same category)
+  const { data: relatedData } = useQuery({
+    queryKey: ["products", "related", productData?.data?.category],
+    queryFn: () =>
+      productsApi.getProducts({
+        category: productData?.data?.category,
+        limit: 6,
+      }),
+    enabled: !!productData?.data?.category,
+  });
+
+  const product = productData?.data;
+  const relatedProducts = (relatedData?.data || [])
+    .filter((p) => p.id !== id)
+    .slice(0, 5)
+    .map(convertToCardProduct);
+
+  const productImages = product?.images?.map(getImageUrl) || [];
 
   const totalReviews = ratingDistribution.reduce((acc, curr) => acc + curr.count, 0);
   const averageRating = 4.5;
+
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Please log in",
+        description: "You need to be logged in to add items to cart.",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      await cartApi.addToCart({ productId: id!, quantity });
+      toast({
+        title: "Added to cart",
+        description: `${product?.name} has been added to your cart.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Failed to add to cart",
+        description: error.response?.data?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">Loading product...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <AlertCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="text-xl font-semibold mb-2">Product not found</h2>
+            <p className="text-muted-foreground mb-6">This product doesn't exist or has been removed.</p>
+            <Button asChild>
+              <Link to="/shop">Back to Shop</Link>
+            </Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -167,9 +195,9 @@ export default function ProductDetails() {
       {/* Breadcrumb */}
       <div className="section-container py-4">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Link to="/" className="hover:text-foreground transition-colors">Homepage</Link>
+          <Link to="/" className="hover:text-foreground transition-colors">Home</Link>
           <ChevronRight className="w-4 h-4" />
-          <Link to="/shop" className="hover:text-foreground transition-colors">Women</Link>
+          <Link to="/shop" className="hover:text-foreground transition-colors">Shop</Link>
           <ChevronRight className="w-4 h-4" />
           <span className="text-foreground">{product.name}</span>
         </div>
@@ -182,89 +210,70 @@ export default function ProductDetails() {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="aspect-[3/4] bg-secondary rounded-lg overflow-hidden relative group">
-              <img
-                src={productImages[selectedImage]}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-              {/* Wishlist and Save buttons */}
+              {productImages[selectedImage] ? (
+                <img
+                  src={productImages[selectedImage]}
+                  alt={product.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
+              )}
+              {/* Action buttons */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-sm"
-                >
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-sm">
                   <Bookmark className="h-5 w-5" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-sm"
-                >
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-white/90 hover:bg-white shadow-sm">
                   <Heart className="h-5 w-5" />
                 </Button>
               </div>
             </div>
 
             {/* Thumbnail Images */}
-            <div className="grid grid-cols-5 gap-3">
-              {productImages.map((img, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedImage(idx)}
-                  className={cn(
-                    "aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all",
-                    selectedImage === idx ? "border-foreground" : "border-transparent hover:border-border"
-                  )}
-                >
-                  <img
-                    src={img}
-                    alt={`View ${idx + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {productImages.length > 1 && (
+              <div className="grid grid-cols-5 gap-3">
+                {productImages.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setSelectedImage(idx)}
+                    className={cn(
+                      "aspect-[3/4] rounded-lg overflow-hidden border-2 transition-all",
+                      selectedImage === idx ? "border-foreground" : "border-transparent hover:border-border"
+                    )}
+                  >
+                    <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Right: Product Details */}
           <div className="space-y-6">
             {/* Brand and Name */}
             <div>
-              <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">
-                {product.brand}
-              </p>
+              <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">FITVERSE</p>
               <h1 className="text-3xl lg:text-4xl font-bold mb-3">{product.name}</h1>
               
               {/* Price and Rating */}
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-baseline gap-3">
-                  {product.originalPrice && (
-                    <span className="text-2xl text-muted-foreground line-through">
-                      £{product.originalPrice.toFixed(2)}
-                    </span>
-                  )}
-                  <span className="text-3xl font-bold">£{product.price.toFixed(2)}</span>
+                  <span className="text-3xl font-bold">${Number(product.price).toFixed(2)}</span>
                 </div>
                 <Separator orientation="vertical" className="h-6 hidden sm:block" />
                 <div className="flex items-center gap-2">
                   <div className="flex">
                     {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        className={cn(
-                          "w-4 h-4",
-                          i < Math.floor(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                        )}
-                      />
+                      <Star key={i} className={cn("w-4 h-4", i < Math.floor(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
                     ))}
                   </div>
                   <span className="text-sm font-medium">{averageRating}</span>
-                  <Badge variant="secondary" className="bg-green-50 text-green-700 border-green-200">
-                    1232 Sold
-                  </Badge>
-                  <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                    4.5 Good
+                  <Badge
+                    variant="secondary"
+                    className={cn("text-xs", product.stock > 10 ? "bg-green-50 text-green-700 border-green-200" : product.stock > 0 ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-red-50 text-red-700 border-red-200")}
+                  >
+                    {product.stock > 10 ? "In Stock" : product.stock > 0 ? `Only ${product.stock} left` : "Out of Stock"}
                   </Badge>
                 </div>
               </div>
@@ -274,22 +283,15 @@ export default function ProductDetails() {
             <div>
               <h3 className="font-semibold mb-2">Description:</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Relaxed and stylish but not over slouchy casual style over soft-seams and a flat hem waits. Soft
-                Cotton in solid colors, pin stripes, florals you name it, flatters your build and gives a personable
-                appearance...
-                {showFullDescription && (
-                  <span>
-                    {" "}The perfect blend of comfort and style, this versatile piece can be dressed up or down for any occasion. 
-                    Made from premium materials that ensure durability and long-lasting wear.
-                  </span>
-                )}
+                {showFullDescription
+                  ? product.description
+                  : product.description?.slice(0, 150) + (product.description?.length > 150 ? "..." : "")}
               </p>
-              <button
-                onClick={() => setShowFullDescription(!showFullDescription)}
-                className="text-sm text-primary hover:underline mt-1"
-              >
-                {showFullDescription ? "See Less..." : "See More..."}
-              </button>
+              {product.description?.length > 150 && (
+                <button onClick={() => setShowFullDescription(!showFullDescription)} className="text-sm text-primary hover:underline mt-1">
+                  {showFullDescription ? "See Less..." : "See More..."}
+                </button>
+              )}
             </div>
 
             <Separator />
@@ -326,7 +328,7 @@ export default function ProductDetails() {
                 <button className="text-sm text-primary hover:underline">View Size Chart</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
+                {AVAILABLE_SIZES.map((size) => (
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}
@@ -361,8 +363,9 @@ export default function ProductDetails() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setQuantity(quantity + 1)}
+                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                     className="h-12 w-12 rounded-none"
+                    disabled={quantity >= product.stock}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -370,10 +373,25 @@ export default function ProductDetails() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button size="lg" className="h-12 text-base font-semibold">
-                  Add To Cart
+                <Button
+                  size="lg"
+                  className="h-12 text-base font-semibold"
+                  onClick={handleAddToCart}
+                  disabled={addingToCart || product.stock === 0}
+                >
+                  {addingToCart ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</>
+                  ) : (
+                    <><ShoppingCart className="mr-2 h-4 w-4" /> Add To Cart</>
+                  )}
                 </Button>
-                <Button size="lg" variant="outline" className="h-12 text-base font-semibold">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 text-base font-semibold"
+                  onClick={() => navigate("/checkout")}
+                  disabled={product.stock === 0}
+                >
                   Checkout Now
                 </Button>
               </div>

@@ -1,0 +1,75 @@
+// Winston Logger Configuration
+// Production-grade logging with file rotation
+
+const winston = require('winston');
+const DailyRotateFile = require('winston-daily-rotate-file');
+const path = require('path');
+
+const logDir = path.join(__dirname, '../../logs');
+
+// Define log format
+const logFormat = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.errors({ stack: true }),
+  winston.format.splat(),
+  winston.format.printf(({ timestamp, level, message, stack }) => {
+    if (stack) {
+      return `[${timestamp}] ${level.toUpperCase()}: ${message}\n${stack}`;
+    }
+    return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+  })
+);
+
+// Console format with colors
+const consoleFormat = winston.format.combine(
+  winston.format.colorize(),
+  winston.format.timestamp({ format: 'HH:mm:ss' }),
+  winston.format.printf(({ timestamp, level, message }) => {
+    return `[${timestamp}] ${level}: ${message}`;
+  })
+);
+
+// Daily rotate file transport for all logs
+const fileRotateTransport = new DailyRotateFile({
+  filename: path.join(logDir, 'application-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '14d',
+  format: logFormat,
+});
+
+// Daily rotate file transport for error logs only
+const errorRotateTransport = new DailyRotateFile({
+  filename: path.join(logDir, 'error-%DATE%.log'),
+  datePattern: 'YYYY-MM-DD',
+  maxSize: '20m',
+  maxFiles: '30d',
+  level: 'error',
+  format: logFormat,
+});
+
+// Create logger
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: logFormat,
+  transports: [
+    fileRotateTransport,
+    errorRotateTransport,
+  ],
+});
+
+// Add console transport in development
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(new winston.transports.Console({
+    format: consoleFormat,
+  }));
+}
+
+// Create a stream object for Morgan HTTP logger
+logger.stream = {
+  write: (message) => {
+    logger.info(message.trim());
+  },
+};
+
+module.exports = logger;

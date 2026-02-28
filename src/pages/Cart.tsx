@@ -1,77 +1,79 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Tag, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
-// Import product images
-import product1 from "@/assets/products/product-1.jpg";
-import product2 from "@/assets/products/product-2.jpg";
-import product3 from "@/assets/products/product-3.jpg";
-
-interface CartItem {
-  id: string;
-  name: string;
-  image: string;
-  price: number;
-  size: string;
-  color: string;
-  quantity: number;
-}
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { cartApi } from "@/services/api";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Cart() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: "1",
-      name: "Tailored White Blazer Set",
-      image: product1,
-      price: 189.00,
-      size: "M",
-      color: "White",
-      quantity: 1,
-    },
-    {
-      id: "2",
-      name: "Premium Leather Jacket",
-      image: product2,
-      price: 329.00,
-      size: "L",
-      color: "Black",
-      quantity: 1,
-    },
-    {
-      id: "3",
-      name: "Cashmere Turtleneck Sweater",
-      image: product3,
-      price: 149.00,
-      size: "S",
-      color: "Beige",
-      quantity: 2,
-    },
-  ]);
-
   const [promoCode, setPromoCode] = useState("");
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep] = useState(1);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const updateQuantity = (id: string, newQuantity: number) => {
+  // Fetch cart data
+  const { data: cartData, isLoading, error } = useQuery({
+    queryKey: ["cart"],
+    queryFn: cartApi.getCart,
+  });
+
+  // Update quantity mutation
+  const updateQuantityMutation = useMutation({
+    mutationFn: ({ cartItemId, quantity }: { cartItemId: string; quantity: number }) =>
+      cartApi.updateCartItem(cartItemId, { quantity }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update quantity. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Remove item mutation
+  const removeItemMutation = useMutation({
+    mutationFn: (cartItemId: string) => cartApi.removeFromCart(cartItemId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+      toast({
+        title: "Success",
+        description: "Item removed from cart",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to remove item. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateQuantity = (cartItemId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
+    updateQuantityMutation.mutate({ cartItemId, quantity: newQuantity });
   };
 
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const removeItem = (cartItemId: string) => {
+    removeItemMutation.mutate(cartItemId);
   };
 
-  const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shipping = subtotal > 0 ? 15.00 : 0;
+  // Calculate totals
+  const cartItems = cartData?.data?.items || [];
+  const subtotal = cartItems.reduce(
+    (sum, item) => sum + Number(item.product.price) * item.quantity,
+    0
+  );
+  const shipping = subtotal > 0 ? 15.0 : 0;
   const tax = subtotal * 0.08; // 8% tax
   const total = subtotal + shipping + tax;
 
@@ -81,16 +83,57 @@ export default function Cart() {
     { number: 3, label: "Payment" },
   ];
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="section-container py-12 flex items-center justify-center min-h-[60vh]">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+            <p className="text-muted-foreground">Loading your cart...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="section-container py-12">
+          <div className="text-center py-20">
+            <h2 className="text-2xl font-bold mb-2 text-destructive">Error Loading Cart</h2>
+            <p className="text-muted-foreground mb-6">
+              {(error as Error).message || "Failed to load cart. Please try again."}
+            </p>
+            <Button onClick={() => window.location.reload()}>Retry</Button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
       <div className="section-container md:max-w-full md:px-8 lg:px-12 xl:px-16 py-8 lg:py-12">
-        {/* Header */}
-        <div className="mb-8">
-
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-4 lg:gap-8 mb-8">
+        {/* Header: Back button + Progress Steps */}
+        <div className="flex items-center mb-8">
+          <div className="flex-1">
+            <Link to="/shop">
+              <Button variant="outline" className="gap-2 hover:bg-foreground hover:text-background transition-colors">
+                <ArrowLeft className="w-4 h-4" />
+                Back to Shopping
+              </Button>
+            </Link>
+          </div>
+          <div className="flex items-center gap-4 lg:gap-8">
             {steps.map((step, idx) => (
               <div key={step.number} className="flex items-center">
                 <div className="flex items-center gap-3">
@@ -121,6 +164,7 @@ export default function Cart() {
               </div>
             ))}
           </div>
+          <div className="flex-1" />
         </div>
 
         {cartItems.length === 0 ? (
@@ -153,83 +197,109 @@ export default function Cart() {
               </div>
 
               <div className="space-y-4">
-                {cartItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="bg-card border border-border rounded-2xl p-4 lg:p-6 hover:shadow-md transition-shadow"
-                  >
-                    <div className="flex gap-4">
-                      {/* Product Image */}
-                      <Link
-                        to={`/product/${item.id}`}
-                        className="flex-shrink-0 w-24 h-24 lg:w-28 lg:h-28 rounded-xl overflow-hidden bg-secondary"
-                      >
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                      </Link>
+                {cartItems.map((item) => {
+                  const imageUrl = item.product.images?.[0]?.startsWith("http")
+                    ? item.product.images[0]
+                    : `http://localhost:5000/${item.product.images?.[0] || ""}`;
 
-                      {/* Product Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between gap-4 mb-2">
-                          <Link to={`/product/${item.id}`}>
-                            <h3 className="font-semibold text-base lg:text-lg hover:text-primary transition-colors">
-                              {item.name}
-                            </h3>
-                          </Link>
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                            aria-label="Remove item"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        </div>
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-card border border-border rounded-2xl p-4 lg:p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex gap-4">
+                        {/* Product Image */}
+                        <Link
+                          to={`/product/${item.product.id}`}
+                          className="flex-shrink-0 w-24 h-24 lg:w-28 lg:h-28 rounded-xl overflow-hidden bg-secondary"
+                        >
+                          <img
+                            src={imageUrl}
+                            alt={item.product.name}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "https://via.placeholder.com/100?text=No+Image";
+                            }}
+                          />
+                        </Link>
 
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mb-3">
-                          <span>Size: <span className="text-foreground font-medium">{item.size}</span></span>
-                          <span>Color: <span className="text-foreground font-medium">{item.color}</span></span>
-                        </div>
-
-                        <div className="flex items-center justify-between flex-wrap gap-3">
-                          <span className="text-xl font-bold">
-                            ${(item.price * item.quantity).toFixed(2)}
-                          </span>
-
-                          {/* Quantity Controls */}
-                          <div className="flex items-center border-2 border-border rounded-lg">
+                        {/* Product Details */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between gap-4 mb-2">
+                            <Link to={`/product/${item.product.id}`}>
+                              <h3 className="font-semibold text-base lg:text-lg hover:text-primary transition-colors">
+                                {item.product.name}
+                              </h3>
+                            </Link>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="p-2 hover:bg-secondary transition-colors"
-                              aria-label="Decrease quantity"
+                              onClick={() => removeItem(item.id)}
+                              disabled={removeItemMutation.isPending}
+                              className="flex-shrink-0 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                              aria-label="Remove item"
                             >
-                              <Minus className="w-4 h-4" />
+                              {removeItemMutation.isPending &&
+                              removeItemMutation.variables === item.id ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-5 h-5" />
+                              )}
                             </button>
-                            <span className="w-12 text-center font-medium">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="p-2 hover:bg-secondary transition-colors"
-                              aria-label="Increase quantity"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground mb-3">
+                            <span>
+                              Category:{" "}
+                              <span className="text-foreground font-medium">
+                                {item.product.category}
+                              </span>
+                            </span>
+                            <span>
+                              Price:{" "}
+                              <span className="text-foreground font-medium">
+                                ${Number(item.product.price).toFixed(2)}
+                              </span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between flex-wrap gap-3">
+                            <span className="text-xl font-bold">
+                              ${(Number(item.product.price) * item.quantity).toFixed(2)}
+                            </span>
+
+                            {/* Quantity Controls */}
+                            <div className="flex items-center border-2 border-border rounded-lg">
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                disabled={
+                                  updateQuantityMutation.isPending || item.quantity <= 1
+                                }
+                                className="p-2 hover:bg-secondary transition-colors disabled:opacity-50"
+                                aria-label="Decrease quantity"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <span className="w-12 text-center font-medium">
+                                {item.quantity}
+                              </span>
+                              <button
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                disabled={updateQuantityMutation.isPending}
+                                className="p-2 hover:bg-secondary transition-colors disabled:opacity-50"
+                                aria-label="Increase quantity"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              {/* Continue Shopping */}
-              <Link to="/shop">
-                <Button variant="outline" className="gap-2">
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                  Continue Shopping
-                </Button>
-              </Link>
+
             </div>
 
             {/* Right: Order Summary */}

@@ -1,10 +1,10 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* Fitverse Design System - Premium Fashion Tech Aesthetic */
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @font-face {
      font-family: 'Mokoto';
@@ -37,11 +37,11 @@
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%;
 
-    /* Accent - Purple/Blue AI gradient colors */
-    --accent: 262 83% 58%;
+    /* Accent - Updated to match foreground for black/white theme */
+    --accent: 240 6% 10%;
     --accent-foreground: 0 0% 100%;
     
-    /* AI Gradient Colors */
+    /* AI Gradient Colors - Kept for backward compatibility */
     --ai-purple: 262 83% 58%;
     --ai-blue: 217 91% 60%;
     --ai-violet: 280 73% 53%;
@@ -58,7 +58,7 @@
     /* Borders & Inputs */
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 262 83% 58%;
+    --ring: 240 6% 10%;
 
     --radius: 0.75rem;
 
@@ -70,7 +70,7 @@
     --sidebar-accent: 240 5% 96%;
     --sidebar-accent-foreground: 240 6% 10%;
     --sidebar-border: 240 6% 90%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 240 6% 10%;
   }
 
   .dark {
@@ -91,24 +91,24 @@
     --muted: 240 5% 14%;
     --muted-foreground: 240 4% 65%;
 
-    --accent: 262 83% 58%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 0 0% 98%;
+    --accent-foreground: 240 10% 4%;
 
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 240 5% 18%;
     --input: 240 5% 18%;
-    --ring: 262 83% 58%;
+    --ring: 0 0% 98%;
 
     --sidebar-background: 240 10% 6%;
     --sidebar-foreground: 240 5% 85%;
-    --sidebar-primary: 262 83% 58%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 240 10% 4%;
     --sidebar-accent: 240 5% 14%;
     --sidebar-accent-foreground: 240 5% 85%;
     --sidebar-border: 240 5% 18%;
-    --sidebar-ring: 262 83% 58%;
+    --sidebar-ring: 0 0% 98%;
   }
 }
 
@@ -128,20 +128,17 @@
 }
 
 @layer components {
-  /* AI Gradient Backgrounds */
+  /* AI Gradient Backgrounds - Updated to Black/White Theme */
   .gradient-ai {
-    background: linear-gradient(135deg, hsl(var(--ai-purple)) 0%, hsl(var(--ai-blue)) 50%, hsl(var(--ai-violet)) 100%);
+    background: hsl(var(--foreground));
   }
 
   .gradient-ai-subtle {
-    background: linear-gradient(135deg, hsl(var(--ai-purple) / 0.1) 0%, hsl(var(--ai-blue) / 0.1) 50%, hsl(var(--ai-violet) / 0.05) 100%);
+    background: hsl(var(--secondary));
   }
 
   .gradient-ai-text {
-    background: linear-gradient(135deg, hsl(var(--ai-purple)) 0%, hsl(var(--ai-blue)) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    @apply text-foreground font-semibold;
   }
 
   /* Glass Morphism */
@@ -164,7 +161,7 @@
 
   /* Button Variants */
   .btn-ai {
-    @apply gradient-ai text-white font-medium px-6 py-3 rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-xl hover:shadow-purple-500/40 transition-all duration-300 hover:scale-[1.02];
+    @apply bg-foreground text-background font-medium px-6 py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02];
   }
 
   .btn-outline-premium {
@@ -173,7 +170,7 @@
 
   /* Badge Styles */
   .badge-ai {
-    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium gradient-ai text-white;
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-foreground text-background;
   }
 
   .badge-thrift {
@@ -235,7 +232,7 @@
   }
 
   .shadow-ai {
-    box-shadow: 0 8px 32px -4px hsl(var(--ai-purple) / 0.3), 0 4px 16px -4px hsl(var(--ai-blue) / 0.2);
+    box-shadow: 0 8px 32px -4px rgba(0, 0, 0, 0.15), 0 4px 16px -4px rgba(0, 0, 0, 0.1);
   }
 
   /* Text Utilities */

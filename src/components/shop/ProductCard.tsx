@@ -28,7 +28,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const discount = product.originalPrice 
-    ? Math.round((1 - product.price / product.originalPrice) * 100) 
+    ? Math.round((1 - Number(product.price) / Number(product.originalPrice)) * 100) 
     : 0;
 
   return (
@@ -106,11 +106,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="font-semibold text-base">
-            ${product.price.toFixed(2)}
+            ${Number(product.price).toFixed(2)}
           </span>
           {product.originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ${product.originalPrice.toFixed(2)}
+              ${Number(product.originalPrice).toFixed(2)}
             </span>
           )}
         </div>

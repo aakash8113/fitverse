@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, User, Eye, EyeOff, Sparkles, Phone } from "lucide-react";
+import { Mail, Lock, User, Eye, EyeOff, Sparkles, Phone, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -22,8 +25,9 @@ export default function Signup() {
     subscribeNewsletter: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
       return;
@@ -32,9 +36,24 @@ export default function Signup() {
       alert("Please agree to the terms and conditions");
       return;
     }
-    console.log("Signup:", formData);
-    // Handle signup - navigate to account
-    navigate("/account");
+    
+    setIsLoading(true);
+    
+    try {
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      await signup(
+        fullName,
+        formData.email,
+        formData.password,
+        formData.phone || undefined
+      );
+      // Navigate to verification page with email
+      navigate('/verify-email', { state: { email: formData.email } });
+    } catch (error) {
+      console.error("Signup failed:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -234,8 +253,20 @@ export default function Signup() {
             </div>
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full h-11" size="lg">
-              Create Account
+            <Button 
+              type="submit" 
+              className="w-full h-11 gradient-ai text-white hover:opacity-90" 
+              size="lg"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Create Account'
+              )}
             </Button>
           </form>
 

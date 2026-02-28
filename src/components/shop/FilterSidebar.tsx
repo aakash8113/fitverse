@@ -37,6 +37,8 @@ interface FilterOption {
 interface FilterSidebarProps {
   className?: string;
   onClose?: () => void;
+  onCategoryChange?: (category: string | undefined) => void;
+  onPriceRangeChange?: (min: number, max: number) => void;
 }
 
 const categories: FilterOption[] = [
@@ -62,7 +64,7 @@ const brands: FilterOption[] = [
   { id: "adidas", label: "Adidas", count: 24 },
 ];
 
-export function FilterSidebar({ className, onClose }: FilterSidebarProps) {
+export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRangeChange }: FilterSidebarProps) {
   const [priceRange, setPriceRange] = useState([0, 500]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -80,15 +82,45 @@ export function FilterSidebar({ className, onClose }: FilterSidebarProps) {
     );
   };
 
+  const handleCategoryToggle = (id: string) => {
+    const newCategories = selectedCategories.includes(id)
+      ? selectedCategories.filter((item) => item !== id)
+      : [...selectedCategories, id];
+    
+    setSelectedCategories(newCategories);
+    
+    // Call the callback with the first selected category or undefined
+    if (onCategoryChange) {
+      onCategoryChange(newCategories.length > 0 ? newCategories[0] : undefined);
+    }
+  };
+
+  const handlePriceChange = (value: number[]) => {
+    setPriceRange(value);
+    
+    // Call the callback with the new price range
+    if (onPriceRangeChange) {
+      onPriceRangeChange(value[0], value[1]);
+    }
+  };
+
   const clearAll = () => {
     setSelectedCategories([]);
     setSelectedSizes([]);
     setSelectedBrands([]);
     setPriceRange([0, 500]);
+    
+    // Reset filters in parent component
+    if (onCategoryChange) {
+      onCategoryChange(undefined);
+    }
+    if (onPriceRangeChange) {
+      onPriceRangeChange(0, 500);
+    }
   };
 
   const hasFilters = 
-    selectedCategories.length > 0 || 
+    selectedCategories.length > 0 ||
     selectedSizes.length > 0 || 
     selectedBrands.length > 0 ||
     priceRange[0] > 0 ||
@@ -153,7 +185,7 @@ export function FilterSidebar({ className, onClose }: FilterSidebarProps) {
         <div className="px-1">
           <Slider
             value={priceRange}
-            onValueChange={setPriceRange}
+            onValueChange={handlePriceChange}
             max={500}
             step={10}
             className="mb-4"

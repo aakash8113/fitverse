@@ -146,10 +146,10 @@ export default function Wishlist() {
                         <div className="flex items-center gap-2">
                           {item.originalPrice && (
                             <span className="text-sm text-muted-foreground line-through">
-                              ${item.originalPrice.toFixed(2)}
+                              ${Number(item.originalPrice).toFixed(2)}
                             </span>
                           )}
-                          <span className="text-lg font-bold">${item.price.toFixed(2)}</span>
+                          <span className="text-lg font-bold">${Number(item.price).toFixed(2)}</span>
                         </div>
                         <span
                           className={cn(
@@ -217,10 +217,10 @@ export default function Wishlist() {
                       <div className="flex flex-col gap-1">
                         {item.originalPrice && (
                           <span className="text-sm text-muted-foreground line-through">
-                            ${item.originalPrice.toFixed(2)}
+                            ${Number(item.originalPrice).toFixed(2)}
                           </span>
                         )}
-                        <span className="text-lg font-bold">${item.price.toFixed(2)}</span>
+                        <span className="text-lg font-bold">${Number(item.price).toFixed(2)}</span>
                       </div>
                     </div>
 

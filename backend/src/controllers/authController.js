@@ -1,0 +1,97 @@
+// Authentication Controller
+// Handles HTTP requests for authentication
+
+const authService = require('../services/authService');
+const asyncHandler = require('../utils/asyncHandler');
+const ApiResponse = require('../utils/apiResponse');
+
+/**
+ * @route   POST /api/auth/signup
+ * @desc    Register new user
+ * @access  Public
+ */
+const signup = asyncHandler(async (req, res) => {
+  const result = await authService.signup(req.body);
+  
+  return ApiResponse.success(
+    res,
+    201,
+    result.user,
+    result.message
+  );
+});
+
+/**
+ * @route   POST /api/auth/verify-email
+ * @desc    Verify email with OTP
+ * @access  Public
+ */
+const verifyEmail = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  const result = await authService.verifyEmail(email, otp);
+  
+  return ApiResponse.success(
+    res,
+    200,
+    null,
+    result.message
+  );
+});
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Login user
+ * @access  Public
+ */
+const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const result = await authService.login(email, password);
+  
+  return ApiResponse.success(
+    res,
+    200,
+    result,
+    'Login successful'
+  );
+});
+
+/**
+ * @route   POST /api/auth/resend-otp
+ * @desc    Resend OTP to email
+ * @access  Public
+ */
+const resendOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const result = await authService.resendOTP(email);
+  
+  return ApiResponse.success(
+    res,
+    200,
+    null,
+    result.message
+  );
+});
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get current user profile
+ * @access  Private
+ */
+const getMe = asyncHandler(async (req, res) => {
+  const user = await authService.getMe(req.user.id);
+  
+  return ApiResponse.success(
+    res,
+    200,
+    user,
+    'User profile retrieved'
+  );
+});
+
+module.exports = {
+  signup,
+  verifyEmail,
+  login,
+  resendOTP,
+  getMe,
+};
