@@ -50,6 +50,9 @@ class ProductService {
     // Category filter
     if (query.category) {
       where.category = query.category.toUpperCase();
+    } else {
+      // Never show thrift items in the regular shop
+      where.category = { not: 'THRIFT' };
     }
 
     // Price range filter

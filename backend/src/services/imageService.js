@@ -62,7 +62,16 @@ class ImageService {
       // Create subfolder if it doesn't exist
       await fs.mkdir(subfolderPath, { recursive: true });
 
-      // Generate unique filename
+      // ── Disk storage: file already saved by multer, just compute relative path ──
+      if (file.path) {
+        const normalized = file.path.replace(/\\/g, '/');
+        const idx = normalized.indexOf('uploads/');
+        const relativePath = idx !== -1 ? normalized.slice(idx) : `uploads/${subfolder}/${file.filename}`;
+        logger.info(`Image stored (disk): ${relativePath}`);
+        return relativePath;
+      }
+
+      // ── Memory storage: write buffer manually ──
       const timestamp = Date.now();
       const randomString = Math.random().toString(36).substring(2, 8);
       const ext = path.extname(file.originalname);

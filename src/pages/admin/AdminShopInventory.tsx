@@ -18,7 +18,14 @@ import {
   Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
-const CATEGORIES = ['T-Shirts', 'Shirts', 'Pants', 'Jeans', 'Dresses', 'Kurtas', 'Jackets', 'Shorts', 'Skirts', 'Activewear'];
+const CATEGORIES: { value: string; label: string }[] = [
+  { value: 'MENS', label: 'Mens' },
+  { value: 'WOMENS', label: 'Womens' },
+  { value: 'ACCESSORIES', label: 'Accessories' },
+  { value: 'ACTIVEWEAR', label: 'Activewear' },
+  { value: 'FOOTWEAR', label: 'Footwear' },
+  { value: 'THRIFT', label: 'Thrift' },
+];
 const PAGE_SIZE = 12;
 
 interface ProductFormData {
@@ -68,6 +75,14 @@ const AdminShopInventory: React.FC = () => {
   const products: Product[] = rawData?.products || rawData || [];
   const totalPages = rawData?.pagination?.totalPages || 1;
 
+  const getErrorDescription = (e: any): string => {
+    const data = e?.response?.data;
+    if (data?.errors && Array.isArray(data.errors) && data.errors.length > 0) {
+      return data.errors.map((err: { field: string; message: string }) => `${err.field}: ${err.message}`).join('\n');
+    }
+    return data?.message || 'Something went wrong';
+  };
+
   const createMutation = useMutation({
     mutationFn: (fd: FormData) => productsApi.createProduct(fd),
     onSuccess: () => {
@@ -75,7 +90,7 @@ const AdminShopInventory: React.FC = () => {
       toast({ title: 'Product created' });
       setDialogOpen(false);
     },
-    onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Failed to create product', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Validation Error', description: getErrorDescription(e), variant: 'destructive' }),
   });
 
   const updateMutation = useMutation({
@@ -85,7 +100,7 @@ const AdminShopInventory: React.FC = () => {
       toast({ title: 'Product updated' });
       setDialogOpen(false);
     },
-    onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Failed to update', variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Validation Error', description: getErrorDescription(e), variant: 'destructive' }),
   });
 
   const deleteMutation = useMutation({
@@ -181,7 +196,7 @@ const AdminShopInventory: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
-              {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -293,11 +308,13 @@ const AdminShopInventory: React.FC = () => {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
-                <Label className="text-xs">Product Name *</Label>
+                <Label className="text-xs">Product Name * <span className="text-gray-400">(min 3 chars)</span></Label>
                 <Input
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   required
+                  minLength={3}
+                  placeholder="e.g. Running Shoes"
                   className="h-9 text-sm"
                 />
               </div>
@@ -331,16 +348,19 @@ const AdminShopInventory: React.FC = () => {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="col-span-2 space-y-1">
-                <Label className="text-xs">Description</Label>
+                <Label className="text-xs">Description <span className="text-gray-400">(min 10 chars)</span></Label>
                 <Textarea
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                   rows={3}
+                  minLength={10}
+                  required
+                  placeholder="Describe the product..."
                   className="text-sm resize-none"
                 />
               </div>

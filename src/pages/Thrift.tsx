@@ -1,16 +1,12 @@
 import { useState } from "react";
-import { Recycle, Leaf, Heart, TrendingUp, Plus, Upload as UploadIcon, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Recycle, Leaf, Heart, TrendingUp, Plus, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard, Product } from "@/components/shop/ProductCard";
 import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { SlidersHorizontal } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
@@ -24,8 +20,8 @@ const stats = [
 ];
 
 export default function Thrift() {
+  const navigate = useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [isSellDialogOpen, setIsSellDialogOpen] = useState(false);
 
   const { data: productsData, isLoading } = useQuery({
     queryKey: ["products", "THRIFT"],
@@ -80,62 +76,16 @@ export default function Thrift() {
                 ))}
               </div>
 
-              <Dialog open={isSellDialogOpen} onOpenChange={setIsSellDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button className="bg-thrift-green hover:bg-thrift-green/90 text-white h-12 px-8">
-                    <Plus className="w-5 h-5 mr-2" />
-                    Sell Your Items
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>List Your Item</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 py-4">
-                    <div className="border-2 border-dashed border-border rounded-xl p-8 text-center">
-                      <UploadIcon className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground mb-2">Drag & drop images or click to upload</p>
-                      <Button variant="outline" size="sm">Select Files</Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Title</Label>
-                        <Input placeholder="e.g., Vintage Denim Jacket" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Brand</Label>
-                        <Input placeholder="e.g., Levi's" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Price</Label>
-                        <Input type="number" placeholder="$0.00" />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Condition</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">Like New</SelectItem>
-                            <SelectItem value="excellent">Excellent</SelectItem>
-                            <SelectItem value="good">Gently Used</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea placeholder="Describe your item..." rows={3} />
-                    </div>
-                    <Button className="w-full bg-thrift-green hover:bg-thrift-green/90 text-white">
-                      List Item
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <div className="flex gap-3 flex-wrap">
+                <Button onClick={() => navigate('/thrift/sell')} className="bg-thrift-green hover:bg-thrift-green/90 text-white h-12 px-8">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Sell Your Items
+                </Button>
+                <Button onClick={() => navigate('/thrift/my-listings')} variant="outline" className="h-12 px-6 border-thrift-green text-thrift-green hover:bg-thrift-green/5">
+                  <List className="w-4 h-4 mr-2" />
+                  My Listings
+                </Button>
+              </div>
             </div>
 
             <div className="relative">
@@ -228,10 +178,10 @@ export default function Thrift() {
               Together, we've prevented thousands of clothing items from ending up in landfills.
             </p>
             <div className="flex justify-center gap-4">
-              <Button className="bg-white text-thrift-green hover:bg-white/90">
+              <Button className="bg-white text-thrift-green hover:bg-white/90" onClick={() => document.querySelector('#thrift-products')?.scrollIntoView({ behavior: 'smooth' })}>
                 Start Shopping
               </Button>
-              <Button variant="outline" className="border-white text-thrift-green hover:bg-white/10">
+              <Button variant="outline" className="border-white text-white hover:bg-white/10" onClick={() => navigate('/thrift/sell')}>
                 Sell Your Items
               </Button>
             </div>

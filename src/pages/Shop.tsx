@@ -16,7 +16,8 @@ import { productsApi, Product as ApiProduct } from "@/services/api";
 // Convert API product to frontend product format
 const convertProduct = (apiProduct: ApiProduct) => {
   // Helper to convert image path to full URL
-  const getImageUrl = (imagePath: string) => {
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return '/placeholder.svg';
     // If image is already a full URL (starts with http), return as-is
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
@@ -30,8 +31,8 @@ const convertProduct = (apiProduct: ApiProduct) => {
     name: apiProduct.name,
     brand: "FITVERSE",
     price: apiProduct.price,
-    image: getImageUrl(apiProduct.images[0]), // Convert to full URL
-    images: apiProduct.images.map(getImageUrl),
+    image: getImageUrl(apiProduct.images?.[0]), // Convert to full URL
+    images: (apiProduct.images || []).map(getImageUrl),
     sizes: ["XS", "S", "M", "L", "XL"], // TODO: Add sizes to backend
     category: apiProduct.category.toLowerCase(),
     isNew: false,

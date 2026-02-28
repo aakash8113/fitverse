@@ -1,14 +1,33 @@
 // File Upload Middleware
-// Handles image uploads using Multer with memory storage
+// Handles image uploads using Multer with disk storage
 
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const { BadRequestError } = require('../utils/errors');
 const config = require('../config/env');
 
-// Memory storage (files stored in memory as Buffer objects)
-// Better for cloud uploads where we'll stream directly to S3/Cloudinary
-const storage = multer.memoryStorage();
+// Ensure uploads directories exist
+const UPLOADS_DIR = path.join(__dirname, '../../uploads');
+const THRIFT_DIR  = path.join(UPLOADS_DIR, 'thrift');
+const PRODUCTS_DIR = path.join(UPLOADS_DIR, 'products');
+[UPLOADS_DIR, THRIFT_DIR, PRODUCTS_DIR].forEach((d) => {
+  if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
+});
+
+// Disk storage — saves files to /uploads/<subfolder>/
+const storage = multer.diskStorage({
+  destination: (req, _file, cb) => {
+    // Use thrift subfolder for thrift routes, products otherwise
+    const isThrift = req.baseUrl?.includes('thrift') || req.path?.includes('thrift');
+    cb(null, isThrift ? THRIFT_DIR : PRODUCTS_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${unique}${ext}`);
+  },
+});
 
 // File filter - only images allowed
 const fileFilter = (req, file, cb) => {

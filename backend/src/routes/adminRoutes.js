@@ -23,15 +23,20 @@ router.get('/users/:id/orders', adminController.getUserOrders);
 router.put('/users/:id/block', adminController.blockUser);
 router.put('/users/:id/unblock', adminController.unblockUser);
 
-// Thrift & AI routes — placeholder (returns 501 until fully implemented)
-router.get('/thrift/requests', (req, res) => res.json({ success: false, message: 'Thrift request feature not yet implemented', data: [] }));
-router.put('/thrift/requests/:id/status', (req, res) => res.json({ success: false, message: 'Thrift request feature not yet implemented' }));
-router.get('/refurbishment', (req, res) => res.json({ success: false, message: 'Refurbishment feature not yet implemented', data: [] }));
-router.put('/refurbishment/:id', (req, res) => res.json({ success: false, message: 'Not yet implemented' }));
-router.post('/refurbishment/:id/move-to-inventory', (req, res) => res.json({ success: false, message: 'Not yet implemented' }));
-router.get('/thrift/inventory', (req, res) => res.json({ success: false, message: 'Thrift inventory not yet implemented', data: [] }));
-router.put('/thrift/inventory/:id', (req, res) => res.json({ success: false, message: 'Not yet implemented' }));
-router.delete('/thrift/inventory/:id', (req, res) => res.json({ success: false, message: 'Not yet implemented' }));
+// Thrift requests (listing review workflow)
+router.get('/thrift/requests', adminController.getAllThriftListings);
+router.get('/thrift/requests/:id', adminController.getThriftListingById);
+router.put('/thrift/requests/:id/review', adminController.reviewThriftListing);
+router.put('/thrift/requests/:id/pickup', adminController.markListingPickedUp);
+
+// Individual item management
+router.put('/thrift/items/:id/status', adminController.updateThriftItemStatus);
+router.post('/thrift/items/:id/list', adminController.listThriftItem);
+
+// Thrift inventory (LISTED / SOLD items)
+router.get('/thrift/inventory', adminController.getThriftInventory);
+
+// AI routes — placeholder
 router.get('/ai/stats', (req, res) => res.json({ success: false, message: 'AI monitoring not yet implemented', data: null }));
 router.put('/ai/maintenance', (req, res) => res.json({ success: true, message: 'AI maintenance toggle acknowledged' }));
 

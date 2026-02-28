@@ -567,5 +567,171 @@ export const adminApi = {
   },
 };
 
+// ============================================
+// THRIFT MARKETPLACE — User-facing types + API
+// ============================================
+
+export type ThriftItemCondition = 'POOR' | 'FAIR' | 'GOOD' | 'VERY_GOOD' | 'LIKE_NEW';
+export type ThriftItemCategory =
+  | 'TOPS' | 'BOTTOMS' | 'DRESSES' | 'OUTERWEAR'
+  | 'FOOTWEAR' | 'ACCESSORIES' | 'SPORTSWEAR' | 'ETHNIC' | 'BAGS' | 'OTHER';
+export type ThriftItemStatus =
+  | 'PENDING' | 'APPROVED' | 'REJECTED'
+  | 'PICKED_UP' | 'UNDER_REFURBISHMENT' | 'LISTED' | 'SOLD';
+export type ThriftListingStatus =
+  | 'PENDING' | 'APPROVED' | 'REJECTED' | 'PICKED_UP' | 'COMPLETED';
+
+export interface ThriftItem {
+  id: string;
+  listingId: string;
+  userId: string;
+  name: string;
+  brand?: string;
+  category: ThriftItemCategory;
+  size?: string;
+  condition: ThriftItemCondition;
+  description: string;
+  images: string[];
+  originalPrice?: number;
+  estimatedValue?: number;
+  listedPrice?: number;
+  status: ThriftItemStatus;
+  rejectionReason?: string;
+  adminNotes?: string;
+  listedProductId?: string;
+  createdAt: string;
+  updatedAt: string;
+  user?: { id: string; name: string; email: string };
+}
+
+export interface ThriftListing {
+  id: string;
+  userId: string;
+  status: ThriftListingStatus;
+  pickupDate?: string;
+  pickupSlot?: string;
+  adminNotes?: string;
+  items: ThriftItem[];
+  user?: { id: string; name: string; email: string; phone?: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ThriftItemFormData {
+  name: string;
+  brand: string;
+  category: ThriftItemCategory | '';
+  size: string;
+  condition: ThriftItemCondition | '';
+  description: string;
+  originalPrice: string;
+  images: File[];
+  previewUrls: string[];
+}
+
+export const thriftApi = {
+  // Submit a new listing with multiple items (+ optional images)
+  createListing: async (formData: FormData) => {
+    const response = await api.post<ApiResponse<ThriftListing>>('/thrift/listings', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  // Get user's own listings
+  getMyListings: async () => {
+    const response = await api.get<ApiResponse<ThriftListing[]>>('/thrift/listings');
+    return response.data;
+  },
+
+  // Get single listing detail
+  getListing: async (id: string) => {
+    const response = await api.get<ApiResponse<ThriftListing>>(`/thrift/listings/${id}`);
+    return response.data;
+  },
+
+  // Cancel a pending listing
+  cancelListing: async (id: string) => {
+    const response = await api.delete<ApiResponse>(`/thrift/listings/${id}`);
+    return response.data;
+  },
+
+  // Upload images for a specific item (after listing created)
+  uploadItemImages: async (listingId: string, itemId: string, files: File[]) => {
+    const fd = new FormData();
+    files.forEach((f) => fd.append('images', f));
+    const response = await api.post<ApiResponse<ThriftItem>>(
+      `/thrift/listings/${listingId}/items/${itemId}/images`,
+      fd,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    );
+    return response.data;
+  },
+};
+
+// Admin thrift API extensions
+export const adminThriftApi = {
+  // All listing requests
+  getAllListings: async (params?: { status?: string; page?: number; limit?: number }) => {
+    const response = await api.get<ApiResponse<ThriftListing[]>>('/admin/thrift/requests', { params });
+    return response.data;
+  },
+
+  getListing: async (id: string) => {
+    const response = await api.get<ApiResponse<ThriftListing>>(`/admin/thrift/requests/${id}`);
+    return response.data;
+  },
+
+  // Review: approve/reject, set pickup date + per-item estimated values
+  reviewListing: async (
+    id: string,
+    payload: {
+      decision: 'APPROVED' | 'REJECTED';
+      pickupDate?: string;
+      pickupSlot?: string;
+      adminNotes?: string;
+      items: { id: string; approved: boolean; estimatedValue?: number; rejectionReason?: string }[];
+    }
+  ) => {
+    const response = await api.put<ApiResponse<ThriftListing>>(
+      `/admin/thrift/requests/${id}/review`,
+      payload
+    );
+    return response.data;
+  },
+
+  // Mark listing + items as PICKED_UP
+  markPickedUp: async (id: string) => {
+    const response = await api.put<ApiResponse<ThriftListing>>(
+      `/admin/thrift/requests/${id}/pickup`
+    );
+    return response.data;
+  },
+
+  // Move individual item through pipeline
+  updateItemStatus: async (itemId: string, status: ThriftItemStatus, adminNotes?: string) => {
+    const response = await api.put<ApiResponse<ThriftItem>>(
+      `/admin/thrift/items/${itemId}/status`,
+      { status, adminNotes }
+    );
+    return response.data;
+  },
+
+  // List item as a real product in the store
+  listItem: async (itemId: string, payload: { listedPrice: number; description?: string; stock?: number }) => {
+    const response = await api.post<ApiResponse<{ item: ThriftItem; product: Product }>>(
+      `/admin/thrift/items/${itemId}/list`,
+      payload
+    );
+    return response.data;
+  },
+
+  // Get listed/sold thrift inventory
+  getInventory: async (params?: { status?: string; page?: number; limit?: number }) => {
+    const response = await api.get<ApiResponse<ThriftItem[]>>('/admin/thrift/inventory', { params });
+    return response.data;
+  },
+};
+
 // Export everything
 export default api;

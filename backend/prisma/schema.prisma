@@ -36,9 +36,11 @@ model User {
   otpExpiresAt    DateTime?
   
   // Relations
-  cart      Cart?
-  orders    Order[]
-  addresses Address[]
+  cart            Cart?
+  orders          Order[]
+  addresses       Address[]
+  thriftListings  ThriftListing[]
+  thriftItems     ThriftItem[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -231,4 +233,112 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@map("order_items")
+}
+
+// ============================================
+// THRIFT MARKETPLACE
+// ============================================
+
+enum ThriftListingStatus {
+  PENDING           // Awaiting admin review
+  APPROVED          // Admin accepted, pickup scheduled
+  REJECTED          // Admin rejected all items
+  PICKED_UP         // Items physically received
+  COMPLETED         // All items listed/sold
+}
+
+enum ThriftItemStatus {
+  PENDING               // Awaiting admin review
+  APPROVED              // Admin approved with estimated value
+  REJECTED              // Admin rejected this item
+  PICKED_UP             // Item physically received
+  UNDER_REFURBISHMENT   // Being cleaned/repaired
+  LISTED                // Live in store as Product
+  SOLD                  // Sold to a buyer
+}
+
+enum ThriftItemCondition {
+  POOR
+  FAIR
+  GOOD
+  VERY_GOOD
+  LIKE_NEW
+}
+
+enum ThriftItemCategory {
+  TOPS
+  BOTTOMS
+  DRESSES
+  OUTERWEAR
+  FOOTWEAR
+  ACCESSORIES
+  SPORTSWEAR
+  ETHNIC
+  BAGS
+  OTHER
+}
+
+model ThriftListing {
+  id         String              @id @default(uuid())
+  userId     String
+
+  status     ThriftListingStatus @default(PENDING)
+
+  // Pickup details (set by admin when approving)
+  pickupDate DateTime?
+  pickupSlot String?             // e.g. "9 AM – 12 PM"
+
+  // Admin communication
+  adminNotes String?             @db.Text
+
+  // Relations
+  user  User         @relation(fields: [userId], references: [id])
+  items ThriftItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@map("thrift_listings")
+}
+
+model ThriftItem {
+  id        String @id @default(uuid())
+  listingId String
+  userId    String
+
+  // Item details (filled by user)
+  name        String
+  brand       String?
+  category    ThriftItemCategory
+  size        String?
+  condition   ThriftItemCondition
+  description String              @db.Text
+  images      String[]            @default([])
+
+  // Pricing
+  originalPrice  Decimal? @db.Decimal(10, 2)  // What user paid originally
+  estimatedValue Decimal? @db.Decimal(10, 2)  // Admin's offer to user
+  listedPrice    Decimal? @db.Decimal(10, 2)  // Final store price
+
+  // Status tracking
+  status          ThriftItemStatus @default(PENDING)
+  rejectionReason String?          @db.Text
+  adminNotes      String?          @db.Text
+
+  // When the item is listed as a Product in the store
+  listedProductId String? @unique
+
+  // Relations
+  listing ThriftListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  user    User          @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([listingId])
+  @@index([userId])
+  @@index([status])
+  @@map("thrift_items")
 }

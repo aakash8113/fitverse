@@ -13,7 +13,8 @@ import { productsApi, Product as ApiProduct, PaginatedResponse } from "@/service
 
 // Same converter as Shop.tsx
 const convertProduct = (apiProduct: ApiProduct) => {
-  const getImageUrl = (imagePath: string) => {
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return '/placeholder.svg';
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
       return imagePath;
     }
@@ -25,8 +26,8 @@ const convertProduct = (apiProduct: ApiProduct) => {
     name: apiProduct.name,
     brand: "FITVERSE",
     price: apiProduct.price,
-    image: getImageUrl(apiProduct.images[0]),
-    images: apiProduct.images.map(getImageUrl),
+    image: getImageUrl(apiProduct.images?.[0]),
+    images: (apiProduct.images || []).map(getImageUrl),
     sizes: ["XS", "S", "M", "L", "XL"],
     category: apiProduct.category.toLowerCase(),
     isNew: false,

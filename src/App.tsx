@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import FitverseAI from "./pages/FitverseAI";
 import Thrift from "./pages/Thrift";
+import ThriftSell from "./pages/ThriftSell";
+import ThriftMyListings from "./pages/ThriftMyListings";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
@@ -48,7 +50,15 @@ import AdminThriftInventory from "./pages/admin/AdminThriftInventory";
 import AdminAIMonitoring from "./pages/admin/AdminAIMonitoring";
 import AdminUsers from "./pages/admin/AdminUsers";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 30_000, // 30 s — reuse cached data instead of re-fetching immediately
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -72,6 +82,8 @@ const App = () => (
           <Route path="/search" element={<SearchResults />} />
           <Route path="/fitverse-ai" element={<FitverseAI />} />
           <Route path="/thrift" element={<Thrift />} />
+          <Route path="/thrift/sell" element={<ProtectedRoute requireVerification><ThriftSell /></ProtectedRoute>} />
+          <Route path="/thrift/my-listings" element={<ProtectedRoute requireVerification><ThriftMyListings /></ProtectedRoute>} />
           
           {/* Cart & Checkout */}
           <Route path="/cart" element={<ProtectedRoute requireVerification><Cart /></ProtectedRoute>} />

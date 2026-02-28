@@ -38,7 +38,7 @@ const convertToCardProduct = (apiProduct: ApiProduct) => ({
   name: apiProduct.name,
   brand: "FITVERSE",
   price: apiProduct.price,
-  image: getImageUrl(apiProduct.images[0]),
+  image: getImageUrl(apiProduct.images?.[0]),
   sizes: ["XS", "S", "M", "L", "XL"],
   category: apiProduct.category.toLowerCase(),
   isNew: false,
