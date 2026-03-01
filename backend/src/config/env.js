@@ -73,6 +73,12 @@ const config = {
     resendApiKey: process.env.RESEND_API_KEY,
     from: process.env.EMAIL_FROM || 'Fitverse <noreply@contact.fitverse.co.in>',
   },
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
+  },
 };
 
 module.exports = config;

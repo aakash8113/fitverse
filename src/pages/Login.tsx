@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
+import logoImage from "@/assets/logo.jpg";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -44,10 +45,17 @@ export default function Login() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="bg-foreground rounded-lg p-2">
-            <Sparkles className="h-6 w-6 text-background" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight">Fitverse</span>
+          <img 
+              src={logoImage} 
+              alt="Fitverse Logo" 
+              className=" h-10 w-10 object-contain translate-y-[-5px]"
+            />
+            <span
+              className="text-[26px] font-bold tracking-wider leading-none"
+              style={{ fontFamily: 'Mokoto, sans-serif' }}
+            >
+              FITVERSE
+            </span>
         </Link>
 
         {/* Login Card */}

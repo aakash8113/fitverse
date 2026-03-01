@@ -617,6 +617,8 @@ export interface ThriftListing {
   id: string;
   userId: string;
   status: ThriftListingStatus;
+  pickupAddressId?: string;
+  pickupAddress?: Address;
   pickupDate?: string;
   pickupSlot?: string;
   adminNotes?: string;

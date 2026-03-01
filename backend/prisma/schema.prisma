@@ -70,6 +70,7 @@ model Address {
   // Relations
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders Order[]
+  thriftListings ThriftListing[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -285,7 +286,10 @@ model ThriftListing {
 
   status     ThriftListingStatus @default(PENDING)
 
-  // Pickup details (set by admin when approving)
+  // Pickup address (provided by user on submission)
+  pickupAddressId String?
+
+  // Pickup schedule (set by admin when approving)
   pickupDate DateTime?
   pickupSlot String?             // e.g. "9 AM – 12 PM"
 
@@ -293,8 +297,9 @@ model ThriftListing {
   adminNotes String?             @db.Text
 
   // Relations
-  user  User         @relation(fields: [userId], references: [id])
-  items ThriftItem[]
+  user          User          @relation(fields: [userId], references: [id])
+  pickupAddress Address?      @relation(fields: [pickupAddressId], references: [id])
+  items         ThriftItem[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

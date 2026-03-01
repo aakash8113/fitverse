@@ -9,7 +9,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from '@/components/ui/use-toast';
-import { Loader2, Search } from 'lucide-react';
+import { Loader2, Search, ChevronDown, ChevronUp, MapPin, Package } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   COD: 'Cash on Delivery',
@@ -24,6 +25,7 @@ const ORDER_STATUSES = [
 const AdminOrders: React.FC = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-orders'],
@@ -101,11 +103,13 @@ const AdminOrders: React.FC = () => {
                     <th className="text-left px-5 py-3 font-medium">Status</th>
                     <th className="text-left px-5 py-3 font-medium">Date</th>
                     <th className="text-left px-5 py-3 font-medium">Change Status</th>
+                    <th className="px-5 py-3" />{/* expand */}
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((order: any, idx: number) => (
-                    <tr key={order.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
+                    <React.Fragment key={order.id}>
+                    <tr className={cn('border-b border-gray-100 last:border-0', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50')}>
                       <td className="px-5 py-3 font-mono text-xs text-gray-500">{order.orderNumber || `#${order.id.slice(-6).toUpperCase()}`}</td>
                       <td className="px-5 py-3">
                         <div>
@@ -145,7 +149,64 @@ const AdminOrders: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </td>
+                      <td className="px-3 py-3">
+                        <button
+                          onClick={() => setExpandedId((prev) => prev === order.id ? null : order.id)}
+                          className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors"
+                        >
+                          {expandedId === order.id
+                            ? <ChevronUp className="h-4 w-4" />
+                            : <ChevronDown className="h-4 w-4" />}
+                        </button>
+                      </td>
                     </tr>
+                    {expandedId === order.id && (
+                      <tr className="bg-gray-50">
+                        <td colSpan={9} className="px-5 py-4 border-b border-gray-100">
+                          <div className="space-y-3">
+                            {/* Delivery address */}
+                            {order.address ? (
+                              <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 text-xs">
+                                <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+                                <div>
+                                  <span className="font-semibold text-blue-700">Deliver to: </span>
+                                  <span className="text-blue-700">{order.address.name} &middot; {order.address.phone}</span>
+                                  <span className="text-blue-600 ml-1">
+                                    &mdash; {order.address.addressLine1}{order.address.addressLine2 ? `, ${order.address.addressLine2}` : ''}, {order.address.city}, {order.address.state} {order.address.zipCode}
+                                  </span>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-gray-400 italic">No delivery address on record.</p>
+                            )}
+                            {/* Line items */}
+                            <div className="space-y-2">
+                              {(order.orderItems || order.items || []).map((item: any) => {
+                                const img = item.productImage || item.product?.images?.[0];
+                                const imgUrl = img?.startsWith('http') ? img : img ? `http://localhost:5000/${img}` : null;
+                                return (
+                                  <div key={item.id} className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-3">
+                                    {imgUrl ? (
+                                      <img src={imgUrl} alt={item.productName || item.product?.name} className="h-12 w-12 rounded-lg object-cover border border-gray-200 shrink-0" />
+                                    ) : (
+                                      <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                                        <Package className="h-5 w-5 text-gray-300" />
+                                      </div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm font-medium truncate">{item.productName || item.product?.name || '—'}</p>
+                                      <p className="text-xs text-gray-500">Qty: {item.quantity} &middot; ₹{parseFloat(item.price || '0').toFixed(2)} each</p>
+                                    </div>
+                                    <p className="text-sm font-semibold text-gray-800 shrink-0">₹{(parseFloat(item.price || '0') * item.quantity).toFixed(2)}</p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

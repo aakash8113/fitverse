@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Sparkles, Instagram, Twitter, Facebook, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import logoImage from "@/assets/logo.jpg";
 
 export function Footer() {
   return (
@@ -11,10 +12,17 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
-              <div className="gradient-ai rounded-lg p-2">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold">Fitverse</span>
+              <img 
+              src={logoImage} 
+              alt="Fitverse Logo" 
+              className=" h-10 w-10 object-contain translate-y-[-5px]"
+            />
+            <span
+              className="text-[26px] font-bold tracking-wider leading-none"
+              style={{ fontFamily: 'Mokoto, sans-serif' }}
+            >
+              FITVERSE
+            </span>
             </Link>
             <p className="text-sm text-primary-foreground/70 leading-relaxed">
               Revolutionizing fashion with AI-powered virtual try-ons. See how clothes fit before you buy.

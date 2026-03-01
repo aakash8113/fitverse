@@ -17,7 +17,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Clock, CheckCircle, XCircle, Truck, Package, Eye,
   Loader2, Calendar, IndianRupee, ImageOff, ChevronDown, ChevronUp,
-  Search, Wrench, Tag, ChevronLeft, ChevronRight,
+  Search, Wrench, Tag, ChevronLeft, ChevronRight, MapPin,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -163,6 +163,25 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
             Submitted by <strong>{listing.user?.name}</strong> - {listing.items.length} items - {format(new Date(listing.createdAt), 'dd MMM yyyy')}
           </DialogDescription>
         </DialogHeader>
+
+        {/* Pickup Address */}
+        {listing.pickupAddress && (
+          <div className="flex items-start gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm">
+            <MapPin className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-blue-800 mb-0.5">Pickup Address</p>
+              <p className="text-blue-700 font-medium">{listing.pickupAddress.name} &middot; {listing.pickupAddress.phone}</p>
+              <p className="text-blue-700">
+                {listing.pickupAddress.addressLine1}
+                {listing.pickupAddress.addressLine2 ? `, ${listing.pickupAddress.addressLine2}` : ''}
+              </p>
+              <p className="text-blue-600">
+                {listing.pickupAddress.city}, {listing.pickupAddress.state} {listing.pickupAddress.zipCode}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-5">
           <div className="space-y-3">
             <p className="text-sm font-semibold text-gray-700">Items ({approvedCount}/{listing.items.length} approved)</p>
@@ -389,6 +408,19 @@ function ListingRow({ listing, onReview, onMarkPickedUp, onManageItem, isMarking
       </div>
       {expanded && (
         <div className="border-t border-gray-100 px-5 py-4 bg-gray-50">
+          {/* Pickup address */}
+          {listing.pickupAddress && (
+            <div className="flex items-start gap-2 mb-4 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 text-xs">
+              <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0 mt-0.5" />
+              <div className="min-w-0">
+                <span className="font-semibold text-blue-700">Pickup from: </span>
+                <span className="text-blue-700">{listing.pickupAddress.name} &middot; {listing.pickupAddress.phone}</span>
+                <span className="text-blue-600 ml-1">
+                  &mdash; {listing.pickupAddress.addressLine1}{listing.pickupAddress.addressLine2 ? `, ${listing.pickupAddress.addressLine2}` : ''}, {listing.pickupAddress.city}, {listing.pickupAddress.state} {listing.pickupAddress.zipCode}
+                </span>
+              </div>
+            </div>
+          )}
           <div className="space-y-3">
             {listing.items.map((item) => {
               const itemCfg = ITEM_STATUS_CFG[item.status as keyof typeof ITEM_STATUS_CFG];

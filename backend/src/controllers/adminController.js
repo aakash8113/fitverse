@@ -239,6 +239,7 @@ const getAllThriftListings = asyncHandler(async (req, res) => {
       include: {
         user: { select: { id: true, name: true, email: true, phone: true } },
         items: true,
+        pickupAddress: true,
       },
       orderBy: { createdAt: 'desc' },
     }),
@@ -262,6 +263,7 @@ const getThriftListingById = asyncHandler(async (req, res) => {
     include: {
       user: { select: { id: true, name: true, email: true, phone: true } },
       items: true,
+      pickupAddress: true,
     },
   });
 

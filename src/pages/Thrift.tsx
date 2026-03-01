@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Recycle, Leaf, Heart, TrendingUp, Plus, Loader2, List } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlidersHorizontal } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
 
 import thriftHero from "@/assets/thrift-hero.jpg";
@@ -27,12 +27,18 @@ export default function Thrift() {
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
-  const { data: productsData, isLoading } = useQuery({
+  const THRIFT_LIMIT = 20; // 4 cols x 5 rows
+
+  const { data: productsData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
     queryKey: ["products", "THRIFT", sortBy, minPrice, maxPrice],
-    queryFn: () => productsApi.getProducts({ category: "THRIFT", limit: 50, sortBy, minPrice, maxPrice }),
+    queryFn: ({ pageParam }) =>
+      productsApi.getProducts({ category: "THRIFT", limit: THRIFT_LIMIT, page: pageParam as number, sortBy, minPrice, maxPrice }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination?.hasNextPage ? lastPage.pagination.currentPage + 1 : undefined,
   });
 
-  const thriftProducts: Product[] = (productsData?.data || []).map((p) => ({
+  const thriftProducts: Product[] = (productsData?.pages.flatMap((p) => p.data || []) ?? []).map((p) => ({
     id: p.id,
     name: p.name,
     brand: "THRIFT",
@@ -46,6 +52,23 @@ export default function Thrift() {
     condition: "Pre-Loved",
     seller: { name: "Fitverse", rating: 4.9 },
   }));
+
+  // IntersectionObserver sentinel for infinite scroll
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -188,6 +211,13 @@ export default function Thrift() {
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
+              )}
+              {/* Infinite scroll sentinel + spinner */}
+              <div ref={sentinelRef} className="h-4 mt-8" />
+              {isFetchingNextPage && (
+                <div className="flex justify-center items-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-thrift-green" />
+                </div>
               )}
             </main>
           </div>

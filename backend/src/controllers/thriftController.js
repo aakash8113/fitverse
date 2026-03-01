@@ -10,20 +10,13 @@ const logger = require('../config/logger');
 // Round a value to 2 decimal places — avoids floating point drift (e.g. 200 → 199.97)
 const toMoney = (val) => val != null && val !== '' ? Math.round(parseFloat(val) * 100) / 100 : null;
 
-// Convert absolute disk path → relative 'uploads/...' path for DB storage
-const toRelativePath = (filePath) => {
-  if (!filePath) return null;
-  const normalized = filePath.replace(/\\/g, '/');
-  const idx = normalized.indexOf('uploads/');
-  return idx !== -1 ? normalized.slice(idx) : normalized;
-};
-
 // ============================================
 // CREATE LISTING (with multiple items + images)
 // POST /api/thrift/listings
 // ============================================
 const createListing = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const { pickupAddressId } = req.body;
 
   // Items come as a JSON string in the `items` field (FormData)
   let itemsData;
@@ -47,7 +40,7 @@ const createListing = asyncHandler(async (req, res) => {
       if (match) {
         const idx = parseInt(match[1], 10);
         if (!filesByIndex[idx]) filesByIndex[idx] = [];
-        filesByIndex[idx].push(toRelativePath(file.path));
+        filesByIndex[idx].push(file.path); // file.path = Cloudinary URL
       }
     });
   }
@@ -56,6 +49,7 @@ const createListing = asyncHandler(async (req, res) => {
   const listing = await prisma.thriftListing.create({
     data: {
       userId,
+      pickupAddressId: pickupAddressId || null,
       items: {
         create: itemsData.map((item, idx) => ({
           userId,
@@ -70,7 +64,10 @@ const createListing = asyncHandler(async (req, res) => {
         })),
       },
     },
-    include: { items: true },
+    include: {
+      items: true,
+      pickupAddress: true,
+    },
   });
 
   logger.info(`ThriftListing created: ${listing.id} by user ${userId} with ${listing.items.length} items`);
@@ -95,7 +92,7 @@ const uploadItemImages = asyncHandler(async (req, res) => {
     throw new BadRequestError('No images uploaded');
   }
 
-  const newImages = req.files.map((f) => toRelativePath(f.path));
+  const newImages = req.files.map((f) => f.path); // f.path = Cloudinary URL
   const allImages = [...item.images, ...newImages].slice(0, 5); // max 5 per item
 
   const updated = await prisma.thriftItem.update({
@@ -117,6 +114,7 @@ const getMyListings = asyncHandler(async (req, res) => {
     where: { userId },
     include: {
       items: true,
+      pickupAddress: true,
     },
     orderBy: { createdAt: 'desc' },
   });
@@ -134,7 +132,7 @@ const getListingById = asyncHandler(async (req, res) => {
 
   const listing = await prisma.thriftListing.findFirst({
     where: { id, userId },
-    include: { items: true },
+    include: { items: true, pickupAddress: true },
   });
 
   if (!listing) throw new NotFoundError('Listing not found');

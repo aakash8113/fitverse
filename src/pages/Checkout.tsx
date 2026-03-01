@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, MapPin, Plus, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { cartApi, addressesApi } from "@/services/api";
+import { cartApi } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { AddressSelector } from "@/components/shared/AddressSelector";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -24,14 +23,7 @@ export default function Checkout() {
     queryFn: cartApi.getCart,
   });
 
-  // Fetch addresses
-  const { data: addressesData, isLoading: addressesLoading } = useQuery({
-    queryKey: ["addresses"],
-    queryFn: addressesApi.getAddresses,
-  });
-
   const cartItems = cartData?.data?.items || [];
-  const addresses = addressesData?.data || [];
   const subtotal = cartItems.reduce(
     (sum, item) => sum + Number(item.product.price) * item.quantity,
     0
@@ -59,7 +51,7 @@ export default function Checkout() {
   };
 
   // Loading state
-  if (cartLoading || addressesLoading) {
+  if (cartLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -85,28 +77,6 @@ export default function Checkout() {
             <p className="text-muted-foreground mb-6">Add items to cart before checkout</p>
             <Link to="/shop">
               <Button>Continue Shopping</Button>
-            </Link>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  // No addresses available
-  if (addresses.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <div className="section-container py-12">
-          <div className="text-center py-20">
-            <MapPin className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="text-2xl font-bold mb-4">No delivery address found</h2>
-            <p className="text-muted-foreground mb-6">
-              Please add a delivery address to continue with checkout
-            </p>
-            <Link to="/addresses">
-              <Button>Add Address</Button>
             </Link>
           </div>
         </div>
@@ -169,60 +139,16 @@ export default function Checkout() {
           <div className="lg:col-span-3 space-y-8">
             {/* Shipping Address */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h2 className="text-2xl font-bold mb-2">Shipping Address</h2>
-                  <p className="text-muted-foreground">Select a delivery address</p>
-                </div>
-                <Link to="/addresses">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add New
-                  </Button>
-                </Link>
+              <div className="mb-4">
+                <h2 className="text-2xl font-bold mb-2">Shipping Address</h2>
+                <p className="text-muted-foreground">Select or add a delivery address</p>
               </div>
 
-              <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId}>
-                <div className="space-y-3">
-                  {addresses.map((address) => (
-                    <div
-                      key={address.id}
-                      className={cn(
-                        "border-2 rounded-xl p-4 cursor-pointer transition-all",
-                        selectedAddressId === address.id
-                          ? "border-foreground bg-foreground/5"
-                          : "border-border hover:border-foreground/50"
-                      )}
-                      onClick={() => setSelectedAddressId(address.id)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <RadioGroupItem value={address.id} id={address.id} className="mt-1" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Label htmlFor={address.id} className="font-semibold cursor-pointer">
-                              {address.name}
-                            </Label>
-                            {address.isDefault && (
-                              <span className="text-xs bg-foreground/10 text-foreground px-2 py-0.5 rounded">
-                                Default
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {address.addressLine1}
-                            {address.addressLine2 && `, ${address.addressLine2}`}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {address.city}, {address.state} {address.zipCode}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{address.country}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{address.phone}</p>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </RadioGroup>
+              <AddressSelector
+                selectedId={selectedAddressId}
+                onSelect={setSelectedAddressId}
+                variant="dark"
+              />
             </div>
           </div>
 

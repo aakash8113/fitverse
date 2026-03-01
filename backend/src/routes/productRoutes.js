@@ -21,7 +21,7 @@ router.post(
   '/',
   protect,
   authorize('ADMIN'),
-  upload.array('images', 5), // Max 5 images
+  upload.product.array('images', 5), // uploads to fitverse/products on Cloudinary
   validate(createProductSchema),
   productController.createProduct
 );
@@ -31,7 +31,7 @@ router.put(
   '/:id',
   protect,
   authorize('ADMIN'),
-  upload.array('images', 5),
+  upload.product.array('images', 5),
   validate(updateProductSchema),
   productController.updateProduct
 );

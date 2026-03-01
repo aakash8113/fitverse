@@ -1,9 +1,9 @@
 // Shop Page - Fetches products from backend API with filtering and pagination
 
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { SlidersHorizontal, Grid3X3, LayoutGrid, ChevronDown, Loader2 } from "lucide-react";
+import { SlidersHorizontal, Grid3X3, LayoutGrid, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -48,7 +48,6 @@ export default function Shop() {
 
   const [gridView, setGridView] = useState<"3" | "4">("4");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [page, setPage] = useState(1);
   const [category, setCategory] = useState<string | undefined>(urlCategory);
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
@@ -60,16 +59,15 @@ export default function Shop() {
   useEffect(() => {
     const param = searchParams.get("category")?.toUpperCase() || undefined;
     setCategory(param);
-    setPage(1);
   }, [searchParams]);
   
-  const limit = 12;
+  const limit = 16; // 4 cols × 4 rows
 
-  // Fetch products from API
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ['products', page, limit, category, minPrice, maxPrice, search, sortBy],
-    queryFn: () => productsApi.getProducts({
-      page,
+  // Infinite scroll query — each filter change resets back to page 1 automatically
+  const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
+    queryKey: ['products', limit, category, minPrice, maxPrice, search, sortBy],
+    queryFn: ({ pageParam }) => productsApi.getProducts({
+      page: pageParam as number,
       limit,
       category: category?.toUpperCase(),
       minPrice,
@@ -77,28 +75,39 @@ export default function Shop() {
       search,
       sortBy,
     }),
-    keepPreviousData: true,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination?.hasNextPage ? lastPage.pagination.currentPage + 1 : undefined,
   });
 
-  const products = data?.data?.map(convertProduct) || [];
+  // Flatten all loaded pages into one product list
+  const allProducts = data?.pages.flatMap((p) => p.data?.map(convertProduct) || []) || [];
   const filteredProducts = selectedSizes.length > 0
-    ? products.filter((p) => p.sizes.some((s) => selectedSizes.includes(s.toLowerCase())))
-    : products;
-  const totalPages = data?.pagination?.totalPages || 1;
-  const hasNextPage = data?.pagination?.hasNextPage || false;
-  const totalItems = data?.pagination?.totalItems || 0;
+    ? allProducts.filter((p) => p.sizes.some((s) => selectedSizes.includes(s.toLowerCase())))
+    : allProducts;
+  const totalItems = data?.pages[0]?.pagination?.totalItems || 0;
 
   const handlePriceChange = (min: number, max: number) => {
     setMinPrice(min > 0 ? min : undefined);
     setMaxPrice(max < 999999 ? max : undefined);
-    setPage(1);
   };
 
-  const handleLoadMore = () => {
-    if (hasNextPage) {
-      setPage(page + 1);
-    }
-  };
+  // IntersectionObserver sentinel — triggers next page fetch when user scrolls near the bottom
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: '300px' }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -121,7 +130,7 @@ export default function Shop() {
             <div className="sticky top-24">
               <FilterSidebar 
                 defaultCategory={urlCategory}
-                onCategoryChange={(cat) => { setCategory(cat); setPage(1); }}
+                onCategoryChange={setCategory}
                 onPriceRangeChange={handlePriceChange}
                 onSizeChange={setSelectedSizes}
               />
@@ -145,7 +154,7 @@ export default function Shop() {
                     <FilterSidebar 
                       onClose={() => setIsFilterOpen(false)}
                       defaultCategory={urlCategory}
-                      onCategoryChange={(cat) => { setCategory(cat); setPage(1); }}
+                      onCategoryChange={setCategory}
                       onPriceRangeChange={handlePriceChange}
                       onSizeChange={setSelectedSizes}
                     />
@@ -211,7 +220,7 @@ export default function Shop() {
             )}
 
             {/* Product Grid */}
-            {!isLoading && !isError && products.length > 0 && (
+            {!isLoading && !isError && filteredProducts.length > 0 && (
               <div className={cn(
                 "grid gap-5",
                 gridView === "4"
@@ -236,7 +245,6 @@ export default function Shop() {
                     setMinPrice(undefined);
                     setMaxPrice(undefined);
                     setSearch(undefined);
-                    setPage(1);
                   }}
                 >
                   Clear Filters
@@ -244,21 +252,11 @@ export default function Shop() {
               </div>
             )}
 
-            {/* Load More */}
-            {!isLoading && hasNextPage && (
-              <div className="text-center mt-12">
-                <Button 
-                  variant="outline" 
-                  size="lg" 
-                  className="min-w-48"
-                  onClick={handleLoadMore}
-                >
-                  Load More
-                  <ChevronDown className="w-4 h-4 ml-2" />
-                </Button>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Page {page} of {totalPages}
-                </p>
+            {/* Infinite scroll sentinel + loading spinner */}
+            <div ref={sentinelRef} className="h-4 mt-8" />
+            {isFetchingNextPage && (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-accent" />
               </div>
             )}
           </main>
