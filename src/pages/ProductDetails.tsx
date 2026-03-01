@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -169,7 +169,7 @@ export default function ProductDetails() {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast({
         title: "Added to cart",
-        description: `${product?.name} has been added to your cart.`,
+        description: `?${product?.name} has been added to your cart.`,
       });
     } catch (error: any) {
       toast({
@@ -299,8 +299,8 @@ export default function ProductDetails() {
                     toast({
                       title: isWishlisted(product.id) ? "Removed from wishlist" : "Added to wishlist",
                       description: isWishlisted(product.id)
-                        ? `${product.name} removed.`
-                        : `${product.name} saved to wishlist.`,
+                        ? `?${product.name} removed.`
+                        : `?${product.name} saved to wishlist.`,
                     });
                   }}
                   className={cn(
@@ -342,7 +342,7 @@ export default function ProductDetails() {
               {/* Price and Rating */}
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-baseline gap-3">
-                  <span className="text-3xl font-bold">${Number(product.price).toFixed(2)}</span>
+                  <span className="text-3xl font-bold">₹{Number(product.price).toFixed(2)}</span>
                 </div>
                 <Separator orientation="vertical" className="h-6 hidden sm:block" />
                 <div className="flex items-center gap-2">
@@ -557,7 +557,7 @@ export default function ProductDetails() {
                   <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
                     <div
                       className="h-full bg-foreground"
-                      style={{ width: `${(item.count / totalReviews) * 100}%` }}
+                      style={{ width: `?${(item.count / totalReviews) * 100}%` }}
                     />
                   </div>
                   <span className="text-sm text-muted-foreground w-12 text-right">

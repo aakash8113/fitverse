@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
   User,
@@ -320,7 +320,7 @@ export default function Account() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">${order.total.toFixed(2)}</p>
+                      <p className="font-semibold">₹{order.total.toFixed(2)}</p>
                       <span
                         className={cn(
                           "text-xs px-2 py-1 rounded-full mt-1 inline-block",

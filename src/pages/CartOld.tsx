@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Tag } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -195,7 +195,7 @@ export default function Cart() {
 
                         <div className="flex items-center justify-between flex-wrap gap-3">
                           <span className="text-xl font-bold">
-                            ${(item.price * item.quantity).toFixed(2)}
+                            ₹{(item.price * item.quantity).toFixed(2)}
                           </span>
 
                           {/* Quantity Controls */}
@@ -241,22 +241,22 @@ export default function Cart() {
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-medium">${subtotal.toFixed(2)}</span>
+                      <span className="font-medium">₹{subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Shipping</span>
-                      <span className="font-medium">${shipping.toFixed(2)}</span>
+                      <span className="font-medium">₹{shipping.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Tax (8%)</span>
-                      <span className="font-medium">${tax.toFixed(2)}</span>
+                      <span className="font-medium">₹{tax.toFixed(2)}</span>
                     </div>
 
                     <Separator />
 
                     <div className="flex justify-between text-lg">
                       <span className="font-bold">Total</span>
-                      <span className="font-bold">${total.toFixed(2)}</span>
+                      <span className="font-bold">₹{total.toFixed(2)}</span>
                     </div>
                   </div>
 

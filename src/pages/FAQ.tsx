@@ -1,4 +1,4 @@
-import { HelpCircle, Package, Truck, CreditCard, RefreshCw } from "lucide-react";
+﻿import { HelpCircle, Package, Truck, CreditCard, RefreshCw } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import {
@@ -26,7 +26,7 @@ const faqCategories = [
       {
         question: "Do you offer gift cards?",
         answer:
-          "Yes! Gift cards are available in denominations of $25, $50, $100, and $200. They can be purchased on our website and delivered via email instantly.",
+          "Yes! Gift cards are available in denominations of ₹25, ₹50, ₹100, and ₹200. They can be purchased on our website and delivered via email instantly.",
       },
       {
         question: "Why was my payment declined?",

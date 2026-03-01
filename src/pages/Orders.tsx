@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Package, ChevronRight, Calendar, Search, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -160,7 +160,7 @@ export default function Orders() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold group-hover:text-accent transition-colors">
-                          {order.orderNumber || `Order #${order.id.slice(0, 8)}`}
+                          {order.orderNumber || `Order #₹{order.id.slice(0, 8)}`}
                         </h3>
                         <Badge
                           variant="outline"
@@ -183,12 +183,12 @@ export default function Orders() {
                         </span>
                         <span>•</span>
                         <span className="font-semibold text-foreground">
-                          ${Number(order.total).toFixed(2)}
+                          ₹{Number(order.total).toFixed(2)}
                         </span>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Link to={`/orders/${order.id}`}>
+                      <Link to={`/orders/₹{order.id}`}>
                         <Button variant="outline" size="sm" className="gap-2">
                           View Details
                           <ChevronRight className="h-4 w-4" />

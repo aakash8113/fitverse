@@ -1,4 +1,4 @@
-import { Truck, Package, Globe, Clock, DollarSign, MapPin } from "lucide-react";
+﻿import { Truck, Package, Globe, Clock, DollarSign, MapPin } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Link } from "react-router-dom";
@@ -39,7 +39,7 @@ export default function Shipping() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>$5.99 or FREE on orders over $75</span>
+                      <span>₹5.99 or FREE on orders over ₹75</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -69,7 +69,7 @@ export default function Shipping() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>$12.99 flat rate</span>
+                      <span>₹12.99 flat rate</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
@@ -94,7 +94,7 @@ export default function Shipping() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>$24.99 flat rate</span>
+                      <span>₹24.99 flat rate</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />

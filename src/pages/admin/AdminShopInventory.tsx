@@ -304,11 +304,11 @@ const AdminShopInventory: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-xs">
-                        {p.gender ? `${p.gender} / ${p.wearType || 'â€”'}` : 'â€”'}
+                        {p.gender ? `${p.gender} / ${p.wearType || '—'}` : '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{p.category || 'â€”'}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium">â‚¹{parseFloat(String(p.price)).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-700">{p.stock ?? 'â€”'}</td>
+                      <td className="px-4 py-3 text-gray-600">{p.category || '—'}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">₹{parseFloat(String(p.price)).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-gray-700">{p.stock ?? '—'}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={(p.stock || 0) > 0 ? 'active' : 'inactive'} customLabel={(p.stock || 0) > 0 ? 'In Stock' : 'Out of Stock'} />
                       </td>
@@ -388,7 +388,7 @@ const AdminShopInventory: React.FC = () => {
 
               {/* Price & Stock */}
               <div className="space-y-1">
-                <Label className="text-xs">Price (â‚¹) *</Label>
+                <Label className="text-xs">Price (₹) *</Label>
                 <Input type="number" min="0" step="0.01" value={form.price}
                   onChange={(e) => setFormField('price', e.target.value)} required className="h-9 text-sm" />
               </div>

@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, MapPin, Package, Truck, CheckCircle, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -132,7 +132,7 @@ export default function OrderDetail() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h1 className="text-2xl font-bold mb-2">
-                      Order {order.orderNumber || `#${order.id.slice(0, 8)}`}
+                      Order {order.orderNumber || `#₹{order.id.slice(0, 8)}`}
                     </h1>
                     <p className="text-sm text-muted-foreground">
                       Placed on {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
@@ -140,7 +140,7 @@ export default function OrderDetail() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+                    className={`?${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                   >
                     {order.status.charAt(0) + order.status.slice(1).toLowerCase()}
                   </Badge>
@@ -207,12 +207,12 @@ export default function OrderDetail() {
                             Quantity: {item.quantity}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Price: ${Number(item.price).toFixed(2)} each
+                            Price: ₹{Number(item.price).toFixed(2)} each
                           </p>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">
-                            ${(Number(item.price) * item.quantity).toFixed(2)}
+                            ₹{(Number(item.price) * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
@@ -234,7 +234,7 @@ export default function OrderDetail() {
                     <p className="font-medium mb-1">{order.address.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {order.address.addressLine1}
-                      {order.address.addressLine2 && `, ${order.address.addressLine2}`}
+                      {order.address.addressLine2 && `, ₹{order.address.addressLine2}`}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {order.address.city}, {order.address.state} {order.address.zipCode}
@@ -256,20 +256,20 @@ export default function OrderDetail() {
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${Number(order.subtotal).toFixed(2)}</span>
+                    <span>₹{Number(order.subtotal).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span>${Number(order.shipping).toFixed(2)}</span>
+                    <span>₹{Number(order.shipping).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax (8%)</span>
-                    <span>${Number(order.tax).toFixed(2)}</span>
+                    <span>₹{Number(order.tax).toFixed(2)}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
-                    <span>${Number(order.total).toFixed(2)}</span>
+                    <span>₹{Number(order.total).toFixed(2)}</span>
                   </div>
                 </div>
                 
@@ -307,7 +307,7 @@ export default function OrderDetail() {
                       Contact Support
                     </Button>
                   </Link>
-                  <Link to={`/product/${order.items[0]?.productId}`}>
+                  <Link to={`/product/₹{order.items[0]?.productId}`}>
                     <Button variant="outline" className="w-full">
                       Buy Again
                     </Button>

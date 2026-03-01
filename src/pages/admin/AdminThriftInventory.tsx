@@ -1,4 +1,4 @@
-// AdminThriftInventory — Full CRUD for thrift products in the store
+// AdminThriftInventory ï¿½ Full CRUD for thrift products in the store
 // Replaced old read-only card view with full add/edit/delete + pagination.
 import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -301,12 +301,12 @@ const AdminThriftInventory: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-gray-600 text-xs">
-                        {p.gender ? `${p.gender} / ${p.wearType || '—'}` : '—'}
+                        {p.gender ? `${p.gender} / ${p.wearType || 'â€”'}` : 'â€”'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{p.category || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.availableSizes?.[0] || '—'}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium">?{parseFloat(String(p.price)).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-700">{p.stock ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">{p.category || 'â€”'}</td>
+                      <td className="px-4 py-3 text-gray-600">{p.availableSizes?.[0] || 'â€”'}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">â‚¹{parseFloat(String(p.price)).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-gray-700">{p.stock ?? 'â€”'}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={(p.stock || 0) > 0 ? 'active' : 'inactive'} customLabel={(p.stock || 0) > 0 ? 'Available' : 'Sold'} />
                       </td>
@@ -386,7 +386,7 @@ const AdminThriftInventory: React.FC = () => {
 
               {/* Price & Stock */}
               <div className="space-y-1">
-                <Label className="text-xs">Price (?) *</Label>
+                <Label className="text-xs">Price (â‚¹) *</Label>
                 <Input type="number" min="0" step="0.01" value={form.price}
                   onChange={(e) => setFormField('price', e.target.value)} required className="h-9 text-sm" />
               </div>
@@ -447,7 +447,7 @@ const AdminThriftInventory: React.FC = () => {
                 </Select>
               </div>
 
-              {/* Size — single selection (thrift = one size per item) */}
+              {/* Size ï¿½ single selection (thrift = one size per item) */}
               {sizesForWearType.length > 0 && (
                 <div className="col-span-2 space-y-2">
                   <Label className="text-xs">Size <span className="text-gray-400">(select one)</span></Label>

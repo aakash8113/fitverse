@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "react-router-dom";
+﻿import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle, Package, MapPin, CreditCard, Calendar, ArrowRight, Loader2, AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
@@ -44,17 +44,17 @@ export default function OrderConfirmation() {
                   <div key={item.id} className="flex gap-4">
                     <div className="w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0"><img src={getImageUrl(item.productImage)} alt={item.productName} className="w-full h-full object-cover" /></div>
                     <div className="flex-1 min-w-0"><h3 className="font-semibold mb-1 truncate">{item.productName}</h3><p className="text-sm text-muted-foreground">Qty: {item.quantity}</p></div>
-                    <div className="text-right"><p className="font-semibold">${(Number(item.price) * item.quantity).toFixed(2)}</p><p className="text-xs text-muted-foreground">${Number(item.price).toFixed(2)} each</p></div>
+                    <div className="text-right"><p className="font-semibold">₹{(Number(item.price) * item.quantity).toFixed(2)}</p><p className="text-xs text-muted-foreground">₹{Number(item.price).toFixed(2)} each</p></div>
                   </div>
                 ))}
               </div>
               <Separator className="my-6" />
               <div className="space-y-3">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">${Number(order.subtotal).toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="font-medium">${Number(order.shipping).toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tax</span><span className="font-medium">${Number(order.tax).toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">₹{Number(order.subtotal).toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="font-medium">₹{Number(order.shipping).toFixed(2)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tax</span><span className="font-medium">₹{Number(order.tax).toFixed(2)}</span></div>
                 <Separator />
-                <div className="flex justify-between text-lg"><span className="font-bold">Total</span><span className="font-bold">${Number(order.total).toFixed(2)}</span></div>
+                <div className="flex justify-between text-lg"><span className="font-bold">Total</span><span className="font-bold">₹{Number(order.total).toFixed(2)}</span></div>
               </div>
             </div>
             {order.address && (<div className="bg-card border border-border rounded-2xl p-6"><div className="flex items-center gap-2 mb-4"><MapPin className="w-5 h-5 text-muted-foreground" /><h3 className="text-lg font-semibold">Shipping Address</h3></div><div className="text-muted-foreground"><p className="font-semibold text-foreground mb-1">{order.address.name}</p><p>{order.address.addressLine1}</p>{order.address.addressLine2 && <p>{order.address.addressLine2}</p>}<p>{order.address.city}, {order.address.state} {order.address.zipCode}</p><p>{order.address.country}</p></div></div>)}

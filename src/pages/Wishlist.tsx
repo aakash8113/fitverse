@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom";
 import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Navbar } from "@/components/layout/Navbar";
@@ -75,8 +75,8 @@ export default function Wishlist() {
                         <Link to={`/product/${item.id}`}><h3 className="font-semibold hover:text-primary transition-colors">{item.name}</h3></Link>
                         <p className="text-sm text-muted-foreground capitalize">{item.category}</p>
                         <div className="flex items-center gap-2">
-                          {item.originalPrice && <span className="text-sm text-muted-foreground line-through">${Number(item.originalPrice).toFixed(2)}</span>}
-                          <span className="text-lg font-bold">${Number(item.price).toFixed(2)}</span>
+                          {item.originalPrice && <span className="text-sm text-muted-foreground line-through">₹{Number(item.originalPrice).toFixed(2)}</span>}
+                          <span className="text-lg font-bold">₹{Number(item.price).toFixed(2)}</span>
                         </div>
                         {item.stock !== undefined && (
                           <span className={cn("text-xs font-medium", item.stock > 0 ? "text-green-600" : "text-red-600")}>
@@ -104,8 +104,8 @@ export default function Wishlist() {
                       </div>
                     </div>
                     <div className="col-span-2">
-                      {item.originalPrice && <span className="text-sm text-muted-foreground line-through block">${Number(item.originalPrice).toFixed(2)}</span>}
-                      <span className="text-lg font-bold">${Number(item.price).toFixed(2)}</span>
+                      {item.originalPrice && <span className="text-sm text-muted-foreground line-through block">₹{Number(item.originalPrice).toFixed(2)}</span>}
+                      <span className="text-lg font-bold">₹{Number(item.price).toFixed(2)}</span>
                     </div>
                     <div className="col-span-2">
                       {item.stock !== undefined ? (

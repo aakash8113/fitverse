@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+﻿import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, MapPin, Package, Truck, CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -191,7 +191,7 @@ export default function OrderDetail() {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold">${item.price.toFixed(2)}</p>
+                        <p className="font-semibold">₹{item.price.toFixed(2)}</p>
                       </div>
                     </div>
                   ))}
@@ -202,20 +202,20 @@ export default function OrderDetail() {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Subtotal</span>
-                    <span>${orderDetails.subtotal.toFixed(2)}</span>
+                    <span>₹{orderDetails.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span>${orderDetails.shipping.toFixed(2)}</span>
+                    <span>₹{orderDetails.shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tax</span>
-                    <span>${orderDetails.tax.toFixed(2)}</span>
+                    <span>₹{orderDetails.tax.toFixed(2)}</span>
                   </div>
                   <Separator className="my-2" />
                   <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span>${orderDetails.total.toFixed(2)}</span>
+                    <span>₹{orderDetails.total.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -279,7 +279,7 @@ export default function OrderDetail() {
                     Contact Support
                   </Button>
                 </Link>
-                <Link to={`/product/${orderDetails.items[0].id}`}>
+                <Link to={`/product/₹{orderDetails.items[0].id}`}>
                   <Button className="w-full">Buy Again</Button>
                 </Link>
               </div>

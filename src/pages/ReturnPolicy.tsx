@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/layout/Navbar";
+﻿import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { RotateCcw, Package, Truck, CreditCard, Clock, AlertCircle } from "lucide-react";
 
@@ -228,7 +228,7 @@ export default function ReturnPolicy() {
                 </p>
                 <p>
                   Original shipping costs and customs duties are non-refundable. Refunds
-                  will be issued in USD to your original payment method.
+                  will be issued in INR to your original payment method.
                 </p>
               </div>
             </div>

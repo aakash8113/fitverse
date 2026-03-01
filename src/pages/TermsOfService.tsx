@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/layout/Navbar";
+﻿import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { FileText, Shield, ShoppingCart, CreditCard, AlertCircle } from "lucide-react";
 
@@ -129,7 +129,7 @@ export default function TermsOfService() {
                   selected payment method.
                 </p>
                 <p>
-                  All prices are listed in US Dollars unless otherwise specified. Prices
+                  All prices are listed in Indian Rupees (INR) unless otherwise specified. Prices
                   are subject to change without notice. You agree to pay all fees and
                   applicable taxes incurred by you or anyone using your account.
                 </p>

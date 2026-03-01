@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+﻿import { Link } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -47,7 +47,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     });
     toast({
       title: wishlisted ? "Removed from wishlist" : "Added to wishlist",
-      description: wishlisted ? `${product.name} removed.` : `${product.name} saved to wishlist.`,
+      description: wishlisted ? `?${product.name} removed.` : `?${product.name} saved to wishlist.`,
     });
   };
 
@@ -131,11 +131,11 @@ export function ProductCard({ product, className }: ProductCardProps) {
         {/* Price */}
         <div className="flex items-center gap-2">
           <span className="font-semibold text-base">
-            ${Number(product.price).toFixed(2)}
+            ₹{Number(product.price).toFixed(2)}
           </span>
           {product.originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              ${Number(product.originalPrice).toFixed(2)}
+              ₹{Number(product.originalPrice).toFixed(2)}
             </span>
           )}
         </div>
