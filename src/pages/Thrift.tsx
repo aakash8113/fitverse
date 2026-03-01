@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard, Product } from "@/components/shop/ProductCard";
-import { FilterSidebar } from "@/components/shop/FilterSidebar";
+import { FilterSidebar, ShopFilters } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SlidersHorizontal } from "lucide-react";
@@ -24,15 +24,22 @@ export default function Thrift() {
   const navigate = useNavigate();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
+  const [filters, setFilters] = useState<ShopFilters>({});
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
   const THRIFT_LIMIT = 20; // 4 cols x 5 rows
 
+  const handleFilterChange = (f: ShopFilters) => {
+    setFilters(f);
+    if (f.minPrice !== undefined) setMinPrice(f.minPrice);
+    if (f.maxPrice !== undefined) setMaxPrice(f.maxPrice);
+  };
+
   const { data: productsData, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["products", "THRIFT", sortBy, minPrice, maxPrice],
+    queryKey: ["products", "THRIFT", sortBy, filters, minPrice, maxPrice],
     queryFn: ({ pageParam }) =>
-      productsApi.getProducts({ category: "THRIFT", limit: THRIFT_LIMIT, page: pageParam as number, sortBy, minPrice, maxPrice }),
+      productsApi.getProducts({ isThrift: true, limit: THRIFT_LIMIT, page: pageParam as number, sortBy, minPrice, maxPrice, gender: filters.gender, wearType: filters.wearType, category: filters.category, subCategory: filters.subCategory, size: filters.size }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.pagination?.hasNextPage ? lastPage.pagination.currentPage + 1 : undefined,
@@ -46,7 +53,7 @@ export default function Thrift() {
     image: p.images?.[0]?.startsWith("http")
       ? p.images[0]
       : `http://localhost:5000/${p.images?.[0] || ""}`,
-    sizes: ["XS", "S", "M", "L", "XL"],
+    sizes: p.availableSizes || ["XS", "S", "M", "L", "XL"],
     category: "thrift",
     isThrift: true,
     condition: "Pre-Loved",
@@ -149,6 +156,7 @@ export default function Thrift() {
             <aside className="hidden lg:block w-56 flex-shrink-0">
               <div className="sticky top-24">
                 <FilterSidebar
+                  onFilterChange={handleFilterChange}
                   onPriceRangeChange={(min, max) => {
                     setMinPrice(min > 0 ? min : undefined);
                     setMaxPrice(max < 999999 ? max : undefined);
@@ -171,6 +179,7 @@ export default function Thrift() {
                     <SheetContent side="left" className="w-80 p-6">
                       <FilterSidebar
                         onClose={() => setIsFilterOpen(false)}
+                        onFilterChange={handleFilterChange}
                         onPriceRangeChange={(min, max) => {
                           setMinPrice(min > 0 ? min : undefined);
                           setMaxPrice(max < 999999 ? max : undefined);

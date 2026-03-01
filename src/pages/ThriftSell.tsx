@@ -22,18 +22,54 @@ import { cn } from '@/lib/utils';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const CATEGORIES = [
-  { value: 'TOPS', label: 'Tops / T-Shirts / Shirts' },
-  { value: 'BOTTOMS', label: 'Bottoms / Pants / Jeans' },
-  { value: 'DRESSES', label: 'Dresses / Skirts' },
-  { value: 'OUTERWEAR', label: 'Jackets / Coats / Hoodies' },
-  { value: 'FOOTWEAR', label: 'Shoes / Sneakers / Sandals' },
-  { value: 'ACCESSORIES', label: 'Accessories / Belts / Scarves' },
-  { value: 'SPORTSWEAR', label: 'Sportswear / Activewear' },
-  { value: 'ETHNIC', label: 'Ethnic Wear / Kurtas / Sarees' },
-  { value: 'BAGS', label: 'Bags / Backpacks / Purses' },
-  { value: 'OTHER', label: 'Other' },
+const GENDERS = [
+  { value: 'MENS', label: "Men's" },
+  { value: 'WOMENS', label: "Women's" },
 ];
+
+const WEAR_TYPES = [
+  { value: 'TOPWEAR', label: 'Topwear' },
+  { value: 'BOTTOMWEAR', label: 'Bottomwear' },
+];
+
+const TOPWEAR_CATEGORIES = [
+  { value: 'TSHIRT', label: 'T-Shirt' },
+  { value: 'SHIRT', label: 'Shirt' },
+  { value: 'HOODIE', label: 'Hoodie' },
+  { value: 'JACKET', label: 'Jacket' },
+];
+
+const BOTTOMWEAR_CATEGORIES = [
+  { value: 'JEANS', label: 'Jeans' },
+  { value: 'TROUSER', label: 'Trouser' },
+  { value: 'TRACKPANT', label: 'Trackpant' },
+  { value: 'CARGO', label: 'Cargo' },
+];
+
+const SUB_CATEGORIES: Record<string, { value: string; label: string }[]> = {
+  TSHIRT: [
+    { value: 'OVERSIZED', label: 'Oversized' },
+    { value: 'POLO', label: 'Polo' },
+    { value: 'DROP_SHOULDER', label: 'Drop Shoulder' },
+    { value: 'V_NECK', label: 'V-Neck' },
+    { value: 'SHORT_SLEEVED', label: 'Short Sleeved' },
+    { value: 'LONG_SLEEVED', label: 'Long Sleeved' },
+  ],
+  SHIRT: [
+    { value: 'PRINTED', label: 'Printed' },
+    { value: 'PLAIN', label: 'Plain' },
+    { value: 'TEXTURED', label: 'Textured' },
+  ],
+  JEANS: [
+    { value: 'DENIM', label: 'Denim' },
+    { value: 'SKINNY', label: 'Skinny' },
+    { value: 'BAGGY', label: 'Baggy' },
+    { value: 'BOOT_CUT', label: 'Boot Cut' },
+  ],
+};
+
+const TOPWEAR_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const BOTTOMWEAR_SIZES = ['26', '28', '30', '32', '34', '36', '38', '40', '42'];
 
 const CONDITIONS = [
   { value: 'LIKE_NEW', label: 'Like New', desc: 'Worn once or never. No visible signs of use.' },
@@ -43,10 +79,8 @@ const CONDITIONS = [
   { value: 'POOR', label: 'Poor', desc: 'Heavy wear, stains, or damage. Still sellable.' },
 ];
 
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size', 'UK6', 'UK7', 'UK8', 'UK9', 'UK10', 'UK11', 'UK12', 'Other'];
-
 const emptyItem = (): ThriftItemFormData => ({
-  name: '', brand: '', category: '', size: '', condition: '',
+  name: '', brand: '', gender: '', wearType: '', category: '', subCategory: '', size: '', condition: '',
   description: '', originalPrice: '', images: [], previewUrls: [],
 });
 
@@ -133,8 +167,24 @@ interface ItemCardProps {
 }
 
 function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
-  const set = (field: keyof ThriftItemFormData, value: string) =>
+  const set = (field: keyof ThriftItemFormData, value: string) => {
+    // Cascade: when gender changes, clear wearType/category/subCategory/size
+    if (field === 'gender') {
+      onChange({ ...item, gender: value as any, wearType: '' as any, category: '' as any, subCategory: '' as any, size: '' });
+      return;
+    }
+    // Cascade: when wearType changes, clear category/subCategory/size
+    if (field === 'wearType') {
+      onChange({ ...item, wearType: value as any, category: '' as any, subCategory: '' as any, size: '' });
+      return;
+    }
+    // Cascade: when category changes, clear subCategory and size
+    if (field === 'category') {
+      onChange({ ...item, category: value as any, subCategory: '' as any, size: '' });
+      return;
+    }
     onChange({ ...item, [field]: value });
+  };
 
   // Single handler: allPreviews is always the COMPLETE desired list after the action.
   // newFiles contains only the newly added File objects (empty on remove).
@@ -200,34 +250,83 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
           </div>
         </div>
 
-        {/* Row: Category + Size */}
+        {/* Row: Gender + WearType */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Category *</Label>
-            <Select value={item.category} onValueChange={(v) => set('category', v)}>
+            <Label className="text-xs font-medium">Gender *</Label>
+            <Select value={item.gender} onValueChange={(v) => set('gender', v)}>
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder="Select gender" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                {GENDERS.map((g) => (
+                  <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs font-medium flex items-center gap-1">
-              <Ruler className="h-3 w-3" /> Size *
-            </Label>
-            <Select value={item.size} onValueChange={(v) => set('size', v)}>
+            <Label className="text-xs font-medium">Type *</Label>
+            <Select value={item.wearType} onValueChange={(v) => set('wearType', v)} disabled={!item.gender}>
               <SelectTrigger className="h-9 text-sm">
-                <SelectValue placeholder="Select size" />
+                <SelectValue placeholder={item.gender ? "Select type" : "Select gender first"} />
               </SelectTrigger>
               <SelectContent>
-                {SIZES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                {WEAR_TYPES.map((w) => (
+                  <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
+        </div>
+
+        {/* Row: Category + SubCategory */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Category *</Label>
+            <Select value={item.category} onValueChange={(v) => set('category', v)} disabled={!item.wearType}>
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder={item.wearType ? "Select category" : "Select type first"} />
+              </SelectTrigger>
+              <SelectContent>
+                {(item.wearType === 'TOPWEAR' ? TOPWEAR_CATEGORIES : item.wearType === 'BOTTOMWEAR' ? BOTTOMWEAR_CATEGORIES : []).map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {SUB_CATEGORIES[item.category] && (
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium">Style</Label>
+              <Select value={item.subCategory || ''} onValueChange={(v) => set('subCategory', v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue placeholder="Select style (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUB_CATEGORIES[item.category].map((s) => (
+                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* Size */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium flex items-center gap-1">
+            <Ruler className="h-3 w-3" /> Size *
+          </Label>
+          <Select value={item.size} onValueChange={(v) => set('size', v)} disabled={!item.wearType}>
+            <SelectTrigger className="h-9 text-sm">
+              <SelectValue placeholder={item.wearType ? "Select size" : "Select type first"} />
+            </SelectTrigger>
+            <SelectContent>
+              {(item.wearType === 'TOPWEAR' ? TOPWEAR_SIZES : item.wearType === 'BOTTOMWEAR' ? BOTTOMWEAR_SIZES : []).map((s) => (
+                <SelectItem key={s} value={s}>{s}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Condition */}
@@ -399,6 +498,8 @@ export default function ThriftSell() {
       const it = items[i];
       if (!it.name || it.name.length < 3) return `Item ${i + 1}: name must be at least 3 characters`;
       if (!it.brand || !it.brand.trim()) return `Item ${i + 1}: please enter a brand name`;
+      if (!it.gender) return `Item ${i + 1}: please select a gender`;
+      if (!it.wearType) return `Item ${i + 1}: please select a wear type`;
       if (!it.category) return `Item ${i + 1}: please select a category`;
       if (!it.size) return `Item ${i + 1}: please select a size`;
       if (!it.condition) return `Item ${i + 1}: please select a condition`;

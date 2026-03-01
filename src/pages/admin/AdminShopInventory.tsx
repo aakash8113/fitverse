@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
@@ -13,19 +13,41 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
 import {
   Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight,
 } from 'lucide-react';
 
-const CATEGORIES: { value: string; label: string }[] = [
-  { value: 'MENS', label: 'Mens' },
-  { value: 'WOMENS', label: 'Womens' },
-  { value: 'ACCESSORIES', label: 'Accessories' },
-  { value: 'ACTIVEWEAR', label: 'Activewear' },
-  { value: 'FOOTWEAR', label: 'Footwear' },
-  { value: 'THRIFT', label: 'Thrift' },
+// â”€â”€â”€ Category Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+const GENDERS = [{ value: 'MENS', label: "Men's" }, { value: 'WOMENS', label: "Women's" }];
+const WEAR_TYPES = [{ value: 'TOPWEAR', label: 'Topwear' }, { value: 'BOTTOMWEAR', label: 'Bottomwear' }];
+const TOPWEAR_CATS = [
+  { value: 'TSHIRT', label: 'T-Shirt' }, { value: 'SHIRT', label: 'Shirt' },
+  { value: 'HOODIE', label: 'Hoodie' }, { value: 'JACKET', label: 'Jacket' },
 ];
+const BOTTOMWEAR_CATS = [
+  { value: 'JEANS', label: 'Jeans' }, { value: 'TROUSER', label: 'Trouser' },
+  { value: 'TRACKPANT', label: 'Trackpant' }, { value: 'CARGO', label: 'Cargo' },
+];
+const SUB_CATS: Record<string, { value: string; label: string }[]> = {
+  TSHIRT: [
+    { value: 'OVERSIZED', label: 'Oversized' }, { value: 'POLO', label: 'Polo' },
+    { value: 'DROP_SHOULDER', label: 'Drop Shoulder' }, { value: 'V_NECK', label: 'V-Neck' },
+    { value: 'SHORT_SLEEVED', label: 'Short Sleeved' }, { value: 'LONG_SLEEVED', label: 'Long Sleeved' },
+  ],
+  SHIRT: [
+    { value: 'PRINTED', label: 'Printed' }, { value: 'PLAIN', label: 'Plain' }, { value: 'TEXTURED', label: 'Textured' },
+  ],
+  JEANS: [
+    { value: 'DENIM', label: 'Denim' }, { value: 'SKINNY', label: 'Skinny' },
+    { value: 'BAGGY', label: 'Baggy' }, { value: 'BOOT_CUT', label: 'Boot Cut' },
+  ],
+};
+const TOPWEAR_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const BOTTOMWEAR_SIZES = ['26', '28', '30', '32', '34', '36', '38', '40', '42'];
+
 const PAGE_SIZE = 12;
 
 interface ProductFormData {
@@ -33,23 +55,25 @@ interface ProductFormData {
   description: string;
   price: string;
   stock: string;
+  brand: string;
+  gender: string;
+  wearType: string;
   category: string;
+  subCategory: string;
+  availableSizes: string[];
   image?: File | null;
 }
 
 const emptyForm: ProductFormData = {
-  name: '',
-  description: '',
-  price: '',
-  stock: '',
-  category: '',
+  name: '', description: '', price: '', stock: '', brand: '',
+  gender: '', wearType: '', category: '', subCategory: '', availableSizes: [],
   image: null,
 };
 
 const AdminShopInventory: React.FC = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [genderFilter, setGenderFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -60,11 +84,11 @@ const AdminShopInventory: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'products', search, categoryFilter, page],
+    queryKey: ['admin', 'products', search, genderFilter, page],
     queryFn: () =>
       productsApi.getProducts({
         search: search || undefined,
-        category: categoryFilter !== 'all' ? categoryFilter : undefined,
+        gender: genderFilter !== 'all' ? genderFilter : undefined,
         page,
         limit: PAGE_SIZE,
       }),
@@ -127,7 +151,12 @@ const AdminShopInventory: React.FC = () => {
       description: p.description || '',
       price: String(p.price),
       stock: String(p.stock ?? 0),
+      brand: p.brand || '',
+      gender: p.gender || '',
+      wearType: p.wearType || '',
       category: p.category || '',
+      subCategory: p.subCategory || '',
+      availableSizes: p.availableSizes || [],
       image: null,
     });
     setImagePreview(p.images?.[0] || null);
@@ -146,6 +175,31 @@ const AdminShopInventory: React.FC = () => {
     setImagePreview(URL.createObjectURL(file));
   };
 
+  const setFormField = (field: keyof ProductFormData, value: any) => {
+    if (field === 'gender') {
+      setForm((f) => ({ ...f, gender: value, wearType: '', category: '', subCategory: '', availableSizes: [] }));
+      return;
+    }
+    if (field === 'wearType') {
+      setForm((f) => ({ ...f, wearType: value, category: '', subCategory: '', availableSizes: [] }));
+      return;
+    }
+    if (field === 'category') {
+      setForm((f) => ({ ...f, category: value, subCategory: '' }));
+      return;
+    }
+    setForm((f) => ({ ...f, [field]: value }));
+  };
+
+  const toggleSize = (size: string) => {
+    setForm((f) => ({
+      ...f,
+      availableSizes: f.availableSizes.includes(size)
+        ? f.availableSizes.filter((s) => s !== size)
+        : [...f.availableSizes, size],
+    }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const fd = new FormData();
@@ -153,7 +207,13 @@ const AdminShopInventory: React.FC = () => {
     fd.append('description', form.description);
     fd.append('price', form.price);
     fd.append('stock', form.stock);
+    fd.append('brand', form.brand);
+    fd.append('gender', form.gender);
+    fd.append('wearType', form.wearType);
     fd.append('category', form.category);
+    if (form.subCategory) fd.append('subCategory', form.subCategory);
+    fd.append('availableSizes', JSON.stringify(form.availableSizes));
+    fd.append('isThrift', 'false');
     if (form.image) fd.append('images', form.image);
 
     if (editingProduct) {
@@ -164,6 +224,9 @@ const AdminShopInventory: React.FC = () => {
   };
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
+  const categoriesForWearType = form.wearType === 'TOPWEAR' ? TOPWEAR_CATS : form.wearType === 'BOTTOMWEAR' ? BOTTOMWEAR_CATS : [];
+  const sizesForWearType = form.wearType === 'TOPWEAR' ? TOPWEAR_SIZES : form.wearType === 'BOTTOMWEAR' ? BOTTOMWEAR_SIZES : [];
+  const subCatsForCategory = SUB_CATS[form.category] || [];
 
   return (
     <AdminLayout>
@@ -190,13 +253,13 @@ const AdminShopInventory: React.FC = () => {
               className="pl-9 h-9 text-sm"
             />
           </div>
-          <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setPage(1); }}>
+          <Select value={genderFilter} onValueChange={(v) => { setGenderFilter(v); setPage(1); }}>
             <SelectTrigger className="h-9 text-sm w-44">
-              <SelectValue placeholder="All categories" />
+              <SelectValue placeholder="All genders" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All categories</SelectItem>
-              {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+              <SelectItem value="all">All genders</SelectItem>
+              {GENDERS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -215,6 +278,7 @@ const AdminShopInventory: React.FC = () => {
                 <thead>
                   <tr className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
                     <th className="text-left px-4 py-3 font-medium">Product</th>
+                    <th className="text-left px-4 py-3 font-medium">Gender / Type</th>
                     <th className="text-left px-4 py-3 font-medium">Category</th>
                     <th className="text-left px-4 py-3 font-medium">Price</th>
                     <th className="text-left px-4 py-3 font-medium">Stock</th>
@@ -239,9 +303,12 @@ const AdminShopInventory: React.FC = () => {
                           <span className="font-medium text-gray-800 line-clamp-1">{p.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{p.category || '—'}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium">₹{parseFloat(String(p.price)).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-700">{p.stock ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-600 text-xs">
+                        {p.gender ? `${p.gender} / ${p.wearType || 'â€”'}` : 'â€”'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">{p.category || 'â€”'}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">â‚¹{parseFloat(String(p.price)).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-gray-700">{p.stock ?? 'â€”'}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={(p.stock || 0) > 0 ? 'active' : 'inactive'} customLabel={(p.stock || 0) > 0 ? 'In Stock' : 'Out of Stock'} />
                       </td>
@@ -285,7 +352,7 @@ const AdminShopInventory: React.FC = () => {
 
       {/* Add / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
           </DialogHeader>
@@ -307,59 +374,107 @@ const AdminShopInventory: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3">
+              {/* Name */}
               <div className="col-span-2 space-y-1">
                 <Label className="text-xs">Product Name * <span className="text-gray-400">(min 3 chars)</span></Label>
                 <Input
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  required
-                  minLength={3}
-                  placeholder="e.g. Running Shoes"
+                  onChange={(e) => setFormField('name', e.target.value)}
+                  required minLength={3}
+                  placeholder="e.g. Classic Oversized Tee"
                   className="h-9 text-sm"
                 />
               </div>
+
+              {/* Price & Stock */}
               <div className="space-y-1">
-                <Label className="text-xs">Price (₹) *</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={form.price}
-                  onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
-                  required
-                  className="h-9 text-sm"
-                />
+                <Label className="text-xs">Price (â‚¹) *</Label>
+                <Input type="number" min="0" step="0.01" value={form.price}
+                  onChange={(e) => setFormField('price', e.target.value)} required className="h-9 text-sm" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Stock *</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  value={form.stock}
-                  onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value }))}
-                  required
-                  className="h-9 text-sm"
-                />
+                <Input type="number" min="0" value={form.stock}
+                  onChange={(e) => setFormField('stock', e.target.value)} required className="h-9 text-sm" />
               </div>
+
+              {/* Brand */}
               <div className="col-span-2 space-y-1">
-                <Label className="text-xs">Category</Label>
-                <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
-                  <SelectTrigger className="h-9 text-sm">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
+                <Label className="text-xs">Brand</Label>
+                <Input value={form.brand} onChange={(e) => setFormField('brand', e.target.value)}
+                  placeholder="e.g. Nike, Zara" className="h-9 text-sm" />
+              </div>
+
+              {/* Gender */}
+              <div className="space-y-1">
+                <Label className="text-xs">Gender *</Label>
+                <Select value={form.gender} onValueChange={(v) => setFormField('gender', v)}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                    {GENDERS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* WearType */}
+              <div className="space-y-1">
+                <Label className="text-xs">Type *</Label>
+                <Select value={form.wearType} onValueChange={(v) => setFormField('wearType', v)} disabled={!form.gender}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={form.gender ? "Select" : "Pick gender first"} /></SelectTrigger>
+                  <SelectContent>
+                    {WEAR_TYPES.map((w) => <SelectItem key={w.value} value={w.value}>{w.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Category */}
+              <div className="space-y-1">
+                <Label className="text-xs">Category *</Label>
+                <Select value={form.category} onValueChange={(v) => setFormField('category', v)} disabled={!form.wearType}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={form.wearType ? "Select" : "Pick type first"} /></SelectTrigger>
+                  <SelectContent>
+                    {categoriesForWearType.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* SubCategory */}
+              <div className="space-y-1">
+                <Label className="text-xs">Style</Label>
+                <Select value={form.subCategory} onValueChange={(v) => setFormField('subCategory', v)} disabled={subCatsForCategory.length === 0}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={subCatsForCategory.length ? "Select style" : "N/A"} /></SelectTrigger>
+                  <SelectContent>
+                    {subCatsForCategory.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Available Sizes */}
+              {sizesForWearType.length > 0 && (
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-xs">Available Sizes</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {sizesForWearType.map((size) => (
+                      <label key={size} className="flex items-center gap-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={form.availableSizes.includes(size)}
+                          onCheckedChange={() => toggleSize(size)}
+                          className="h-3.5 w-3.5"
+                        />
+                        <span className="text-xs text-gray-700">{size}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Description */}
               <div className="col-span-2 space-y-1">
                 <Label className="text-xs">Description <span className="text-gray-400">(min 10 chars)</span></Label>
                 <Textarea
                   value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                  rows={3}
-                  minLength={10}
-                  required
+                  onChange={(e) => setFormField('description', e.target.value)}
+                  rows={3} minLength={10} required
                   placeholder="Describe the product..."
                   className="text-sm resize-none"
                 />
@@ -391,8 +506,7 @@ const AdminShopInventory: React.FC = () => {
               Cancel
             </Button>
             <Button
-              variant="destructive"
-              size="sm"
+              variant="destructive" size="sm"
               disabled={deleteMutation.isPending}
               onClick={() => deletingId && deleteMutation.mutate(deletingId)}
             >

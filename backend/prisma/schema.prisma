@@ -80,42 +80,88 @@ model Address {
 }
 
 // ============================================
-// PRODUCT
+// PRODUCT — category system
 // ============================================
 
-enum ProductCategory {
+enum Gender {
   MENS
   WOMENS
-  UNISEX
-  ACCESSORIES
-  ACTIVEWEAR
-  FOOTWEAR
-  THRIFT
+}
+
+enum WearType {
+  TOPWEAR
+  BOTTOMWEAR
+}
+
+// 4 Topwear + 4 Bottomwear categories
+enum ClothingCategory {
+  TSHIRT
+  SHIRT
+  HOODIE
+  JACKET
+  JEANS
+  TROUSER
+  TRACKPANT
+  CARGO
+}
+
+// Sub-categories (nullable — only some categories have subs)
+enum ClothingSubCategory {
+  // T-Shirt subs
+  OVERSIZED
+  POLO
+  DROP_SHOULDER
+  V_NECK
+  SHORT_SLEEVED
+  LONG_SLEEVED
+  // Shirt subs
+  PRINTED
+  PLAIN
+  TEXTURED
+  // Jeans subs
+  DENIM
+  SKINNY
+  BAGGY
+  BOOT_CUT
 }
 
 model Product {
-  id          String          @id @default(uuid())
+  id          String               @id @default(uuid())
   name        String
-  description String          @db.Text
-  price       Decimal         @db.Decimal(10, 2)
-  stock       Int             @default(0)
-  category    ProductCategory
-  
-  // Images stored as JSON array of paths
-  // e.g., ["uploads/products/image1.jpg", "uploads/products/image2.jpg"]
-  images      String[]        @default([])
-  
-  // Soft delete (optional)
-  isActive    Boolean         @default(true)
-  
+  description String               @db.Text
+  price       Decimal              @db.Decimal(10, 2)
+  stock       Int                  @default(0)
+  brand       String?
+
+  // Category hierarchy
+  gender      Gender
+  wearType    WearType
+  category    ClothingCategory
+  subCategory ClothingSubCategory?
+
+  // Sizes available (TOPWEAR: XS/S/M/L/XL/XXL/3XL  |  BOTTOMWEAR: 28/30/32/34/36/38/40/42)
+  availableSizes String[]          @default([])
+
+  // true = this product was a thrift item (listed by admin)
+  isThrift    Boolean              @default(false)
+
+  // Images
+  images      String[]             @default([])
+
+  // Soft delete
+  isActive    Boolean              @default(true)
+
   // Relations
   cartItems   CartItem[]
   orderItems  OrderItem[]
-  
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
 
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@index([gender])
+  @@index([wearType])
   @@index([category])
+  @@index([isThrift])
   @@index([isActive])
   @@map("products")
 }
@@ -268,19 +314,6 @@ enum ThriftItemCondition {
   LIKE_NEW
 }
 
-enum ThriftItemCategory {
-  TOPS
-  BOTTOMS
-  DRESSES
-  OUTERWEAR
-  FOOTWEAR
-  ACCESSORIES
-  SPORTSWEAR
-  ETHNIC
-  BAGS
-  OTHER
-}
-
 model ThriftListing {
   id         String              @id @default(uuid())
   userId     String
@@ -318,7 +351,10 @@ model ThriftItem {
   // Item details (filled by user)
   name        String
   brand       String?
-  category    ThriftItemCategory
+  gender      Gender
+  wearType    WearType
+  category    ClothingCategory
+  subCategory ClothingSubCategory?
   size        String?
   condition   ThriftItemCondition
   description String              @db.Text

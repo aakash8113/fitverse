@@ -4,6 +4,49 @@ import { Input } from "@/components/ui/input";
 import { ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// ── Category data ──────────────────────────────────────────────────────────
+
+const TOPWEAR_CATEGORIES = [
+  { value: 'TSHIRT',    label: 'T-Shirt' },
+  { value: 'SHIRT',     label: 'Shirt' },
+  { value: 'HOODIE',    label: 'Hoodie' },
+  { value: 'JACKET',    label: 'Jacket' },
+];
+
+const BOTTOMWEAR_CATEGORIES = [
+  { value: 'JEANS',     label: 'Jeans' },
+  { value: 'TROUSER',   label: 'Trouser' },
+  { value: 'TRACKPANT', label: 'Trackpant' },
+  { value: 'CARGO',     label: 'Cargo' },
+];
+
+const SUBCATEGORIES: Record<string, { value: string; label: string }[]> = {
+  TSHIRT: [
+    { value: 'OVERSIZED',    label: 'Oversized' },
+    { value: 'POLO',         label: 'Polo' },
+    { value: 'DROP_SHOULDER',label: 'Drop Shoulder' },
+    { value: 'V_NECK',       label: 'V-Neck' },
+    { value: 'SHORT_SLEEVED',label: 'Short Sleeved' },
+    { value: 'LONG_SLEEVED', label: 'Long Sleeved' },
+  ],
+  SHIRT: [
+    { value: 'PRINTED',  label: 'Printed' },
+    { value: 'PLAIN',    label: 'Plain' },
+    { value: 'TEXTURED', label: 'Textured' },
+  ],
+  JEANS: [
+    { value: 'DENIM',    label: 'Denim' },
+    { value: 'SKINNY',   label: 'Skinny' },
+    { value: 'BAGGY',    label: 'Baggy' },
+    { value: 'BOOT_CUT', label: 'Boot Cut' },
+  ],
+};
+
+const TOPWEAR_SIZES  = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
+const BOTTOMWEAR_SIZES = ['28', '30', '32', '34', '36', '38', '40', '42'];
+
+// ── FilterSection ──────────────────────────────────────────────────────────
+
 interface FilterSectionProps {
   title: string;
   children: React.ReactNode;
@@ -12,7 +55,6 @@ interface FilterSectionProps {
 
 function FilterSection({ title, children, defaultOpen = true }: FilterSectionProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-
   return (
     <div className="border-b border-border/50 py-4">
       <button
@@ -22,100 +64,140 @@ function FilterSection({ title, children, defaultOpen = true }: FilterSectionPro
         {title}
         <ChevronDown className={cn("h-4 w-4 transition-transform", isOpen && "rotate-180")} />
       </button>
-      {isOpen && <div className="mt-4 space-y-3">{children}</div>}
+      {isOpen && <div className="mt-4 space-y-2">{children}</div>}
     </div>
   );
 }
 
-interface FilterOption {
-  id: string;
-  label: string;
-  count?: number;
+// ── Props ──────────────────────────────────────────────────────────────────
+
+export interface ShopFilters {
+  gender?: string;
+  wearType?: string;
+  category?: string;
+  subCategory?: string;
+  size?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 interface FilterSidebarProps {
   className?: string;
   onClose?: () => void;
-  onCategoryChange?: (category: string | undefined) => void;
+  onFilterChange?: (filters: ShopFilters) => void;
   onPriceRangeChange?: (min: number, max: number) => void;
+  /** @deprecated use onFilterChange */
+  onCategoryChange?: (category: string | undefined) => void;
+  /** @deprecated use onFilterChange */
   onSizeChange?: (sizes: string[]) => void;
   defaultCategory?: string;
 }
 
-// Only 3 gender categories; IDs match backend enum values exactly
-const categories: FilterOption[] = [
-  { id: "MEN",    label: "Men" },
-  { id: "WOMEN",  label: "Women" },
-  { id: "UNISEX", label: "Unisex" },
-];
+// ── Pill button ────────────────────────────────────────────────────────────
 
-const sizes: FilterOption[] = [
-  { id: "xs", label: "XS" },
-  { id: "s", label: "S" },
-  { id: "m", label: "M" },
-  { id: "l", label: "L" },
-  { id: "xl", label: "XL" },
-  { id: "xxl", label: "XXL" },
-];
+function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "px-3 py-1.5 text-sm border rounded-lg transition-colors w-full text-left",
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "border-border hover:border-foreground"
+      )}
+    >
+      {label}
+    </button>
+  );
+}
 
-export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRangeChange, onSizeChange, defaultCategory }: FilterSidebarProps) {
+// ── Main Component ─────────────────────────────────────────────────────────
+
+export function FilterSidebar({
+  className,
+  onClose,
+  onFilterChange,
+  onPriceRangeChange,
+  defaultCategory,
+}: FilterSidebarProps) {
   const [minInput, setMinInput] = useState("");
   const [maxInput, setMaxInput] = useState("");
   const [priceApplied, setPriceApplied] = useState(false);
-  // Single-select: null means "All"
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(defaultCategory ?? null);
-  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
 
-  const handleSizeToggle = (id: string) => {
-    const next = selectedSizes.includes(id)
-      ? selectedSizes.filter((s) => s !== id)
-      : [...selectedSizes, id];
-    setSelectedSizes(next);
-    if (onSizeChange) onSizeChange(next);
+  const [gender,      setGender]      = useState<string | undefined>();
+  const [wearType,    setWearType]    = useState<string | undefined>();
+  const [category,    setCategory]    = useState<string | undefined>();
+  const [subCategory, setSubCategory] = useState<string | undefined>();
+  const [size,        setSize]        = useState<string | undefined>();
+
+  const emit = (patch: Partial<ShopFilters>) => {
+    const next: ShopFilters = {
+      gender, wearType, category, subCategory, size, ...patch,
+    };
+    onFilterChange?.(next);
   };
 
-  // Single-select: clicking the same category deselects it
-  const handleCategoryToggle = (id: string) => {
-    const next = selectedCategory === id ? null : id;
-    setSelectedCategory(next);
-    if (onCategoryChange) {
-      onCategoryChange(next ?? undefined);
-    }
+  const toggleGender = (g: string) => {
+    const next = gender === g ? undefined : g;
+    setGender(next);
+    // Reset everything below
+    setWearType(undefined); setCategory(undefined); setSubCategory(undefined); setSize(undefined);
+    emit({ gender: next, wearType: undefined, category: undefined, subCategory: undefined, size: undefined });
+  };
+
+  const toggleWearType = (wt: string) => {
+    const next = wearType === wt ? undefined : wt;
+    setWearType(next);
+    setCategory(undefined); setSubCategory(undefined); setSize(undefined);
+    emit({ wearType: next, category: undefined, subCategory: undefined, size: undefined });
+  };
+
+  const toggleCategory = (cat: string) => {
+    const next = category === cat ? undefined : cat;
+    setCategory(next);
+    setSubCategory(undefined);
+    emit({ category: next, subCategory: undefined });
+  };
+
+  const toggleSubCategory = (sc: string) => {
+    const next = subCategory === sc ? undefined : sc;
+    setSubCategory(next);
+    emit({ subCategory: next });
+  };
+
+  const toggleSize = (s: string) => {
+    const next = size === s ? undefined : s;
+    setSize(next);
+    emit({ size: next });
   };
 
   const handleApplyPrice = () => {
     const min = minInput === "" ? 0 : Math.max(0, Number(minInput));
-    const max = maxInput === "" ? undefined : Math.max(min, Number(maxInput));
-    if (onPriceRangeChange) {
-      onPriceRangeChange(min, max ?? 999999);
-    }
+    const max = maxInput === "" ? 999999 : Math.max(min, Number(maxInput));
+    onPriceRangeChange?.(min, max);
+    emit({ minPrice: min > 0 ? min : undefined, maxPrice: max < 999999 ? max : undefined });
     setPriceApplied(minInput !== "" || maxInput !== "");
   };
 
   const handleClearPrice = () => {
-    setMinInput("");
-    setMaxInput("");
-    setPriceApplied(false);
-    if (onPriceRangeChange) {
-      onPriceRangeChange(0, 999999);
-    }
+    setMinInput(""); setMaxInput(""); setPriceApplied(false);
+    onPriceRangeChange?.(0, 999999);
+    emit({ minPrice: undefined, maxPrice: undefined });
   };
 
   const clearAll = () => {
-    setSelectedCategory(null);
-    setSelectedSizes([]);
-    setMinInput("");
-    setMaxInput("");
-    setPriceApplied(false);
-    if (onCategoryChange) onCategoryChange(undefined);
-    if (onPriceRangeChange) onPriceRangeChange(0, 999999);
-    if (onSizeChange) onSizeChange([]);
+    setGender(undefined); setWearType(undefined); setCategory(undefined);
+    setSubCategory(undefined); setSize(undefined);
+    setMinInput(""); setMaxInput(""); setPriceApplied(false);
+    onPriceRangeChange?.(0, 999999);
+    onFilterChange?.({});
   };
 
-  const hasFilters =
-    selectedCategory !== null ||
-    selectedSizes.length > 0 ||
-    priceApplied;
+  const hasFilters = !!gender || !!wearType || !!category || !!subCategory || !!size || priceApplied;
+
+  const sizeList = wearType === 'TOPWEAR' ? TOPWEAR_SIZES : wearType === 'BOTTOMWEAR' ? BOTTOMWEAR_SIZES : [];
+  const categoryList = wearType === 'TOPWEAR' ? TOPWEAR_CATEGORIES : wearType === 'BOTTOMWEAR' ? BOTTOMWEAR_CATEGORIES : [];
+  const subCategoryList = category ? (SUBCATEGORIES[category] || []) : [];
 
   return (
     <div className={cn("bg-background", className)}>
@@ -135,50 +217,87 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
         </div>
       </div>
 
-      {/* Category — single-select */}
-      <FilterSection title="Category">
-        {categories.map((category) => (
-          <button
-            key={category.id}
-            onClick={() => handleCategoryToggle(category.id)}
-            className={cn(
-              "w-full text-left px-3 py-1.5 text-sm rounded-lg border transition-colors",
-              selectedCategory === category.id
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border hover:border-foreground"
-            )}
-          >
-            {category.label}
-          </button>
-        ))}
-      </FilterSection>
-
-      {/* Size */}
-      <FilterSection title="Size">
-        <div className="flex flex-wrap gap-2">
-          {sizes.map((size) => (
-            <button
-              key={size.id}
-              onClick={() => handleSizeToggle(size.id)}
-              className={cn(
-                "px-3 py-1.5 text-sm border rounded-lg transition-colors",
-                selectedSizes.includes(size.id)
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border hover:border-foreground"
-              )}
-            >
-              {size.label}
-            </button>
+      {/* ── Gender ── */}
+      <FilterSection title="Gender">
+        <div className="grid grid-cols-2 gap-2">
+          {[{ value: 'MENS', label: 'Men' }, { value: 'WOMENS', label: 'Women' }].map((g) => (
+            <Pill key={g.value} label={g.label} active={gender === g.value} onClick={() => toggleGender(g.value)} />
           ))}
         </div>
       </FilterSection>
 
-      {/* Price Range */}
-      <FilterSection title="Price Range">
+      {/* ── Wear Type ── (only after gender selected) */}
+      {gender && (
+        <FilterSection title="Wear Type">
+          <div className="grid grid-cols-2 gap-2">
+            {[{ value: 'TOPWEAR', label: 'Topwear' }, { value: 'BOTTOMWEAR', label: 'Bottomwear' }].map((wt) => (
+              <Pill key={wt.value} label={wt.label} active={wearType === wt.value} onClick={() => toggleWearType(wt.value)} />
+            ))}
+          </div>
+        </FilterSection>
+      )}
+
+      {/* ── Category ── (only after wearType selected) */}
+      {wearType && categoryList.length > 0 && (
+        <FilterSection title="Category">
+          <div className="space-y-1.5">
+            {categoryList.map((cat) => (
+              <Pill key={cat.value} label={cat.label} active={category === cat.value} onClick={() => toggleCategory(cat.value)} />
+            ))}
+          </div>
+        </FilterSection>
+      )}
+
+      {/* ── Sub-Category ── (only if selected category has subs) */}
+      {subCategoryList.length > 0 && (
+        <FilterSection title="Style">
+          <div className="flex flex-wrap gap-2">
+            {subCategoryList.map((sc) => (
+              <button
+                key={sc.value}
+                onClick={() => toggleSubCategory(sc.value)}
+                className={cn(
+                  "px-2.5 py-1 text-xs border rounded-full transition-colors",
+                  subCategory === sc.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border hover:border-foreground"
+                )}
+              >
+                {sc.label}
+              </button>
+            ))}
+          </div>
+        </FilterSection>
+      )}
+
+      {/* ── Size ── (only after wearType chosen — sizes depend on it) */}
+      {sizeList.length > 0 && (
+        <FilterSection title="Size">
+          <div className="flex flex-wrap gap-2">
+            {sizeList.map((s) => (
+              <button
+                key={s}
+                onClick={() => toggleSize(s)}
+                className={cn(
+                  "min-w-[2.5rem] px-2.5 py-1.5 text-sm border rounded-lg transition-colors",
+                  size === s
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border hover:border-foreground"
+                )}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </FilterSection>
+      )}
+
+      {/* ── Price Range ── */}
+      <FilterSection title="Price Range (₹)">
         <div className="space-y-3">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
               <Input
                 type="number"
                 min={0}
@@ -190,7 +309,7 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
             </div>
             <span className="text-muted-foreground text-sm flex-shrink-0">–</span>
             <div className="relative flex-1">
-              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">₹</span>
               <Input
                 type="number"
                 min={0}
@@ -214,22 +333,6 @@ export function FilterSidebar({ className, onClose, onCategoryChange, onPriceRan
           </div>
         </div>
       </FilterSection>
-
-      {/* Brand */}
-      {/* <FilterSection title="Brand">
-        {brands.map((brand) => (
-          <label key={brand.id} className="flex items-center gap-3 cursor-pointer">
-            <Checkbox
-              checked={selectedBrands.includes(brand.id)}
-              onCheckedChange={() => toggleFilter(brand.id, selectedBrands, setSelectedBrands)}
-            />
-            <span className="text-sm flex-1">{brand.label}</span>
-            {brand.count && (
-              <span className="text-xs text-muted-foreground">{brand.count}</span>
-            )}
-          </label>
-        ))}
-      </FilterSection> */}
     </div>
   );
 }

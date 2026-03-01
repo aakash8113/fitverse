@@ -82,13 +82,29 @@ export interface LoginResponse {
   token: string;
 }
 
+export type Gender = 'MENS' | 'WOMENS';
+export type WearType = 'TOPWEAR' | 'BOTTOMWEAR';
+export type ClothingCategory =
+  | 'TSHIRT' | 'SHIRT' | 'HOODIE' | 'JACKET'
+  | 'JEANS' | 'TROUSER' | 'TRACKPANT' | 'CARGO';
+export type ClothingSubCategory =
+  | 'OVERSIZED' | 'POLO' | 'DROP_SHOULDER' | 'V_NECK' | 'SHORT_SLEEVED' | 'LONG_SLEEVED'
+  | 'PRINTED' | 'PLAIN' | 'TEXTURED'
+  | 'DENIM' | 'SKINNY' | 'BAGGY' | 'BOOT_CUT';
+
 export interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
   stock: number;
-  category: 'MENS' | 'WOMENS' | 'ACCESSORIES' | 'ACTIVEWEAR' | 'FOOTWEAR' | 'THRIFT';
+  brand?: string;
+  gender: Gender;
+  wearType: WearType;
+  category: ClothingCategory;
+  subCategory?: ClothingSubCategory;
+  availableSizes: string[];
+  isThrift: boolean;
   images: string[];
   isActive: boolean;
   createdAt: string;
@@ -253,7 +269,12 @@ export const productsApi = {
   getProducts: async (params?: {
     page?: number;
     limit?: number;
+    gender?: string;
+    wearType?: string;
     category?: string;
+    subCategory?: string;
+    size?: string;
+    isThrift?: boolean;
     minPrice?: number;
     maxPrice?: number;
     search?: string;
@@ -581,9 +602,6 @@ export const adminApi = {
 // ============================================
 
 export type ThriftItemCondition = 'POOR' | 'FAIR' | 'GOOD' | 'VERY_GOOD' | 'LIKE_NEW';
-export type ThriftItemCategory =
-  | 'TOPS' | 'BOTTOMS' | 'DRESSES' | 'OUTERWEAR'
-  | 'FOOTWEAR' | 'ACCESSORIES' | 'SPORTSWEAR' | 'ETHNIC' | 'BAGS' | 'OTHER';
 export type ThriftItemStatus =
   | 'PENDING' | 'APPROVED' | 'REJECTED'
   | 'PICKED_UP' | 'UNDER_REFURBISHMENT' | 'LISTED' | 'SOLD';
@@ -596,7 +614,10 @@ export interface ThriftItem {
   userId: string;
   name: string;
   brand?: string;
-  category: ThriftItemCategory;
+  gender: Gender;
+  wearType: WearType;
+  category: ClothingCategory;
+  subCategory?: ClothingSubCategory;
   size?: string;
   condition: ThriftItemCondition;
   description: string;
@@ -631,7 +652,10 @@ export interface ThriftListing {
 export interface ThriftItemFormData {
   name: string;
   brand: string;
-  category: ThriftItemCategory | '';
+  gender: Gender | '';
+  wearType: WearType | '';
+  category: ClothingCategory | '';
+  subCategory: ClothingSubCategory | '';
   size: string;
   condition: ThriftItemCondition | '';
   description: string;

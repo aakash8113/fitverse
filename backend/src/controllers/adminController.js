@@ -411,6 +411,12 @@ const listThriftItem = asyncHandler(async (req, res) => {
     throw new BadRequestError('A valid listing price is required');
   }
 
+  // Default availableSizes based on wearType
+  const getDefaultSizes = (wearType) =>
+    wearType === 'TOPWEAR'
+      ? ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+      : ['28', '30', '32', '34', '36', '38', '40', '42'];
+
   // Create a real Product in the store
   const product = await prisma.product.create({
     data: {
@@ -418,7 +424,13 @@ const listThriftItem = asyncHandler(async (req, res) => {
       description: description || item.description,
       price: finalPrice,
       stock: parseInt(stock) || 1,
-      category: 'THRIFT',
+      brand: item.brand || null,
+      gender: item.gender,
+      wearType: item.wearType,
+      category: item.category,
+      subCategory: item.subCategory || null,
+      availableSizes: getDefaultSizes(item.wearType),
+      isThrift: true,
       images: item.images,
     },
   });
@@ -581,13 +593,24 @@ const moveRefurbishmentItemToInventory = asyncHandler(async (req, res) => {
     throw new BadRequestError('Set a final price before moving to inventory');
   }
 
+  const getDefaultSizesR = (wearType) =>
+    wearType === 'TOPWEAR'
+      ? ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL']
+      : ['28', '30', '32', '34', '36', '38', '40', '42'];
+
   const product = await prisma.product.create({
     data: {
       name: item.name,
       description: item.description,
       price: finalPrice,
       stock: 1,
-      category: 'THRIFT',
+      brand: item.brand || null,
+      gender: item.gender,
+      wearType: item.wearType,
+      category: item.category,
+      subCategory: item.subCategory || null,
+      availableSizes: getDefaultSizesR(item.wearType),
+      isThrift: true,
       images: item.images || [],
     },
   });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -46,7 +46,7 @@ const convertToCardProduct = (apiProduct: ApiProduct) => ({
   stock: apiProduct.stock,
 });
 
-const AVAILABLE_SIZES = ["XS", "S", "M", "L", "XL", "XXL"];
+// Sizes come from product.availableSizes
 
 // Mock reviews data
 const reviews = [
@@ -95,7 +95,7 @@ export default function ProductDetails() {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
-  const [selectedSize, setSelectedSize] = useState("M");
+  const [selectedSize, setSelectedSize] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
@@ -120,6 +120,15 @@ export default function ProductDetails() {
   });
 
   const product = productData?.data;
+  const availableSizes = product?.availableSizes || [];
+
+  // Auto-select first size when product loads
+  useEffect(() => {
+    if (availableSizes.length > 0 && !selectedSize) {
+      setSelectedSize(availableSizes[0]);
+    }
+  }, [availableSizes, selectedSize]);
+
   const relatedProducts = (relatedData?.data || [])
     .filter((p) => p.id !== id)
     .slice(0, 5)
@@ -379,7 +388,9 @@ export default function ProductDetails() {
                 <button onClick={() => setShowSizeChart(true)} className="text-sm text-primary hover:underline">View Size Chart</button>
               </div>
               <div className="flex flex-wrap gap-2">
-                {AVAILABLE_SIZES.map((size) => (
+                {availableSizes.length === 0 ? (
+                  <span className="text-sm text-muted-foreground">No sizes available</span>
+                ) : availableSizes.map((size) => (
                   <button
                     key={size}
                     onClick={() => setSelectedSize(size)}

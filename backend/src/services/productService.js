@@ -21,11 +21,26 @@ class ProductService {
       imagePaths = await imageService.uploadMultiple(images, 'products');
     }
 
+    // Parse availableSizes — FormData sends as JSON string or array
+    let availableSizes = productData.availableSizes || [];
+    if (typeof availableSizes === 'string') {
+      try { availableSizes = JSON.parse(availableSizes); } catch { availableSizes = []; }
+    }
+    if (!Array.isArray(availableSizes)) availableSizes = [];
+
     const product = await prisma.product.create({
       data: {
-        ...productData,
+        name: productData.name,
+        description: productData.description,
         price: Math.round(parseFloat(productData.price) * 100) / 100,
         stock: parseInt(productData.stock, 10),
+        brand: productData.brand || null,
+        gender: productData.gender,
+        wearType: productData.wearType,
+        category: productData.category,
+        subCategory: productData.subCategory || null,
+        availableSizes,
+        isThrift: productData.isThrift === 'true' || productData.isThrift === true || false,
         images: imagePaths,
       },
     });
@@ -47,15 +62,38 @@ class ProductService {
       isActive: true,
     };
 
-    // Category filter
-    // Map frontend shorthand (MEN/WOMEN) to Prisma enum values (MENS/WOMENS)
-    const CATEGORY_ALIAS = { MEN: 'MENS', WOMEN: 'WOMENS' };
-    if (query.category) {
-      const raw = query.category.toUpperCase();
-      where.category = CATEGORY_ALIAS[raw] || raw;
+    // ── isThrift flag ────────────────────────────────────────────────────────
+    // If caller explicitly passes isThrift=true show only thrift products.
+    // Otherwise default to regular (non-thrift) shop.
+    if (query.isThrift === 'true' || query.isThrift === true) {
+      where.isThrift = true;
     } else {
-      // Never show thrift items in the regular shop
-      where.category = { not: 'THRIFT' };
+      where.isThrift = false;
+    }
+
+    // ── Gender filter ────────────────────────────────────────────────────────
+    if (query.gender) {
+      where.gender = query.gender.toUpperCase(); // MENS | WOMENS
+    }
+
+    // ── WearType filter ──────────────────────────────────────────────────────
+    if (query.wearType) {
+      where.wearType = query.wearType.toUpperCase(); // TOPWEAR | BOTTOMWEAR
+    }
+
+    // ── Category filter (ClothingCategory) ──────────────────────────────────
+    if (query.category) {
+      where.category = query.category.toUpperCase(); // TSHIRT | SHIRT | HOODIE | JACKET | JEANS | TROUSER | TRACKPANT | CARGO
+    }
+
+    // ── SubCategory filter ───────────────────────────────────────────────────
+    if (query.subCategory) {
+      where.subCategory = query.subCategory.toUpperCase();
+    }
+
+    // ── Size filter — check if size is in availableSizes array ───────────────
+    if (query.size) {
+      where.availableSizes = { has: query.size };
     }
 
     // Price range filter
@@ -151,6 +189,26 @@ class ProductService {
     }
     if (updateData.stock !== undefined) {
       updateData.stock = parseInt(updateData.stock, 10);
+    }
+
+    // Parse availableSizes if provided
+    if (updateData.availableSizes !== undefined) {
+      let sizes = updateData.availableSizes;
+      if (typeof sizes === 'string') {
+        try { sizes = JSON.parse(sizes); } catch { sizes = []; }
+      }
+      if (!Array.isArray(sizes)) sizes = [];
+      updateData.availableSizes = sizes;
+    }
+
+    // Null out empty subCategory
+    if (updateData.subCategory === '' || updateData.subCategory === 'null') {
+      updateData.subCategory = null;
+    }
+
+    // Parse isThrift boolean from string
+    if (updateData.isThrift !== undefined) {
+      updateData.isThrift = updateData.isThrift === 'true' || updateData.isThrift === true;
     }
 
     // Upload new images if provided

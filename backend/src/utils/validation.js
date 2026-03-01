@@ -56,6 +56,15 @@ const resendOTPSchema = Joi.object({
 // PRODUCT VALIDATION
 // ============================================
 
+const GENDERS      = ['MENS', 'WOMENS'];
+const WEAR_TYPES   = ['TOPWEAR', 'BOTTOMWEAR'];
+const CATEGORIES   = ['TSHIRT', 'SHIRT', 'HOODIE', 'JACKET', 'JEANS', 'TROUSER', 'TRACKPANT', 'CARGO'];
+const SUB_CATEGORIES = [
+  'OVERSIZED', 'POLO', 'DROP_SHOULDER', 'V_NECK', 'SHORT_SLEEVED', 'LONG_SLEEVED',
+  'PRINTED', 'PLAIN', 'TEXTURED',
+  'DENIM', 'SKINNY', 'BAGGY', 'BOOT_CUT',
+];
+
 const createProductSchema = Joi.object({
   name: Joi.string().min(3).max(200).required().messages({
     'string.empty': 'Product name is required',
@@ -75,10 +84,28 @@ const createProductSchema = Joi.object({
     'number.integer': 'Stock must be an integer',
     'number.min': 'Stock cannot be negative',
   }),
-  category: Joi.string().valid('MENS', 'WOMENS', 'ACCESSORIES', 'ACTIVEWEAR', 'FOOTWEAR', 'THRIFT').required().messages({
-    'any.only': 'Invalid category',
+  brand: Joi.string().max(100).optional().allow(''),
+  gender: Joi.string().valid(...GENDERS).required().messages({
+    'any.only': 'Gender must be MENS or WOMENS',
+    'any.required': 'Gender is required',
+  }),
+  wearType: Joi.string().valid(...WEAR_TYPES).required().messages({
+    'any.only': 'WearType must be TOPWEAR or BOTTOMWEAR',
+    'any.required': 'WearType is required',
+  }),
+  category: Joi.string().valid(...CATEGORIES).required().messages({
+    'any.only': 'Invalid clothing category',
     'any.required': 'Category is required',
   }),
+  subCategory: Joi.string().valid(...SUB_CATEGORIES).optional().allow('', null),
+  // availableSizes sent as JSON string or comma-separated from FormData
+  availableSizes: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string()).min(1),
+      Joi.string().min(1),
+    )
+    .optional(),
+  isThrift: Joi.boolean().optional(),
 });
 
 const updateProductSchema = Joi.object({
@@ -86,8 +113,19 @@ const updateProductSchema = Joi.object({
   description: Joi.string().min(10).optional(),
   price: Joi.number().positive().precision(2).optional(),
   stock: Joi.number().integer().min(0).optional(),
-  category: Joi.string().valid('MENS', 'WOMENS', 'ACCESSORIES', 'ACTIVEWEAR', 'FOOTWEAR', 'THRIFT').optional(),
+  brand: Joi.string().max(100).optional().allow(''),
+  gender: Joi.string().valid(...GENDERS).optional(),
+  wearType: Joi.string().valid(...WEAR_TYPES).optional(),
+  category: Joi.string().valid(...CATEGORIES).optional(),
+  subCategory: Joi.string().valid(...SUB_CATEGORIES).optional().allow('', null),
+  availableSizes: Joi.alternatives()
+    .try(
+      Joi.array().items(Joi.string()).min(1),
+      Joi.string().min(1),
+    )
+    .optional(),
   isActive: Joi.boolean().optional(),
+  isThrift: Joi.boolean().optional(),
 });
 
 // ============================================
