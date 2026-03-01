@@ -238,7 +238,7 @@ export default function Thrift() {
               <Button className="bg-white text-thrift-green hover:bg-white/90" onClick={() => document.querySelector('#thrift-products')?.scrollIntoView({ behavior: 'smooth' })}>
                 Start Shopping
               </Button>
-              <Button variant="outline" className="border-white text-white hover:bg-white/10" onClick={() => navigate('/thrift/sell')}>
+              <Button className="bg-white text-thrift-green hover:bg-white/90" onClick={() => navigate('/thrift/sell')}>
                 Sell Your Items
               </Button>
             </div>

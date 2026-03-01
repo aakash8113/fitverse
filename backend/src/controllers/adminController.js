@@ -370,7 +370,7 @@ const updateThriftItemStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status, adminNotes } = req.body;
 
-  const VALID_STATUSES = ['PICKED_UP', 'UNDER_REFURBISHMENT', 'LISTED', 'SOLD'];
+  const VALID_STATUSES = ['PICKED_UP', 'UNDER_REFURBISHMENT', 'REFURBISHMENT_COMPLETE', 'LISTED', 'SOLD'];
   if (!VALID_STATUSES.includes(status)) {
     throw new BadRequestError(`Status must be one of: ${VALID_STATUSES.join(', ')}`);
   }
@@ -480,6 +480,141 @@ const getThriftInventory = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * GET /api/admin/refurbishment
+ * All items in UNDER_REFURBISHMENT, REFURBISHMENT_COMPLETE, or LISTED state
+ */
+const getRefurbishmentItems = asyncHandler(async (req, res) => {
+  const items = await prisma.thriftItem.findMany({
+    where: {
+      status: { in: ['UNDER_REFURBISHMENT', 'REFURBISHMENT_COMPLETE', 'LISTED'] },
+    },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  const mapStatus = (s) =>
+    s === 'UNDER_REFURBISHMENT' ? 'IN_PROGRESS'
+    : s === 'REFURBISHMENT_COMPLETE' ? 'COMPLETED'
+    : 'IN_INVENTORY';
+
+  const mapped = items.map((item) => ({
+    id: item.id,
+    thriftRequestId: item.listingId,
+    itemName: item.name,
+    originalImages: item.images || [],
+    refurbishedImages: [],
+    notes: item.adminNotes || '',
+    cost: item.refurbishmentCost ? parseFloat(item.refurbishmentCost.toString()) : 0,
+    finalPrice: item.listedPrice ? parseFloat(item.listedPrice.toString()) : 0,
+    status: mapStatus(item.status),
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }));
+
+  res.json({ success: true, data: mapped });
+});
+
+/**
+ * PUT /api/admin/refurbishment/:id
+ * Update notes, cost, finalPrice, and optionally status (IN_PROGRESS / COMPLETED)
+ */
+const updateRefurbishmentItem = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { notes, cost, finalPrice, status } = req.body;
+
+  const item = await prisma.thriftItem.findUnique({ where: { id } });
+  if (!item) throw new NotFoundError('Refurbishment item not found');
+
+  let dbStatus = item.status;
+  if (status === 'COMPLETED') dbStatus = 'REFURBISHMENT_COMPLETE';
+  else if (status === 'IN_PROGRESS') dbStatus = 'UNDER_REFURBISHMENT';
+
+  const updated = await prisma.thriftItem.update({
+    where: { id },
+    data: {
+      adminNotes: notes !== undefined ? notes : item.adminNotes,
+      refurbishmentCost: cost != null ? toMoney(cost) : item.refurbishmentCost,
+      listedPrice: finalPrice != null ? toMoney(finalPrice) : item.listedPrice,
+      status: dbStatus,
+    },
+  });
+
+  const mapStatus = (s) =>
+    s === 'UNDER_REFURBISHMENT' ? 'IN_PROGRESS'
+    : s === 'REFURBISHMENT_COMPLETE' ? 'COMPLETED'
+    : 'IN_INVENTORY';
+
+  res.json({
+    success: true,
+    data: {
+      id: updated.id,
+      thriftRequestId: updated.listingId,
+      itemName: updated.name,
+      originalImages: updated.images || [],
+      refurbishedImages: [],
+      notes: updated.adminNotes || '',
+      cost: updated.refurbishmentCost ? parseFloat(updated.refurbishmentCost.toString()) : 0,
+      finalPrice: updated.listedPrice ? parseFloat(updated.listedPrice.toString()) : 0,
+      status: mapStatus(updated.status),
+      createdAt: updated.createdAt,
+      updatedAt: updated.updatedAt,
+    },
+  });
+});
+
+/**
+ * POST /api/admin/refurbishment/:id/move-to-inventory
+ * Create a Product from the completed refurbishment item and mark it LISTED
+ */
+const moveRefurbishmentItemToInventory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const item = await prisma.thriftItem.findUnique({ where: { id } });
+  if (!item) throw new NotFoundError('Item not found');
+
+  if (item.status !== 'REFURBISHMENT_COMPLETE') {
+    throw new BadRequestError('Item must be marked COMPLETED before moving to inventory');
+  }
+
+  const finalPrice = toMoney(item.listedPrice?.toString()) || 0;
+  if (!finalPrice || finalPrice <= 0) {
+    throw new BadRequestError('Set a final price before moving to inventory');
+  }
+
+  const product = await prisma.product.create({
+    data: {
+      name: item.name,
+      description: item.description,
+      price: finalPrice,
+      stock: 1,
+      category: 'THRIFT',
+      images: item.images || [],
+    },
+  });
+
+  await prisma.thriftItem.update({
+    where: { id },
+    data: { status: 'LISTED', listedProductId: product.id },
+  });
+
+  res.json({
+    success: true,
+    data: {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: parseFloat(product.price.toString()),
+      stock: product.stock,
+      images: product.images,
+      category: product.category,
+      condition: 'GOOD',
+      isSold: false,
+      createdAt: product.createdAt,
+    },
+    message: 'Item moved to thrift inventory',
+  });
+});
+
 module.exports = {
   getDashboardStats,
   getUsers,
@@ -496,4 +631,8 @@ module.exports = {
   updateThriftItemStatus,
   listThriftItem,
   getThriftInventory,
+  // Refurbishment
+  getRefurbishmentItems,
+  updateRefurbishmentItem,
+  moveRefurbishmentItemToInventory,
 };

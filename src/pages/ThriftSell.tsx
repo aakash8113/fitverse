@@ -189,7 +189,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium flex items-center gap-1">
-              <Tag className="h-3 w-3" /> Brand
+              <Tag className="h-3 w-3" /> Brand *
             </Label>
             <Input
               value={item.brand}
@@ -217,7 +217,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs font-medium flex items-center gap-1">
-              <Ruler className="h-3 w-3" /> Size
+              <Ruler className="h-3 w-3" /> Size *
             </Label>
             <Select value={item.size} onValueChange={(v) => set('size', v)}>
               <SelectTrigger className="h-9 text-sm">
@@ -293,7 +293,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
         {/* Photos */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium flex items-center gap-1">
-            <Upload className="h-3 w-3" /> Photos
+            <Upload className="h-3 w-3" /> Photos *
           </Label>
           <ImageUploader
             previews={item.previewUrls}
@@ -398,10 +398,13 @@ export default function ThriftSell() {
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
       if (!it.name || it.name.length < 3) return `Item ${i + 1}: name must be at least 3 characters`;
+      if (!it.brand || !it.brand.trim()) return `Item ${i + 1}: please enter a brand name`;
       if (!it.category) return `Item ${i + 1}: please select a category`;
+      if (!it.size) return `Item ${i + 1}: please select a size`;
       if (!it.condition) return `Item ${i + 1}: please select a condition`;
       if (!it.description || it.description.length < 20)
         return `Item ${i + 1}: description must be at least 20 characters`;
+      if (it.images.length === 0) return `Item ${i + 1}: please add at least one photo`;
     }
     return null;
   };

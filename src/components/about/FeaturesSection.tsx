@@ -21,29 +21,38 @@ const features = [
 function TrendScoreCircle() {
   const [score, setScore] = useState(0);
   const ref = useRef<HTMLDivElement>(null);
-  const [hasAnimated, setHasAnimated] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        if (entry.isIntersecting) {
+          setScore(0);
           let current = 0;
           const target = 87;
-          const interval = setInterval(() => {
+          intervalRef.current = setInterval(() => {
             current += 1;
             setScore(current);
-            if (current >= target) clearInterval(interval);
+            if (current >= target) {
+              clearInterval(intervalRef.current!);
+              intervalRef.current = null;
+            }
           }, 20);
+        } else {
+          setScore(0);
         }
       },
       { threshold: 0.5 }
     );
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [hasAnimated]);
+    return () => {
+      observer.disconnect();
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const circumference = 2 * Math.PI * 52;
   const offset = circumference - (score / 100) * circumference;

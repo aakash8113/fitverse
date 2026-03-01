@@ -46,6 +46,7 @@ interface EditForm {
   notes: string;
   cost: string;
   finalPrice: string;
+  status: 'IN_PROGRESS' | 'COMPLETED';
 }
 
 const AdminRefurbishment: React.FC = () => {
@@ -53,7 +54,7 @@ const AdminRefurbishment: React.FC = () => {
   const [editingItem, setEditingItem] = useState<RefurbishmentItem | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [moveDialogItem, setMoveDialogItem] = useState<RefurbishmentItem | null>(null);
-  const [form, setForm] = useState<EditForm>({ notes: '', cost: '', finalPrice: '' });
+  const [form, setForm] = useState<EditForm>({ notes: '', cost: '', finalPrice: '', status: 'IN_PROGRESS' });
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'refurbishment'],
@@ -87,7 +88,7 @@ const AdminRefurbishment: React.FC = () => {
 
   const openEdit = (item: RefurbishmentItem) => {
     setEditingItem(item);
-    setForm({ notes: item.notes, cost: String(item.cost), finalPrice: String(item.finalPrice) });
+    setForm({ notes: item.notes, cost: String(item.cost), finalPrice: String(item.finalPrice), status: item.status === 'IN_INVENTORY' ? 'COMPLETED' : item.status as 'IN_PROGRESS' | 'COMPLETED' });
     setEditOpen(true);
   };
 
@@ -96,7 +97,7 @@ const AdminRefurbishment: React.FC = () => {
     if (!editingItem) return;
     updateMutation.mutate({
       id: editingItem.id,
-      data: { notes: form.notes, cost: Number(form.cost), finalPrice: Number(form.finalPrice) },
+      data: { notes: form.notes, cost: Number(form.cost), finalPrice: Number(form.finalPrice), status: form.status },
     });
   };
 
@@ -265,6 +266,17 @@ const AdminRefurbishment: React.FC = () => {
                   className="h-9 text-sm"
                 />
               </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Status</Label>
+              <select
+                value={form.status}
+                onChange={(e) => setForm((f) => ({ ...f, status: e.target.value as 'IN_PROGRESS' | 'COMPLETED' }))}
+                className="w-full h-9 text-sm border border-input rounded-md px-3 bg-background"
+              >
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="COMPLETED">Completed (Ready to move to inventory)</option>
+              </select>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(false)}>Cancel</Button>

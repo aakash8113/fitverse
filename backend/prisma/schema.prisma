@@ -255,6 +255,7 @@ enum ThriftItemStatus {
   REJECTED              // Admin rejected this item
   PICKED_UP             // Item physically received
   UNDER_REFURBISHMENT   // Being cleaned/repaired
+  REFURBISHMENT_COMPLETE // Refurb done, ready to move to store
   LISTED                // Live in store as Product
   SOLD                  // Sold to a buyer
 }
@@ -324,9 +325,10 @@ model ThriftItem {
   images      String[]            @default([])
 
   // Pricing
-  originalPrice  Decimal? @db.Decimal(10, 2)  // What user paid originally
-  estimatedValue Decimal? @db.Decimal(10, 2)  // Admin's offer to user
-  listedPrice    Decimal? @db.Decimal(10, 2)  // Final store price
+  originalPrice      Decimal? @db.Decimal(10, 2)  // What user paid originally
+  estimatedValue     Decimal? @db.Decimal(10, 2)  // Admin's offer to user
+  refurbishmentCost  Decimal? @db.Decimal(10, 2)  // Cost to clean/repair
+  listedPrice        Decimal? @db.Decimal(10, 2)  // Final store price
 
   // Status tracking
   status          ThriftItemStatus @default(PENDING)
