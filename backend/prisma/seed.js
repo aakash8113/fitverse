@@ -1,6 +1,6 @@
 // Database Seed Script
 // Populates database with sample data for testing
-
+require('dotenv').config({ path: '../.env' });
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 
@@ -12,11 +12,12 @@ async function main() {
   // Clear existing data
   console.log('🗑️  Clearing existing data...');
   await prisma.orderItem.deleteMany();
-  await prisma.order.deleteMany();
   await prisma.cartItem.deleteMany();
+  await prisma.order.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.address.deleteMany();
   await prisma.product.deleteMany();
+  await prisma.thriftListing.deleteMany();
   await prisma.user.deleteMany();
   console.log('✅ Existing data cleared\n');
 

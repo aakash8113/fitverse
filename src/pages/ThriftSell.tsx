@@ -417,8 +417,7 @@ export default function ThriftSell() {
     window.scrollTo(0, 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = () => {
     if (!selectedAddressId) {
       toast({ title: 'No pickup address selected', description: 'Please select a pickup address or add one from your profile.', variant: 'destructive' });
       return;
@@ -564,7 +563,7 @@ export default function ThriftSell() {
 
       {/* ─── STEP 2: Address Selection ─── */}
       {step === 2 && (
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <div className="flex items-center gap-2 mb-1">
               <h2 className="text-lg font-semibold text-gray-900">Select Pickup Address</h2>
@@ -590,7 +589,8 @@ export default function ThriftSell() {
                 Back
               </Button>
               <Button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 disabled={mutation.isPending}
                 className="bg-green-600 hover:bg-green-700 text-white min-w-[160px]"
               >
@@ -606,7 +606,7 @@ export default function ThriftSell() {
               </Button>
             </div>
           </div>
-        </form>
+        </div>
       )}
 
       <Footer />
