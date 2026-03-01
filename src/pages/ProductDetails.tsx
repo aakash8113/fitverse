@@ -47,6 +47,10 @@ const convertToCardProduct = (apiProduct: ApiProduct) => ({
 });
 
 // Sizes come from product.availableSizes
+const ALL_SIZES: Record<string, string[]> = {
+  TOPWEAR: ["XS", "S", "M", "L", "XL", "XXL", "3XL"],
+  BOTTOMWEAR: ["26", "28", "30", "32", "34", "36", "38", "40", "42"],
+};
 
 // Mock reviews data
 const reviews = [
@@ -150,9 +154,18 @@ export default function ProductDetails() {
       return;
     }
 
+    if (availableSizes.length > 0 && !selectedSize) {
+      toast({
+        title: "Select a size",
+        description: "Please select a size before adding to cart.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setAddingToCart(true);
     try {
-      await cartApi.addToCart({ productId: id!, quantity });
+      await cartApi.addToCart({ productId: id!, quantity, size: selectedSize });
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast({
         title: "Added to cart",
@@ -179,11 +192,21 @@ export default function ProductDetails() {
       navigate("/login");
       return;
     }
+
+    if (availableSizes.length > 0 && !selectedSize) {
+      toast({
+        title: "Select a size",
+        description: "Please select a size before purchasing.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setBuyingNow(true);
     try {
-      await cartApi.addToCart({ productId: id!, quantity });
+      await cartApi.addToCart({ productId: id!, quantity, size: selectedSize });
       queryClient.invalidateQueries({ queryKey: ["cart"] });
-      navigate("/checkout");
+      navigate("/checkout", { state: { buyNowProductId: id } });
     } catch (error: any) {
       toast({
         title: "Couldn't proceed to checkout",
@@ -390,20 +413,34 @@ export default function ProductDetails() {
               <div className="flex flex-wrap gap-2">
                 {availableSizes.length === 0 ? (
                   <span className="text-sm text-muted-foreground">No sizes available</span>
-                ) : availableSizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
-                    className={cn(
-                      "w-12 h-12 rounded-lg border-2 transition-all font-medium",
-                      selectedSize === size
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-border hover:border-muted-foreground"
-                    )}
-                  >
-                    {size}
-                  </button>
-                ))}
+                ) : (
+                  (ALL_SIZES[product.wearType] || availableSizes).map((size) => {
+                    const isAvailable = availableSizes.includes(size);
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => isAvailable && setSelectedSize(size)}
+                        disabled={!isAvailable}
+                        title={!isAvailable ? "Not available" : undefined}
+                        className={cn(
+                          "w-12 h-12 rounded-lg border-2 transition-all font-medium relative",
+                          isAvailable
+                            ? selectedSize === size
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border hover:border-muted-foreground"
+                            : "border-border text-muted-foreground/40 cursor-not-allowed"
+                        )}
+                      >
+                        {size}
+                        {!isAvailable && (
+                          <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <span className="w-[120%] h-px bg-muted-foreground/40 rotate-45 absolute" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
               </div>
             </div>
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -13,9 +13,12 @@ import { AddressSelector } from "@/components/shared/AddressSelector";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const [currentStep] = useState(2); // Address step
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
+
+  const buyNowProductId: string | undefined = (location.state as any)?.buyNowProductId;
 
   // Fetch cart data
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -23,7 +26,11 @@ export default function Checkout() {
     queryFn: cartApi.getCart,
   });
 
-  const cartItems = cartData?.data?.items || [];
+  const allCartItems = cartData?.data?.items || [];
+  // For buy-now, only show the specific product
+  const cartItems = buyNowProductId
+    ? allCartItems.filter((item) => item.productId === buyNowProductId)
+    : allCartItems;
   const subtotal = cartItems.reduce(
     (sum, item) => sum + Number(item.product.price) * item.quantity,
     0
@@ -47,7 +54,9 @@ export default function Checkout() {
       });
       return;
     }
-    navigate(`/payment?addressId=${selectedAddressId}`);
+    navigate(`/payment?addressId=${selectedAddressId}`, {
+      state: buyNowProductId ? { buyNowProductId } : undefined,
+    });
   };
 
   // Loading state
@@ -66,8 +75,8 @@ export default function Checkout() {
     );
   }
 
-  // Empty cart redirect
-  if (cartItems.length === 0) {
+  // Empty cart redirect (skip check for buy-now flow)
+  if (!buyNowProductId && cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
@@ -180,6 +189,9 @@ export default function Checkout() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-medium truncate">{item.product.name}</h3>
+                          {item.size && (
+                            <p className="text-xs text-muted-foreground">Size: {item.size}</p>
+                          )}
                           <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           <p className="text-sm font-semibold mt-1">
                             ${(Number(item.product.price) * item.quantity).toFixed(2)}

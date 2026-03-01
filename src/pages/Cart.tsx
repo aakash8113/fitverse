@@ -254,6 +254,14 @@ export default function Cart() {
                                 {item.product.category}
                               </span>
                             </span>
+                            {item.size && (
+                              <span>
+                                Size:{" "}
+                                <span className="text-foreground font-medium">
+                                  {item.size}
+                                </span>
+                              </span>
+                            )}
                             <span>
                               Price:{" "}
                               <span className="text-foreground font-medium">

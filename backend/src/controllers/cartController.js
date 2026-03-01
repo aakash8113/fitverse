@@ -27,8 +27,8 @@ const getCart = asyncHandler(async (req, res) => {
  * @access  Private
  */
 const addToCart = asyncHandler(async (req, res) => {
-  const { productId, quantity } = req.body;
-  const cart = await cartService.addToCart(req.user.id, productId, quantity);
+  const { productId, quantity, size } = req.body;
+  const cart = await cartService.addToCart(req.user.id, productId, quantity, size);
   
   return ApiResponse.success(
     res,

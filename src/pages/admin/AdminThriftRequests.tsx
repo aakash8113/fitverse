@@ -197,6 +197,7 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
                         <div>
                           <p className="font-medium text-sm">{item.name}</p>
                           <p className="text-xs text-gray-500">{item.brand && `${item.brand} - `}{CONDITION_LABEL[item.condition]}{item.size && ` - Size ${item.size}`}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{[item.gender === 'MENS' ? "Men's" : item.gender === 'WOMENS' ? "Women's" : null, item.wearType === 'TOPWEAR' ? 'Topwear' : item.wearType === 'BOTTOMWEAR' ? 'Bottomwear' : null, item.category, item.subCategory?.replace(/_/g, ' ')].filter(Boolean).join(' · ')}</p>
                           <p className="text-xs text-gray-400 mt-1 line-clamp-2">{item.description}</p>
                           {item.originalPrice && <p className="text-xs text-gray-500 mt-1">Originally paid: Rs.{fmtPrice(item.originalPrice)}</p>}
                         </div>
@@ -431,6 +432,7 @@ function ListingRow({ listing, onReview, onMarkPickedUp, onManageItem, isMarking
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.name}</p>
                     <p className="text-xs text-gray-400">{item.brand && `${item.brand} - `}{CONDITION_LABEL[item.condition]}{item.size && ` - ${item.size}`}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{[item.gender === 'MENS' ? "Men's" : item.gender === 'WOMENS' ? "Women's" : null, item.wearType === 'TOPWEAR' ? 'Topwear' : item.wearType === 'BOTTOMWEAR' ? 'Bottomwear' : null, item.category, item.subCategory?.replace(/_/g, ' ')].filter(Boolean).join(' · ')}</p>
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span className={cn('text-xs px-1.5 py-0.5 rounded', itemCfg?.color)}>{itemCfg?.label}</span>
                       {item.estimatedValue && <span className="text-xs text-green-700 font-medium">Offer: Rs.{fmtPrice(item.estimatedValue)}</span>}

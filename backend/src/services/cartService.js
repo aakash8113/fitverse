@@ -55,7 +55,7 @@ class CartService {
    * @param {Number} quantity - Quantity to add
    * @returns {Promise<Object>} Updated cart
    */
-  async addToCart(userId, productId, quantity) {
+  async addToCart(userId, productId, quantity, size = '') {
     // Verify product exists and has stock
     const product = await prisma.product.findUnique({
       where: { id: productId },
@@ -84,13 +84,14 @@ class CartService {
       });
     }
 
-    // Check if item already in cart
-    const existingItem = await prisma.cartItem.findUnique({
+    const sizeKey = size || '';
+
+    // Check if item with same size already in cart
+    const existingItem = await prisma.cartItem.findFirst({
       where: {
-        cartId_productId: {
-          cartId: cart.id,
-          productId,
-        },
+        cartId: cart.id,
+        productId,
+        size: sizeKey,
       },
     });
 
@@ -113,6 +114,7 @@ class CartService {
           cartId: cart.id,
           productId,
           quantity,
+          size: sizeKey,
         },
       });
     }

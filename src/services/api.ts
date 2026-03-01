@@ -37,8 +37,11 @@ api.interceptors.response.use(
       // or if the error is from the login endpoint itself (invalid credentials)
       const isOnLoginPage = window.location.pathname === '/login';
       const isLoginRequest = error.config?.url?.includes('/auth/login');
+      // Don't redirect for /auth/me — used by AuthContext on page load to check
+      // if a stored token is still valid; a 401 there just means "not logged in"
+      const isGetMeRequest = error.config?.url?.includes('/auth/me');
       
-      if (!isOnLoginPage && !isLoginRequest) {
+      if (!isOnLoginPage && !isLoginRequest && !isGetMeRequest) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
@@ -129,6 +132,7 @@ export interface CartItem {
   cartId: string;
   productId: string;
   quantity: number;
+  size: string;
   product: Product;
   createdAt: string;
   updatedAt: string;
@@ -329,7 +333,7 @@ export const cartApi = {
   },
 
   // Add to cart
-  addToCart: async (data: { productId: string; quantity: number }) => {
+  addToCart: async (data: { productId: string; quantity: number; size?: string }) => {
     const response = await api.post<ApiResponse<Cart>>('/cart', data);
     return response.data;
   },
@@ -359,7 +363,7 @@ export const cartApi = {
 
 export const ordersApi = {
   // Create order
-  createOrder: async (data: { addressId: string; paymentMethod: 'CARD' | 'COD' | 'WALLET' }) => {
+  createOrder: async (data: { addressId: string; paymentMethod: 'CARD' | 'COD' | 'WALLET'; productIds?: string[] }) => {
     const response = await api.post<ApiResponse<Order>>('/orders', data);
     return response.data;
   },

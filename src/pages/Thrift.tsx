@@ -194,7 +194,7 @@ export default function Thrift() {
                     {thriftProducts.length} items
                   </span>
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-40 h-8">
+                    <SelectTrigger className="w-48 h-8">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>

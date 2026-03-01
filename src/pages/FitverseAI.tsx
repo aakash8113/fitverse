@@ -30,19 +30,10 @@ export default function FitverseAI() {
 
       {/* Hero */}
       <section className="relative py-16 overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 gradient-ai-subtle" />
-          <div className="absolute right-0 top-0 w-1/3 h-full opacity-10">
-            <img
-              src={heroAI}
-              alt=""
-              className="w-full h-full object-cover"
-            />
-          </div>
-        </div>
+        
+        
 
-        <div className="section-container relative z-10">
+        <div className="section-container relative z-10 bg-blue-100 rounded-3xl p-10 sm:p-14 lg:p-16 shadow-soft">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
               Coming Soon

@@ -17,7 +17,7 @@ class OrderService {
    * @returns {Promise<Object>} Created order
    */
   async createOrder(userId, orderData) {
-    const { addressId, paymentMethod } = orderData;
+    const { addressId, paymentMethod, productIds } = orderData;
 
     // Verify address exists and belongs to user
     const address = await prisma.address.findUnique({
@@ -48,8 +48,17 @@ class OrderService {
       throw new BadRequestError('Cart is empty');
     }
 
-    // Validate stock for all items before proceeding
-    for (const item of cart.items) {
+    // If productIds provided (buy-now flow), only order those items
+    const itemsToOrder = productIds?.length
+      ? cart.items.filter((item) => productIds.includes(item.productId))
+      : cart.items;
+
+    if (itemsToOrder.length === 0) {
+      throw new BadRequestError('No matching items found in cart');
+    }
+
+    // Validate stock for items being ordered
+    for (const item of itemsToOrder) {
       if (item.product.stock < item.quantity) {
         throw new BadRequestError(
           `Insufficient stock for ${item.product.name}. Only ${item.product.stock} available.`
@@ -62,7 +71,7 @@ class OrderService {
     }
 
     // Calculate order totals (NEVER trust frontend calculations)
-    const subtotal = cart.items.reduce((sum, item) => {
+    const subtotal = itemsToOrder.reduce((sum, item) => {
       return sum + (parseFloat(item.product.price) * item.quantity);
     }, 0);
 
@@ -133,7 +142,7 @@ class OrderService {
       });
 
       // Create order items and reduce stock
-      for (const item of cart.items) {
+      for (const item of itemsToOrder) {
         // Create order item (snapshot of product at time of order)
         await tx.orderItem.create({
           data: {
@@ -157,9 +166,12 @@ class OrderService {
         });
       }
 
-      // Clear cart
+      // Only remove ordered items from cart (supports buy-now partial checkout)
       await tx.cartItem.deleteMany({
-        where: { cartId: cart.id },
+        where: {
+          cartId: cart.id,
+          productId: { in: itemsToOrder.map((i) => i.productId) },
+        },
       });
 
       return newOrder;

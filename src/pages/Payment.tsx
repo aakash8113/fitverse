@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CreditCard, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Payment() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -21,6 +22,8 @@ export default function Payment() {
   const [currentStep] = useState(3);
   const [paymentMethod, setPaymentMethod] = useState<string>("COD");
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const buyNowProductId: string | undefined = (location.state as any)?.buyNowProductId;
 
   // Fetch cart data
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -49,7 +52,10 @@ export default function Payment() {
     },
   });
 
-  const cartItems = cartData?.data?.items || [];
+  const allCartItems = cartData?.data?.items || [];
+  const cartItems = buyNowProductId
+    ? allCartItems.filter((item) => item.productId === buyNowProductId)
+    : allCartItems;
   const subtotal = cartItems.reduce(
     (sum, item) => sum + Number(item.product.price) * item.quantity,
     0
@@ -89,6 +95,7 @@ export default function Payment() {
       await createOrderMutation.mutateAsync({
         addressId,
         paymentMethod: paymentMethod as "COD" | "CARD" | "WALLET",
+        ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
       });
     } catch {
       // handled in onError
@@ -278,6 +285,9 @@ export default function Payment() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="text-sm font-medium truncate">{item.product.name}</h3>
+                          {item.size && (
+                            <p className="text-xs text-muted-foreground">Size: {item.size}</p>
+                          )}
                           <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
                           <p className="text-sm font-semibold mt-1">
                             ${(Number(item.product.price) * item.quantity).toFixed(2)}
