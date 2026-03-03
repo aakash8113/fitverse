@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Plus, ChevronLeft, ChevronRight, Package, Clock, CheckCircle,
   XCircle, Truck, Wrench, Tag, Eye, AlertTriangle, Loader2,
-  Calendar, IndianRupee, ImageOff,
+  Calendar, IndianRupee, ImageOff, Phone,
 } from 'lucide-react';
 import { thriftApi, ThriftListing, ThriftItem } from '@/services/api';
 import { toast } from '@/components/ui/use-toast';
@@ -26,6 +26,12 @@ const LISTING_STATUS = {
     color: 'bg-amber-100 text-amber-700 border-amber-200',
     icon: Clock,
     desc: 'Our team is reviewing your submission.',
+  },
+  OFFER_SENT: {
+    label: 'Offer Received',
+    color: 'bg-violet-100 text-violet-700 border-violet-200',
+    icon: IndianRupee,
+    desc: 'We have evaluated your items and sent you an offer.',
   },
   APPROVED: {
     label: 'Approved — Pickup Scheduled',
@@ -72,6 +78,122 @@ const fmtPrice = (val: any) => {
   const n = Math.round(Number(val) * 100) / 100;
   return n % 1 === 0 ? n.toLocaleString('en-IN') : n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+
+// ─── Offer Banner ─────────────────────────────────────────────────────────────
+
+function OfferBanner({
+  listing,
+  onAccept,
+  onDecline,
+  onCall,
+  isLoading,
+  loadingAction,
+}: {
+  listing: ThriftListing;
+  onAccept: () => void;
+  onDecline: () => void;
+  onCall: () => void;
+  isLoading: boolean;
+  loadingAction: string | null;
+}) {
+  const approvedItems = listing.items.filter((i) => i.status !== 'REJECTED');
+  const rejectedItems = listing.items.filter((i) => i.status === 'REJECTED');
+  const totalOffer = approvedItems.reduce((sum, i) => sum + Math.round(Number(i.estimatedValue || 0) * 100) / 100, 0);
+
+  return (
+    <div className="border border-violet-200 bg-violet-50 rounded-xl p-4 space-y-3">
+      {/* Header */}
+      <div className="flex items-center gap-2">
+        <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
+          <IndianRupee className="h-4 w-4 text-white" />
+        </div>
+        <div>
+          <p className="font-semibold text-violet-900 text-sm">Fitverse has evaluated your items!</p>
+          <p className="text-xs text-violet-600">Review the offer and let us know your decision.</p>
+        </div>
+      </div>
+
+      {/* Offer breakdown */}
+      <div className="space-y-1.5">
+        {approvedItems.map((item) => (
+          <div key={item.id} className="flex items-center justify-between text-sm">
+            <span className="text-gray-700 truncate max-w-[60%]">{item.name}</span>
+            <span className="font-semibold text-green-700">₹{fmtPrice(item.estimatedValue)}</span>
+          </div>
+        ))}
+        {rejectedItems.length > 0 && (
+          <div className="text-xs text-red-500 pt-0.5">
+            {rejectedItems.length} item{rejectedItems.length !== 1 ? 's' : ''} not accepted
+          </div>
+        )}
+      </div>
+
+      {/* Total */}
+      <div className="flex items-center justify-between border-t border-violet-200 pt-2">
+        <span className="text-sm font-semibold text-gray-800">Total Offer</span>
+        <span className="text-lg font-bold text-violet-700">₹{fmtPrice(totalOffer)}</span>
+      </div>
+
+      {/* Admin note */}
+      {listing.adminNotes && (
+        <div className="text-xs text-violet-800 bg-violet-100 rounded-lg px-3 py-2">
+          <span className="font-medium">Message from Fitverse: </span>{listing.adminNotes}
+        </div>
+      )}
+
+      {/* Pickup info */}
+      {listing.pickupDate && (
+        <div className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5 shrink-0" />
+          Proposed pickup: <strong>{format(new Date(listing.pickupDate), 'EEE, dd MMM yyyy')}{listing.pickupSlot ? ` · ${listing.pickupSlot}` : ''}</strong>
+        </div>
+      )}
+
+      {/* Call requested confirmation */}
+      {listing.contactRequested && (
+        <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center gap-2">
+          <Phone className="h-3.5 w-3.5 shrink-0" />
+          You requested a call. Our team will reach out to you shortly to discuss the pricing.
+        </div>
+      )}
+
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button
+          size="sm"
+          className="bg-green-600 hover:bg-green-700 text-white flex-1 min-w-[100px]"
+          disabled={isLoading}
+          onClick={onAccept}
+        >
+          {isLoading && loadingAction === 'ACCEPT' ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CheckCircle className="h-3.5 w-3.5 mr-1" />}
+          Accept Offer
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="text-red-600 border-red-300 hover:bg-red-50 flex-1 min-w-[100px]"
+          disabled={isLoading}
+          onClick={onDecline}
+        >
+          {isLoading && loadingAction === 'DECLINE' ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <XCircle className="h-3.5 w-3.5 mr-1" />}
+          Decline
+        </Button>
+        {!listing.contactRequested && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="text-blue-600 border-blue-300 hover:bg-blue-50 w-full"
+            disabled={isLoading}
+            onClick={onCall}
+          >
+            {isLoading && loadingAction === 'CALL' ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Phone className="h-3.5 w-3.5 mr-1" />}
+            Call Us to Negotiate Price
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 // ─── Item Progress Bar ────────────────────────────────────────────────────────
 
@@ -218,9 +340,12 @@ interface ListingCardProps {
   onView: () => void;
   onCancel: () => void;
   isCancelling: boolean;
+  onRespond: (action: 'ACCEPT' | 'DECLINE' | 'CALL') => void;
+  isResponding: boolean;
+  respondingAction: string | null;
 }
 
-function ListingCard({ listing, onView, onCancel, isCancelling }: ListingCardProps) {
+function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isResponding, respondingAction }: ListingCardProps) {
   const cfg = LISTING_STATUS[listing.status];
   const Icon = cfg?.icon || Clock;
   const approvedItems = listing.items.filter((i) => i.status !== 'REJECTED');
@@ -290,6 +415,18 @@ function ListingCard({ listing, onView, onCancel, isCancelling }: ListingCardPro
           </div>
         )}
 
+        {/* Offer banner — shown when listing is OFFER_SENT */}
+        {listing.status === 'OFFER_SENT' && (
+          <OfferBanner
+            listing={listing}
+            onAccept={() => onRespond('ACCEPT')}
+            onDecline={() => onRespond('DECLINE')}
+            onCall={() => onRespond('CALL')}
+            isLoading={isResponding}
+            loadingAction={respondingAction}
+          />
+        )}
+
         {/* Items preview */}
         <div className="space-y-2">
           {listing.items.slice(0, 3).map((item) => (
@@ -321,16 +458,20 @@ function ListingCard({ listing, onView, onCancel, isCancelling }: ListingCardPro
   );
 }
 
-// ─── Detail Dialog ────────────────────────────────────────────────────────────
-
 function ListingDetailDialog({
   listing,
   open,
   onClose,
+  onRespond,
+  isResponding,
+  respondingAction,
 }: {
   listing: ThriftListing | null;
   open: boolean;
   onClose: () => void;
+  onRespond: (action: 'ACCEPT' | 'DECLINE' | 'CALL') => void;
+  isResponding: boolean;
+  respondingAction: string | null;
 }) {
   if (!listing) return null;
   const cfg = LISTING_STATUS[listing.status];
@@ -354,7 +495,7 @@ function ListingDetailDialog({
           </div>
 
           {/* Pickup */}
-          {listing.pickupDate && (
+          {listing.pickupDate && listing.status !== 'OFFER_SENT' && (
             <div className="bg-blue-50 rounded-lg px-4 py-3 text-sm text-blue-700">
               <p className="font-medium mb-0.5 flex items-center gap-2">
                 <Calendar className="h-4 w-4" /> Scheduled Pickup
@@ -363,11 +504,23 @@ function ListingDetailDialog({
             </div>
           )}
 
-          {/* Admin notes */}
-          {listing.adminNotes && (
+          {/* Admin notes (non-offer context) */}
+          {listing.adminNotes && listing.status !== 'OFFER_SENT' && (
             <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
               <strong>Message from admin:</strong> {listing.adminNotes}
             </div>
+          )}
+
+          {/* Offer banner in detail dialog */}
+          {listing.status === 'OFFER_SENT' && (
+            <OfferBanner
+              listing={listing}
+              onAccept={() => onRespond('ACCEPT')}
+              onDecline={() => onRespond('DECLINE')}
+              onCall={() => onRespond('CALL')}
+              isLoading={isResponding}
+              loadingAction={respondingAction}
+            />
           )}
 
           {/* All items */}
@@ -392,6 +545,7 @@ export default function ThriftMyListings() {
   const qc = useQueryClient();
   const [selectedListing, setSelectedListing] = useState<ThriftListing | null>(null);
   const [page, setPage] = useState(1);
+  const [respondingAction, setRespondingAction] = useState<string | null>(null);
   const PAGE_SIZE = 5;
 
   const { data, isLoading, error } = useQuery({
@@ -410,6 +564,32 @@ export default function ThriftMyListings() {
       toast({ title: 'Error', description: e?.response?.data?.message || 'Failed to cancel', variant: 'destructive' });
     },
   });
+
+  const respondMutation = useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'ACCEPT' | 'DECLINE' | 'CALL' }) =>
+      thriftApi.respondToOffer(id, action),
+    onMutate: ({ action }) => setRespondingAction(action),
+    onSuccess: (_data, { action }) => {
+      qc.invalidateQueries({ queryKey: ['thrift', 'my-listings'] });
+      if (action === 'ACCEPT') {
+        toast({ title: 'Offer accepted! 🎉', description: 'Pickup will be arranged as per the schedule.' });
+        setSelectedListing(null);
+      } else if (action === 'DECLINE') {
+        toast({ title: 'Offer declined', description: 'You can submit a new listing anytime.' });
+        setSelectedListing(null);
+      } else {
+        toast({ title: '📞 Call requested!', description: "Our team will reach out to you shortly to discuss pricing." });
+      }
+    },
+    onError: (e: any) => {
+      toast({ title: 'Error', description: e?.response?.data?.message || 'Something went wrong', variant: 'destructive' });
+    },
+    onSettled: () => setRespondingAction(null),
+  });
+
+  const handleRespond = (listing: ThriftListing, action: 'ACCEPT' | 'DECLINE' | 'CALL') => {
+    respondMutation.mutate({ id: listing.id, action });
+  };
 
   const listings: ThriftListing[] = data?.data || [];
   const totalPages = Math.ceil(listings.length / PAGE_SIZE);
@@ -475,6 +655,9 @@ export default function ThriftMyListings() {
                 onView={() => setSelectedListing(listing)}
                 onCancel={() => cancelMutation.mutate(listing.id)}
                 isCancelling={cancelMutation.isPending}
+                onRespond={(action) => handleRespond(listing, action)}
+                isResponding={respondMutation.isPending && respondingAction !== null}
+                respondingAction={respondingAction}
               />
             ))}
 
@@ -498,6 +681,9 @@ export default function ThriftMyListings() {
         listing={selectedListing}
         open={!!selectedListing}
         onClose={() => setSelectedListing(null)}
+        onRespond={(action) => selectedListing && handleRespond(selectedListing, action)}
+        isResponding={respondMutation.isPending && respondingAction !== null}
+        respondingAction={respondingAction}
       />
 
       <Footer />

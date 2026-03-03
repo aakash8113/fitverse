@@ -69,7 +69,7 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li><Link to="/track-order" className="hover:text-primary-foreground transition-colors">Track Order</Link></li>
               <li><Link to="/shipping" className="hover:text-primary-foreground transition-colors">Shipping Info</Link></li>
-              <li><Link to="/returns" className="hover:text-primary-foreground transition-colors">Returns</Link></li>
+              <li><Link to="/return-policy" className="hover:text-primary-foreground transition-colors">Returns</Link></li>
               <li><Link to="/size-guide" className="hover:text-primary-foreground transition-colors">Size Guide</Link></li>
             </ul>
           </div>
@@ -100,7 +100,7 @@ export function Footer() {
           <div className="flex gap-6 text-sm text-primary-foreground/50">
             <Link to="/privacy" className="hover:text-primary-foreground transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-primary-foreground transition-colors">Terms</Link>
-            <Link to="/returns" className="hover:text-primary-foreground transition-colors">Returns</Link>
+            <Link to="/return-policy" className="hover:text-primary-foreground transition-colors">Returns</Link>
             <Link to="/shipping" className="hover:text-primary-foreground transition-colors">Shipping</Link>
           </div>
         </div>

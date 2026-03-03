@@ -192,7 +192,7 @@ export default function Contact() {
                     → Shipping Information
                   </a>
                   <a
-                    href="/returns"
+                    href="/return-policy"
                     className="block text-sm text-muted-foreground hover:text-accent transition-colors"
                   >
                     → Returns & Exchanges

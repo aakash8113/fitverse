@@ -141,6 +141,7 @@ const addToCartSchema = Joi.object({
     'number.base': 'Quantity must be a number',
     'number.min': 'Quantity must be at least 1',
   }),
+  size: Joi.string().allow('').optional(),
 });
 
 const updateCartItemSchema = Joi.object({
@@ -193,6 +194,41 @@ const updateAddressSchema = Joi.object({
   isDefault: Joi.boolean().optional(),
 });
 
+// ============================================
+// RETURNS & REPLACEMENTS VALIDATION
+// ============================================
+
+const RETURN_TYPES   = ['RETURN', 'REPLACEMENT'];
+const RETURN_REASONS = ['DAMAGED', 'WRONG_ITEM', 'SIZE_ISSUE', 'QUALITY_ISSUE', 'OTHER'];
+const RETURN_STATUSES = [
+  'REQUESTED', 'APPROVED', 'REJECTED',
+  'ITEM_RECEIVED', 'REFUND_INITIATED', 'REPLACEMENT_SHIPPED', 'COMPLETED', 'CANCELLED',
+];
+
+const returnItemSchema = Joi.object({
+  orderItemId: Joi.string().uuid().required(),
+  quantity: Joi.number().integer().min(1).default(1),
+});
+
+const createReturnRequestSchema = Joi.object({
+  orderId: Joi.string().uuid().required(),
+  type: Joi.string().valid(...RETURN_TYPES).required(),
+  reason: Joi.string().valid(...RETURN_REASONS).required(),
+  description: Joi.string().max(1000).optional().allow('', null),
+  images: Joi.array().items(Joi.string()).max(5).optional().default([]),
+  replacementSize: Joi.string().optional().allow('', null),
+  bankAccountName: Joi.string().max(100).optional().allow('', null),
+  bankAccountNumber: Joi.string().max(30).optional().allow('', null),
+  bankIFSC: Joi.string().max(20).optional().allow('', null),
+  upiHandle: Joi.string().max(100).optional().allow('', null),
+  items: Joi.array().items(returnItemSchema).min(1).required(),
+});
+
+const updateReturnStatusSchema = Joi.object({
+  status: Joi.string().valid(...RETURN_STATUSES).required(),
+  adminNote: Joi.string().max(1000).optional().allow('', null),
+});
+
 module.exports = {
   // Auth
   signupSchema,
@@ -214,4 +250,8 @@ module.exports = {
   // Address
   createAddressSchema,
   updateAddressSchema,
+
+  // Returns
+  createReturnRequestSchema,
+  updateReturnStatusSchema,
 };

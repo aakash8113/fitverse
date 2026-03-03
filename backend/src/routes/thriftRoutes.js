@@ -14,6 +14,7 @@ router.post('/', upload.thrift.any(), thriftController.createListing); // upload
 router.get('/', thriftController.getMyListings);
 router.get('/:id', thriftController.getListingById);
 router.delete('/:id', thriftController.cancelListing);
+router.post('/:id/respond', thriftController.respondToOffer); // user: accept / decline / call
 
 // Item image upload
 router.post(

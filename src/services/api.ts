@@ -171,6 +171,7 @@ export interface OrderItem {
   productImage: string;
   price: number;
   quantity: number;
+  size: string;
 }
 
 export interface Order {
@@ -610,7 +611,7 @@ export type ThriftItemStatus =
   | 'PENDING' | 'APPROVED' | 'REJECTED'
   | 'PICKED_UP' | 'UNDER_REFURBISHMENT' | 'LISTED' | 'SOLD';
 export type ThriftListingStatus =
-  | 'PENDING' | 'APPROVED' | 'REJECTED' | 'PICKED_UP' | 'COMPLETED';
+  | 'PENDING' | 'OFFER_SENT' | 'APPROVED' | 'REJECTED' | 'PICKED_UP' | 'COMPLETED';
 
 export interface ThriftItem {
   id: string;
@@ -647,6 +648,7 @@ export interface ThriftListing {
   pickupDate?: string;
   pickupSlot?: string;
   adminNotes?: string;
+  contactRequested?: boolean;
   items: ThriftItem[];
   user?: { id: string; name: string; email: string; phone?: string };
   createdAt: string;
@@ -695,6 +697,12 @@ export const thriftApi = {
     return response.data;
   },
 
+  // Respond to an offer: ACCEPT, DECLINE, or CALL (request negotiation call)
+  respondToOffer: async (id: string, action: 'ACCEPT' | 'DECLINE' | 'CALL') => {
+    const response = await api.post<ApiResponse<ThriftListing>>(`/thrift/listings/${id}/respond`, { action });
+    return response.data;
+  },
+
   // Upload images for a specific item (after listing created)
   uploadItemImages: async (listingId: string, itemId: string, files: File[]) => {
     const fd = new FormData();
@@ -721,11 +729,11 @@ export const adminThriftApi = {
     return response.data;
   },
 
-  // Review: approve/reject, set pickup date + per-item estimated values
+  // Review: send offer/reject, set pickup date + per-item estimated values
   reviewListing: async (
     id: string,
     payload: {
-      decision: 'APPROVED' | 'REJECTED';
+      decision: 'OFFER' | 'REJECTED';
       pickupDate?: string;
       pickupSlot?: string;
       adminNotes?: string;
@@ -734,6 +742,23 @@ export const adminThriftApi = {
   ) => {
     const response = await api.put<ApiResponse<ThriftListing>>(
       `/admin/thrift/requests/${id}/review`,
+      payload
+    );
+    return response.data;
+  },
+
+  // Edit an already-sent offer (when status is OFFER_SENT)
+  updateOffer: async (
+    id: string,
+    payload: {
+      pickupDate?: string;
+      pickupSlot?: string;
+      adminNotes?: string;
+      items: { id: string; approved: boolean; estimatedValue?: number; rejectionReason?: string }[];
+    }
+  ) => {
+    const response = await api.put<ApiResponse<ThriftListing>>(
+      `/admin/thrift/requests/${id}/offer`,
       payload
     );
     return response.data;
@@ -768,6 +793,146 @@ export const adminThriftApi = {
   // Get listed/sold thrift inventory
   getInventory: async (params?: { status?: string; page?: number; limit?: number }) => {
     const response = await api.get<ApiResponse<ThriftItem[]>>('/admin/thrift/inventory', { params });
+    return response.data;
+  },
+};
+
+// ============================================
+// PAYMENT API (PhonePe)
+// ============================================
+
+export const paymentApi = {
+  // Initiate an online payment via PhonePe — returns redirectUrl for the checkout page
+  initiateOnlinePayment: async (data: {
+    addressId: string;
+    paymentMethod: 'CARD' | 'WALLET';
+    productIds?: string[];
+  }) => {
+    const response = await api.post<ApiResponse<{
+      orderId: string;
+      orderNumber: string;
+      total: number;
+      redirectUrl: string;
+      phonePeOrderId: string;
+      expireAt: number;
+    }>>('/payment/initiate', data);
+    return response.data;
+  },
+
+  // Poll for payment status after returning from PhonePe checkout
+  getPaymentStatus: async (orderId: string) => {
+    const response = await api.get<ApiResponse<{
+      orderId: string;
+      orderNumber: string;
+      status: string;
+      paymentStatus: string;
+      total: number;
+    }>>(`/payment/status/${orderId}`);
+    return response.data;
+  },
+
+  // Initiate refund for a completed order (admin / future returns feature)
+  initiateRefund: async (orderId: string) => {
+    const response = await api.post<ApiResponse<{
+      refundId: string;
+      merchantRefundId: string;
+      state: string;
+      amount: number;
+    }>>(`/payment/refund/${orderId}`);
+    return response.data;
+  },
+};
+
+// ============================================
+// RETURN / REPLACEMENT TYPES
+// ============================================
+
+export type ReturnType = 'RETURN' | 'REPLACEMENT';
+export type ReturnReason = 'DAMAGED' | 'WRONG_ITEM' | 'SIZE_ISSUE' | 'QUALITY_ISSUE' | 'OTHER';
+export type ReturnStatus =
+  | 'REQUESTED' | 'APPROVED' | 'REJECTED'
+  | 'ITEM_RECEIVED' | 'REFUND_INITIATED' | 'REPLACEMENT_SHIPPED'
+  | 'COMPLETED' | 'CANCELLED';
+
+export interface ReturnRequestItem {
+  id: string;
+  returnRequestId: string;
+  orderItemId: string;
+  quantity: number;
+  orderItem: OrderItem;
+}
+
+export interface ReturnRequest {
+  id: string;
+  requestNumber: string;
+  orderId: string;
+  userId: string;
+  type: ReturnType;
+  status: ReturnStatus;
+  reason: ReturnReason;
+  description?: string;
+  images: string[];
+  replacementSize?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankIFSC?: string;
+  upiHandle?: string;
+  adminNote?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+  items: ReturnRequestItem[];
+  order?: { orderNumber: string; total: number; status: string; paymentMethod: string };
+  user?: { id: string; name: string; email: string };
+}
+
+export interface CreateReturnRequestPayload {
+  orderId: string;
+  type: ReturnType;
+  reason: ReturnReason;
+  description?: string;
+  images?: string[];
+  replacementSize?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankIFSC?: string;
+  upiHandle?: string;
+  items: { orderItemId: string; quantity: number }[];
+}
+
+// ============================================
+// RETURNS API
+// ============================================
+
+export const returnsApi = {
+  createRequest: async (data: CreateReturnRequestPayload) => {
+    const response = await api.post<ApiResponse<ReturnRequest>>('/returns', data);
+    return response.data;
+  },
+
+  getMyRequests: async () => {
+    const response = await api.get<ApiResponse<ReturnRequest[]>>('/returns');
+    return response.data;
+  },
+
+  getRequestById: async (id: string) => {
+    const response = await api.get<ApiResponse<ReturnRequest>>(`/returns/${id}`);
+    return response.data;
+  },
+
+  cancelRequest: async (id: string) => {
+    const response = await api.delete<ApiResponse<ReturnRequest>>(`/returns/${id}`);
+    return response.data;
+  },
+
+  // Admin
+  adminGetAll: async (params?: { status?: string; type?: string; page?: number; limit?: number }) => {
+    const response = await api.get<ApiResponse<{ requests: ReturnRequest[]; pagination: any }>>('/returns/admin/all', { params });
+    return response.data;
+  },
+
+  adminUpdateStatus: async (id: string, data: { status: ReturnStatus; adminNote?: string }) => {
+    const response = await api.patch<ApiResponse<ReturnRequest>>(`/returns/admin/${id}`, data);
     return response.data;
   },
 };

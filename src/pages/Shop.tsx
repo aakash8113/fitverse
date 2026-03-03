@@ -135,8 +135,8 @@ export default function Shop() {
           {/* Products */}
           <main className="flex-1">
             {/* Toolbar */}
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-border/50">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-3 mb-6 pb-4 border-b border-border/50">
+              <div className="flex items-center gap-3">
                 <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                   <SheetTrigger asChild>
                     <Button variant="outline" className="lg:hidden">
@@ -158,9 +158,9 @@ export default function Shop() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3 ml-auto">
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-48 h-8">
+                  <SelectTrigger className="w-36 sm:w-48 h-8">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>

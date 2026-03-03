@@ -22,9 +22,19 @@ const ORDER_STATUSES = [
   'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED',
 ];
 
+const STATUS_TABS = [
+  { key: 'ALL', label: 'All' },
+  { key: 'PROCESSING', label: 'Processing' },
+  { key: 'SHIPPED', label: 'Shipped' },
+  { key: 'DELIVERED', label: 'Delivered' },
+  { key: 'CANCELLED', label: 'Cancelled' },
+  { key: 'REFUNDED', label: 'Returned' },
+];
+
 const AdminOrders: React.FC = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -50,14 +60,16 @@ const AdminOrders: React.FC = () => {
     },
   });
 
-  const filtered = search.trim()
-    ? orders.filter(
-        (o) =>
-          o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
-          o.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
-          o.user?.email?.toLowerCase().includes(search.toLowerCase())
-      )
-    : orders;
+  const filtered = orders
+    .filter((o) =>
+      statusFilter === 'ALL' || o.status === statusFilter
+    )
+    .filter((o) =>
+      !search.trim() ||
+      o.orderNumber?.toLowerCase().includes(search.toLowerCase()) ||
+      o.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      o.user?.email?.toLowerCase().includes(search.toLowerCase())
+    );
 
   return (
     <AdminLayout>
@@ -69,6 +81,32 @@ const AdminOrders: React.FC = () => {
             <p className="text-sm text-gray-500 mt-0.5">All customer orders</p>
           </div>
           <span className="text-sm text-gray-500">{orders.length} total</span>
+        </div>
+
+        {/* Status Tabs */}
+        <div className="flex gap-1 flex-wrap">
+          {STATUS_TABS.map((tab) => {
+            const count = tab.key === 'ALL' ? orders.length : orders.filter(o => o.status === tab.key).length;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setStatusFilter(tab.key)}
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
+                  statusFilter === tab.key
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                )}
+              >
+                {tab.label}
+                {count > 0 && (
+                  <span className={cn('ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]',
+                    statusFilter === tab.key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
+                  )}>{count}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Search */}

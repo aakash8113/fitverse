@@ -152,6 +152,7 @@ class OrderService {
             productImage: item.product.images[0] || '',
             price: item.product.price,
             quantity: item.quantity,
+            size: item.size || '',
           },
         });
 
@@ -329,9 +330,19 @@ class OrderService {
       }
     });
 
-    // Process refund if payment was completed
+    // Initiate refund if payment was completed (PhonePe)
     if (order.paymentStatus === 'COMPLETED') {
-      await paymentService.processRefund(order.paymentId, parseFloat(order.total));
+      try {
+        await paymentService.initiateRefund({
+          merchantRefundId: `REF-${order.id}`,
+          originalMerchantOrderId: order.id,
+          amountInPaise: Math.round(parseFloat(order.total) * 100),
+        });
+      } catch (refundErr) {
+        // Refund initiation failed — log it but don't block the cancellation response.
+        // The order is already cancelled in the DB; the refund can be retried manually.
+        logger.error(`Refund initiation failed for order ${orderId}: ${refundErr.message}`);
+      }
     }
 
     logger.info(`Order cancelled: ${orderId}`);
@@ -444,6 +455,158 @@ class OrderService {
       address: order.address,
       items: order.orderItems,
     };
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+  // PhonePe-specific helpers
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create an order with PENDING status (used before redirecting to PhonePe).
+   * Does NOT call any payment gateway — the caller handles that.
+   * @param {String} userId
+   * @param {Object} orderData - {addressId, paymentMethod, productIds?}
+   * @returns {Promise<Object>} The newly created order
+   */
+  async createPendingOrder(userId, orderData) {
+    const { addressId, paymentMethod, productIds } = orderData;
+
+    const address = await prisma.address.findUnique({ where: { id: addressId } });
+    if (!address) throw new NotFoundError('Address not found');
+    if (address.userId !== userId) throw new BadRequestError('Unauthorized access to address');
+
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: { items: { include: { product: true } } },
+    });
+    if (!cart || cart.items.length === 0) throw new BadRequestError('Cart is empty');
+
+    const itemsToOrder = productIds?.length
+      ? cart.items.filter((item) => productIds.includes(item.productId))
+      : cart.items;
+    if (itemsToOrder.length === 0) throw new BadRequestError('No matching items found in cart');
+
+    for (const item of itemsToOrder) {
+      if (item.product.stock < item.quantity)
+        throw new BadRequestError(`Insufficient stock for ${item.product.name}. Only ${item.product.stock} available.`);
+      if (!item.product.isActive)
+        throw new BadRequestError(`${item.product.name} is no longer available`);
+    }
+
+    const subtotal = itemsToOrder.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
+    const shipping = 15.0;
+    const taxRate = 0.08;
+    const tax = subtotal * taxRate;
+    const total = subtotal + shipping + tax;
+    const orderNumber = generateOrderNumber();
+
+    const order = await prisma.$transaction(async (tx) => {
+      const newOrder = await tx.order.create({
+        data: {
+          orderNumber,
+          userId,
+          addressId,
+          paymentMethod,
+          paymentStatus: 'PENDING',
+          paymentId: null,
+          subtotal,
+          shipping,
+          tax,
+          total,
+          status: 'PENDING',
+        },
+      });
+
+      for (const item of itemsToOrder) {
+        await tx.orderItem.create({
+          data: {
+            orderId: newOrder.id,
+            productId: item.productId,
+            productName: item.product.name,
+            productImage: item.product.images[0] || '',
+            price: item.product.price,
+            quantity: item.quantity,
+            size: item.size || '',
+          },
+        });
+
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        });
+      }
+
+      // Remove ordered items from cart immediately
+      await tx.cartItem.deleteMany({
+        where: {
+          cartId: cart.id,
+          productId: { in: itemsToOrder.map((i) => i.productId) },
+        },
+      });
+
+      return newOrder;
+    });
+
+    logger.info(`Pending order created: ${orderNumber} for user ${userId}`);
+    return this.getOrderById(userId, order.id);
+  }
+
+  /**
+   * Mark an order as PAID after successful PhonePe payment confirmation (webhook).
+   * @param {String} orderId           - DB order ID (== PhonePe merchantOrderId)
+   * @param {String} phonePeOrderId    - PhonePe internal order ID
+   */
+  async markOrderPaid(orderId, phonePeOrderId) {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'PAID',
+        paymentStatus: 'COMPLETED',
+        paymentId: phonePeOrderId || null,
+      },
+    });
+    logger.info(`Order ${orderId} marked PAID. PhonePe orderId: ${phonePeOrderId}`);
+  }
+
+  /**
+   * Mark an order as FAILED/CANCELLED after failed PhonePe payment (webhook).
+   * @param {String} orderId
+   */
+  async markOrderFailed(orderId) {
+    // Restore stock and cancel order
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { orderItems: true },
+    });
+    if (!order) return;
+
+    await prisma.$transaction(async (tx) => {
+      // Restore stock
+      for (const item of order.orderItems) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { increment: item.quantity } },
+        });
+      }
+      // Cancel order
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
+      });
+    });
+    logger.info(`Order ${orderId} marked FAILED/CANCELLED after payment failure`);
+  }
+
+  /**
+   * Mark an order as REFUNDED.
+   * @param {String} orderId
+   * @param {String} refundId
+   */
+  async markOrderRefunded(orderId, refundId) {
+    await prisma.order.update({
+      where: { id: orderId },
+      data: { status: 'REFUNDED', paymentStatus: 'REFUNDED' },
+    });
+    logger.info(`Order ${orderId} marked REFUNDED. Refund ID: ${refundId}`);
   }
 }
 

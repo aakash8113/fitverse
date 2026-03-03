@@ -169,7 +169,7 @@ export default function ProductDetails() {
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       toast({
         title: "Added to cart",
-        description: `?${product?.name} has been added to your cart.`,
+        description: `${product?.name} has been added to your cart.`,
       });
     } catch (error: any) {
       toast({

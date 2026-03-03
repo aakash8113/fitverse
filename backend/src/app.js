@@ -19,6 +19,8 @@ const orderRoutes = require('./routes/orderRoutes');
 const addressRoutes = require('./routes/addressRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const thriftRoutes = require('./routes/thriftRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const returnRoutes = require('./routes/returnRoutes');
 
 // Create Express app
 const app = express();
@@ -31,7 +33,15 @@ app.use(helmetConfig);
 app.use(cors(corsOptions));
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// capture rawBody for PhonePe webhook signature validation
+app.use(express.json({
+  limit: '10mb',
+  verify: (req, _res, buf) => {
+    if (req.originalUrl && req.originalUrl.includes('/payment/webhook')) {
+      req.rawBody = buf.toString('utf8');
+    }
+  },
+}));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
@@ -59,6 +69,8 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/thrift/listings', thriftRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api/returns', returnRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { cartApi, ordersApi } from "@/services/api";
+import { cartApi, ordersApi, paymentApi } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Payment() {
@@ -92,13 +92,30 @@ export default function Payment() {
 
     setIsProcessing(true);
     try {
-      await createOrderMutation.mutateAsync({
-        addressId,
-        paymentMethod: paymentMethod as "COD" | "CARD" | "WALLET",
-        ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
+      if (paymentMethod === "COD") {
+        // COD: create order immediately, navigate to confirmation
+        await createOrderMutation.mutateAsync({
+          addressId,
+          paymentMethod: "COD",
+          ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
+        });
+      } else {
+        // CARD / WALLET: create a pending order and redirect to PhonePe
+        const response = await paymentApi.initiateOnlinePayment({
+          addressId,
+          paymentMethod: paymentMethod as "CARD" | "WALLET",
+          ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
+        });
+        // Navigate user to PhonePe hosted checkout
+        window.location.href = response.data.redirectUrl;
+      }
+    } catch (err: any) {
+      toast({
+        title: "Error",
+        description: err.response?.data?.message || "Failed to initiate payment. Please try again.",
+        variant: "destructive",
       });
-    } catch {
-      // handled in onError
+      setIsProcessing(false);
     }
   };
 
@@ -205,7 +222,7 @@ export default function Payment() {
                     </div>
                   </div>
 
-                  {/* Credit / Debit Card */}
+                  {/* Pay Online via PhonePe — Cards */}
                   <div
                     className={cn(
                       "border-2 rounded-xl p-4 cursor-pointer transition-all",
@@ -221,15 +238,16 @@ export default function Payment() {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4" />
                           <span className="font-semibold">Credit / Debit Card</span>
+                          <span className="ml-auto text-xs font-medium text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Pay securely with Visa, Mastercard, or Amex
+                          Pay securely with Visa, Mastercard, RuPay & more
                         </p>
                       </Label>
                     </div>
                   </div>
 
-                  {/* Digital Wallet */}
+                  {/* Pay Online via PhonePe — UPI / Wallets */}
                   <div
                     className={cn(
                       "border-2 rounded-xl p-4 cursor-pointer transition-all",
@@ -243,11 +261,12 @@ export default function Payment() {
                       <RadioGroupItem value="WALLET" id="wallet" />
                       <Label htmlFor="wallet" className="flex-1 cursor-pointer">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">👛</span>
-                          <span className="font-semibold">Digital Wallet</span>
+                          <span className="text-xl">📲</span>
+                          <span className="font-semibold">UPI / PhonePe Wallet</span>
+                          <span className="ml-auto text-xs font-medium text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Pay with Apple Pay, Google Pay, or your digital wallet
+                          Pay with any UPI app, PhonePe or digital wallet
                         </p>
                       </Label>
                     </div>
@@ -333,11 +352,11 @@ export default function Payment() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Processing...
+                      {paymentMethod === "COD" ? "Placing Order..." : "Redirecting to PhonePe..."}
                     </>
                   ) : (
                     <>
-                      Place Order
+                      {paymentMethod === "COD" ? "Place Order" : "Proceed to PhonePe"}
                       <ArrowRight className="w-5 h-5" />
                     </>
                   )}

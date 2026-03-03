@@ -167,8 +167,8 @@ export default function Thrift() {
 
             {/* Products */}
             <main className="flex-1">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="flex items-center gap-3">
                   <Sheet open={isFilterOpen} onOpenChange={setIsFilterOpen}>
                     <SheetTrigger asChild>
                       <Button variant="outline" className="lg:hidden">
@@ -189,12 +189,12 @@ export default function Thrift() {
                   </Sheet>
                   <h2 className="text-2xl font-bold">Pre-Loved Finds</h2>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 ml-auto">
                   <span className="text-sm text-muted-foreground">
                     {thriftProducts.length} items
                   </span>
                   <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-48 h-8">
+                    <SelectTrigger className="w-36 sm:w-48 h-8">
                       <SelectValue placeholder="Sort by" />
                     </SelectTrigger>
                     <SelectContent>

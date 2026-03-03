@@ -166,10 +166,70 @@ const cancelListing = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Listing cancelled successfully' });
 });
 
+// ============================================
+// RESPOND TO OFFER (user)
+// POST /api/thrift/listings/:id/respond
+// Body: { action: 'ACCEPT' | 'DECLINE' | 'CALL' }
+// ============================================
+const respondToOffer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { action } = req.body;
+  const userId = req.user.id;
+
+  if (!['ACCEPT', 'DECLINE', 'CALL'].includes(action)) {
+    throw new BadRequestError('Action must be ACCEPT, DECLINE, or CALL');
+  }
+
+  const listing = await prisma.thriftListing.findFirst({
+    where: { id, userId },
+    include: { items: true },
+  });
+
+  if (!listing) throw new NotFoundError('Listing not found');
+  if (listing.status !== 'OFFER_SENT') {
+    throw new BadRequestError('No active offer to respond to');
+  }
+
+  let updatedListing;
+
+  if (action === 'ACCEPT') {
+    // Move listing to APPROVED — pickup is now confirmed
+    updatedListing = await prisma.thriftListing.update({
+      where: { id },
+      data: { status: 'APPROVED' },
+      include: { items: true, pickupAddress: true },
+    });
+    logger.info(`ThriftListing ${id}: offer ACCEPTED by user ${userId}`);
+  } else if (action === 'DECLINE') {
+    // Move listing to REJECTED — all approved items also rejected
+    await prisma.thriftItem.updateMany({
+      where: { listingId: id, status: 'APPROVED' },
+      data: { status: 'REJECTED', rejectionReason: 'User declined offer' },
+    });
+    updatedListing = await prisma.thriftListing.update({
+      where: { id },
+      data: { status: 'REJECTED' },
+      include: { items: true, pickupAddress: true },
+    });
+    logger.info(`ThriftListing ${id}: offer DECLINED by user ${userId}`);
+  } else {
+    // CALL — flag contactRequested, status stays OFFER_SENT
+    updatedListing = await prisma.thriftListing.update({
+      where: { id },
+      data: { contactRequested: true },
+      include: { items: true, pickupAddress: true },
+    });
+    logger.info(`ThriftListing ${id}: user ${userId} requested a call for price negotiation`);
+  }
+
+  res.json({ success: true, data: updatedListing, message: `Offer response: ${action}` });
+});
+
 module.exports = {
   createListing,
   uploadItemImages,
   getMyListings,
   getListingById,
   cancelListing,
+  respondToOffer,
 };

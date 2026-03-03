@@ -273,9 +273,10 @@ const getThriftListingById = asyncHandler(async (req, res) => {
 
 /**
  * PUT /api/admin/thrift/requests/:id/review
- * Admin reviews a listing: approves/rejects items, sets pickup date + estimated values
+ * Admin reviews a PENDING listing: sets per-item offer prices, proposed pickup date.
+ * Status is moved to OFFER_SENT (awaiting user accept/decline), not directly to APPROVED.
  * Body: {
- *   decision: 'APPROVED' | 'REJECTED',
+ *   decision: 'OFFER' | 'REJECTED',
  *   pickupDate?: string,
  *   pickupSlot?: string,
  *   adminNotes?: string,
@@ -292,8 +293,8 @@ const reviewThriftListing = asyncHandler(async (req, res) => {
     throw new BadRequestError('Listing has already been reviewed');
   }
 
-  if (!['APPROVED', 'REJECTED'].includes(decision)) {
-    throw new BadRequestError('Decision must be APPROVED or REJECTED');
+  if (!['OFFER', 'REJECTED'].includes(decision)) {
+    throw new BadRequestError('Decision must be OFFER or REJECTED');
   }
 
   // Update each item individually
@@ -313,13 +314,16 @@ const reviewThriftListing = asyncHandler(async (req, res) => {
     );
   }
 
+  const newStatus = decision === 'OFFER' ? 'OFFER_SENT' : 'REJECTED';
+
   const updatedListing = await prisma.thriftListing.update({
     where: { id },
     data: {
-      status: decision,
-      pickupDate: decision === 'APPROVED' && pickupDate ? new Date(pickupDate) : null,
+      status: newStatus,
+      pickupDate: decision === 'OFFER' && pickupDate ? new Date(pickupDate) : null,
       pickupSlot: pickupSlot || null,
       adminNotes: adminNotes || null,
+      contactRequested: false,
     },
     include: {
       user: { select: { id: true, name: true, email: true } },
@@ -327,7 +331,57 @@ const reviewThriftListing = asyncHandler(async (req, res) => {
     },
   });
 
-  res.json({ success: true, data: updatedListing, message: `Listing ${decision.toLowerCase()} successfully` });
+  const msg = decision === 'OFFER' ? 'Offer sent to user' : 'Listing rejected';
+  res.json({ success: true, data: updatedListing, message: msg });
+});
+
+/**
+ * PUT /api/admin/thrift/requests/:id/offer
+ * Admin edits an already-sent offer (when status is OFFER_SENT).
+ * Re-sends the offer with updated prices / date / note.
+ * Body: same as review
+ */
+const updateThriftOffer = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { pickupDate, pickupSlot, adminNotes, items } = req.body;
+
+  const listing = await prisma.thriftListing.findUnique({ where: { id } });
+  if (!listing) throw new NotFoundError('Listing not found');
+  if (listing.status !== 'OFFER_SENT') {
+    throw new BadRequestError('Can only edit an offer that is in OFFER_SENT state');
+  }
+
+  // Update per-item estimated values
+  if (Array.isArray(items) && items.length > 0) {
+    await Promise.all(
+      items.map((item) =>
+        prisma.thriftItem.update({
+          where: { id: item.id },
+          data: {
+            estimatedValue: item.estimatedValue != null ? toMoney(item.estimatedValue) : undefined,
+            rejectionReason: item.approved === false ? (item.rejectionReason || null) : null,
+            status: item.approved === false ? 'REJECTED' : 'APPROVED',
+          },
+        })
+      )
+    );
+  }
+
+  const updatedListing = await prisma.thriftListing.update({
+    where: { id },
+    data: {
+      pickupDate: pickupDate ? new Date(pickupDate) : listing.pickupDate,
+      pickupSlot: pickupSlot !== undefined ? pickupSlot : listing.pickupSlot,
+      adminNotes: adminNotes !== undefined ? adminNotes : listing.adminNotes,
+      contactRequested: false, // clear call request when admin responds
+    },
+    include: {
+      user: { select: { id: true, name: true, email: true } },
+      items: true,
+    },
+  });
+
+  res.json({ success: true, data: updatedListing, message: 'Offer updated and resent to user' });
 });
 
 /**
@@ -650,6 +704,7 @@ module.exports = {
   getAllThriftListings,
   getThriftListingById,
   reviewThriftListing,
+  updateThriftOffer,
   markListingPickedUp,
   updateThriftItemStatus,
   listThriftItem,

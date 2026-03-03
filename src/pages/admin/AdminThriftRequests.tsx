@@ -17,17 +17,18 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Clock, CheckCircle, XCircle, Truck, Package, Eye,
   Loader2, Calendar, IndianRupee, ImageOff, ChevronDown, ChevronUp,
-  Search, Wrench, Tag, ChevronLeft, ChevronRight, MapPin,
+  Search, Wrench, Tag, ChevronLeft, ChevronRight, MapPin, Phone, Pencil,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const LISTING_STATUS_CFG: Record<string, { label: string; color: string; icon: any }> = {
-  PENDING:   { label: 'Pending Review',   color: 'bg-amber-100 text-amber-700',   icon: Clock },
-  APPROVED:  { label: 'Approved',         color: 'bg-blue-100 text-blue-700',     icon: CheckCircle },
-  REJECTED:  { label: 'Rejected',         color: 'bg-red-100 text-red-700',       icon: XCircle },
-  PICKED_UP: { label: 'Picked Up',        color: 'bg-purple-100 text-purple-700', icon: Truck },
-  COMPLETED: { label: 'Completed',        color: 'bg-green-100 text-green-700',   icon: CheckCircle },
+  PENDING:    { label: 'Pending Review',  color: 'bg-amber-100 text-amber-700',   icon: Clock },
+  OFFER_SENT: { label: 'Offer Sent',      color: 'bg-violet-100 text-violet-700', icon: IndianRupee },
+  APPROVED:   { label: 'Approved',        color: 'bg-blue-100 text-blue-700',     icon: CheckCircle },
+  REJECTED:   { label: 'Rejected',        color: 'bg-red-100 text-red-700',       icon: XCircle },
+  PICKED_UP:  { label: 'Picked Up',       color: 'bg-purple-100 text-purple-700', icon: Truck },
+  COMPLETED:  { label: 'Completed',       color: 'bg-green-100 text-green-700',   icon: CheckCircle },
 };
 
 // Format monetary value — strips floating point drift, omits decimals when whole number
@@ -122,17 +123,17 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
   const [pickupDate, setPickupDate] = useState('');
   const [pickupSlot, setPickupSlot] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
-  const [decision, setDecision] = useState<'APPROVED' | 'REJECTED'>('APPROVED');
+  const [decision, setDecision] = useState<'OFFER' | 'REJECTED'>('OFFER');
   const [itemReviews, setItemReviews] = useState<ReviewState>(() =>
     Object.fromEntries(listing.items.map((item) => [item.id, { approved: true, estimatedValue: '', rejectionReason: '' }]))
   );
 
   const reviewMutation = useMutation({
-    mutationFn: (d: 'APPROVED' | 'REJECTED') =>
+    mutationFn: (d: 'OFFER' | 'REJECTED') =>
       adminThriftApi.reviewListing(listing.id, {
         decision: d,
-        pickupDate: d === 'APPROVED' ? pickupDate : undefined,
-        pickupSlot: d === 'APPROVED' ? pickupSlot : undefined,
+        pickupDate: d === 'OFFER' ? pickupDate : undefined,
+        pickupSlot: d === 'OFFER' ? pickupSlot : undefined,
         adminNotes,
         items: listing.items.map((item) => ({
           id: item.id,
@@ -143,7 +144,7 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'thrift', 'requests'] });
-      toast({ title: 'Review submitted', description: `Listing ${decision.toLowerCase()} successfully.` });
+      toast({ title: decision === 'OFFER' ? 'Offer sent to seller!' : 'Listing rejected', description: decision === 'OFFER' ? 'The seller will be notified to review and respond.' : 'The listing has been rejected.' });
       onClose();
     },
     onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Review failed', variant: 'destructive' }),
@@ -158,7 +159,7 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Review Listing</DialogTitle>
+          <DialogTitle>Review &amp; Send Offer</DialogTitle>
           <DialogDescription>
             Submitted by <strong>{listing.user?.name}</strong> - {listing.items.length} items - {format(new Date(listing.createdAt), 'dd MMM yyyy')}
           </DialogDescription>
@@ -208,15 +209,15 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
                       </div>
                     </div>
                   </div>
-                  {rev?.approved && decision === 'APPROVED' ? (
+                  {rev?.approved && decision === 'OFFER' ? (
                     <div className="space-y-1">
-                      <Label className="text-xs">Estimated Value (Rs.) *</Label>
+                      <Label className="text-xs">Offer Value for Seller (Rs.) *</Label>
                       <div className="relative max-w-[160px]">
                         <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
                         <Input type="number" min="0" step="1" placeholder="0" value={rev.estimatedValue}
                           onChange={(e) => setItemReview(item.id, 'estimatedValue', e.target.value)} className="h-8 text-sm pl-7" />
                       </div>
-                      <p className="text-[10px] text-gray-400">Amount the user receives when items sell</p>
+                      <p className="text-[10px] text-gray-400">Amount the seller receives when their item sells</p>
                     </div>
                   ) : (!rev?.approved && (
                     <div className="space-y-1">
@@ -229,9 +230,9 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
               );
             })}
           </div>
-          {decision === 'APPROVED' && approvedCount > 0 && (
+          {decision === 'OFFER' && approvedCount > 0 && (
             <div className="space-y-3 border-t pt-4">
-              <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Schedule Pickup</p>
+              <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Proposed Pickup Schedule</p>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <Label className="text-xs">Pickup Date *</Label>
@@ -265,7 +266,7 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
             Reject All
           </Button>
           <Button
-            onClick={() => { setDecision('APPROVED'); reviewMutation.mutate('APPROVED'); }}
+            onClick={() => { setDecision('OFFER'); reviewMutation.mutate('OFFER'); }}
             disabled={
               reviewMutation.isPending ||
               (approvedCount > 0 && (
@@ -274,12 +275,138 @@ function ReviewDialog({ listing, open, onClose }: { listing: ThriftListing; open
                 listing.items.some((item) => itemReviews[item.id]?.approved && !itemReviews[item.id]?.estimatedValue)
               ))
             }
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-violet-600 hover:bg-violet-700"
           >
-            {reviewMutation.isPending && decision === 'APPROVED'
+            {reviewMutation.isPending && decision === 'OFFER'
               ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" />
-              : <CheckCircle className="h-4 w-4 mr-1.5" />}
-            Approve Listing
+              : <IndianRupee className="h-4 w-4 mr-1.5" />}
+            Send Offer to Seller
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── Edit Offer Dialog ─────────────────────────────────────────────────────
+
+function EditOfferDialog({ listing, open, onClose }: { listing: ThriftListing; open: boolean; onClose: () => void }) {
+  const qc = useQueryClient();
+  const [pickupDate, setPickupDate] = useState(() => listing.pickupDate ? new Date(listing.pickupDate).toISOString().split('T')[0] : '');
+  const [pickupSlot, setPickupSlot] = useState(listing.pickupSlot || '');
+  const [adminNotes, setAdminNotes] = useState(listing.adminNotes || '');
+  const [itemValues, setItemValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      listing.items
+        .filter((i) => i.status !== 'REJECTED')
+        .map((i) => [i.id, i.estimatedValue != null ? String(Number(i.estimatedValue)) : ''])
+    )
+  );
+
+  const approvedItems = listing.items.filter((i) => i.status !== 'REJECTED');
+
+  const updateMutation = useMutation({
+    mutationFn: () =>
+      adminThriftApi.updateOffer(listing.id, {
+        pickupDate: pickupDate || undefined,
+        pickupSlot: pickupSlot || undefined,
+        adminNotes: adminNotes || undefined,
+        items: approvedItems.map((item) => ({
+          id: item.id,
+          estimatedValue: parseFloat(itemValues[item.id] || '0') || 0,
+        })),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'thrift', 'requests'] });
+      toast({ title: 'Offer updated!', description: 'The seller will see the revised offer.' });
+      onClose();
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Update failed', variant: 'destructive' }),
+  });
+
+  const isValid = approvedItems.every((i) => !!itemValues[i.id] && parseFloat(itemValues[i.id]) > 0) && !!pickupDate && !!pickupSlot;
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Offer</DialogTitle>
+          <DialogDescription>
+            Revise your offer for <strong>{listing.user?.name}</strong>. The seller will be notified to review the updated offer.
+          </DialogDescription>
+        </DialogHeader>
+
+        {listing.contactRequested && (
+          <div className="flex items-center gap-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2.5 text-sm text-orange-700">
+            <Phone className="h-4 w-4 shrink-0" />
+            <span>Seller requested a call to negotiate pricing.</span>
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* Per-item offer values */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-gray-700">Item Offer Values</p>
+            {approvedItems.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 border border-gray-200 rounded-lg p-3">
+                <ItemThumb src={item.images?.[0]} alt={item.name} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{item.name}</p>
+                  <p className="text-xs text-gray-400">{CONDITION_LABEL[item.condition]}</p>
+                </div>
+                <div className="relative w-32 shrink-0">
+                  <IndianRupee className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                  <Input
+                    type="number" min="0" step="1" placeholder="0"
+                    value={itemValues[item.id] ?? ''}
+                    onChange={(e) => setItemValues((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                    className="h-8 text-sm pl-7"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Pickup schedule */}
+          <div className="space-y-3 border-t pt-3">
+            <p className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><Calendar className="h-4 w-4" /> Pickup Schedule</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">Pickup Date *</Label>
+                <Input type="date" value={pickupDate} min={new Date().toISOString().split('T')[0]} onChange={(e) => setPickupDate(e.target.value)} className="h-9 text-sm" />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Time Slot</Label>
+                <Select value={pickupSlot} onValueChange={setPickupSlot}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select slot" /></SelectTrigger>
+                  <SelectContent>{PICKUP_SLOTS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Note to Seller (optional)</Label>
+            <Textarea
+              placeholder="Explain any changes or add context for the seller..."
+              value={adminNotes}
+              onChange={(e) => setAdminNotes(e.target.value)}
+              rows={2}
+              className="text-sm resize-none"
+            />
+          </div>
+        </div>
+
+        <DialogFooter className="mt-4 gap-2">
+          <Button variant="outline" onClick={onClose} disabled={updateMutation.isPending}>Cancel</Button>
+          <Button
+            onClick={() => updateMutation.mutate()}
+            disabled={updateMutation.isPending || !isValid}
+            className="bg-violet-600 hover:bg-violet-700"
+          >
+            {updateMutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-1.5" />}
+            <IndianRupee className="h-4 w-4 mr-1.5" />
+            Update &amp; Resend Offer
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -363,12 +490,12 @@ function ItemPipelineDialog({ item, open, onClose }: { item: ThriftItem | null; 
   );
 }
 
-function ListingRow({ listing, onReview, onMarkPickedUp, onManageItem, isMarkingPickedUp }: {
-  listing: ThriftListing; onReview: () => void; onMarkPickedUp: () => void;
+function ListingRow({ listing, onReview, onEditOffer, onMarkPickedUp, onManageItem, isMarkingPickedUp }: {
+  listing: ThriftListing; onReview: () => void; onEditOffer: () => void; onMarkPickedUp: () => void;
   onManageItem: (item: ThriftItem) => void; isMarkingPickedUp: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const cfg = LISTING_STATUS_CFG[listing.status];
+  const cfg = LISTING_STATUS_CFG[listing.status] || LISTING_STATUS_CFG.PENDING;
   const Icon = cfg?.icon || Package;
 
   return (
@@ -378,6 +505,11 @@ function ListingRow({ listing, onReview, onMarkPickedUp, onManageItem, isMarking
           <div className="flex items-center gap-2 mb-1">
             <p className="font-medium text-sm">{listing.user?.name}</p>
             <span className="text-gray-400 text-xs">{listing.user?.email}</span>
+            {listing.contactRequested && listing.status === 'OFFER_SENT' && (
+              <span className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 border border-orange-200 rounded-full px-2 py-0.5">
+                <Phone className="h-3 w-3" /> Call requested
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span className={cn('inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium', cfg.color)}>
@@ -395,6 +527,11 @@ function ListingRow({ listing, onReview, onMarkPickedUp, onManageItem, isMarking
           {listing.status === 'PENDING' && (
             <Button size="sm" onClick={onReview} className="h-8 text-xs bg-blue-600 hover:bg-blue-700">
               <Eye className="h-3.5 w-3.5 mr-1" /> Review
+            </Button>
+          )}
+          {listing.status === 'OFFER_SENT' && (
+            <Button size="sm" onClick={onEditOffer} variant="outline" className="h-8 text-xs text-violet-700 border-violet-300 hover:bg-violet-50">
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Edit Offer
             </Button>
           )}
           {listing.status === 'APPROVED' && (
@@ -456,6 +593,7 @@ export default function AdminThriftRequests() {
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const [reviewListing, setReviewListing] = useState<ThriftListing | null>(null);
+  const [editOfferListing, setEditOfferListing] = useState<ThriftListing | null>(null);
   const [managingItem, setManagingItem] = useState<ThriftItem | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -480,6 +618,7 @@ export default function AdminThriftRequests() {
   const counts = {
     total: allListings.length,
     pending: allListings.filter((l) => l.status === 'PENDING').length,
+    offerSent: allListings.filter((l) => l.status === 'OFFER_SENT').length,
     approved: allListings.filter((l) => l.status === 'APPROVED').length,
     pickedUp: allListings.filter((l) => l.status === 'PICKED_UP').length,
     completed: allListings.filter((l) => l.status === 'COMPLETED').length,
@@ -490,10 +629,17 @@ export default function AdminThriftRequests() {
       <div className="p-6 space-y-5">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Thrift Requests</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Review seller submissions, approve items and schedule pickups</p>
+          <p className="text-sm text-gray-500 mt-0.5">Review seller submissions, send offers, and schedule pickups</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {[{ key: '', label: 'All', count: counts.total }, { key: 'PENDING', label: 'Pending', count: counts.pending }, { key: 'APPROVED', label: 'Approved', count: counts.approved }, { key: 'PICKED_UP', label: 'Picked Up', count: counts.pickedUp }, { key: 'COMPLETED', label: 'Completed', count: counts.completed }].map((s) => (
+          {[
+            { key: '',           label: 'All',       count: counts.total },
+            { key: 'PENDING',    label: 'Pending',   count: counts.pending },
+            { key: 'OFFER_SENT', label: 'Offer Sent', count: counts.offerSent },
+            { key: 'APPROVED',   label: 'Approved',  count: counts.approved },
+            { key: 'PICKED_UP',  label: 'Picked Up', count: counts.pickedUp },
+            { key: 'COMPLETED',  label: 'Completed', count: counts.completed },
+          ].map((s) => (
             <button key={s.key} onClick={() => setStatusFilter(s.key)}
               className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors', statusFilter === s.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400')}>
               {s.label} <span className="ml-1 font-bold">{s.count}</span>
@@ -511,14 +657,21 @@ export default function AdminThriftRequests() {
         ) : (
           <div className="space-y-3">
             {filtered.map((listing) => (
-              <ListingRow key={listing.id} listing={listing} onReview={() => setReviewListing(listing)}
-                onMarkPickedUp={() => pickupMutation.mutate(listing.id)} onManageItem={(item) => setManagingItem(item)}
-                isMarkingPickedUp={pickupMutation.isPending} />
+              <ListingRow
+                key={listing.id}
+                listing={listing}
+                onReview={() => setReviewListing(listing)}
+                onEditOffer={() => setEditOfferListing(listing)}
+                onMarkPickedUp={() => pickupMutation.mutate(listing.id)}
+                onManageItem={(item) => setManagingItem(item)}
+                isMarkingPickedUp={pickupMutation.isPending}
+              />
             ))}
           </div>
         )}
       </div>
       {reviewListing && <ReviewDialog listing={reviewListing} open={!!reviewListing} onClose={() => setReviewListing(null)} />}
+      {editOfferListing && <EditOfferDialog listing={editOfferListing} open={!!editOfferListing} onClose={() => setEditOfferListing(null)} />}
       {managingItem && <ItemPipelineDialog item={managingItem} open={!!managingItem} onClose={() => setManagingItem(null)} />}
     </AdminLayout>
   );

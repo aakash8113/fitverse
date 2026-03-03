@@ -254,14 +254,17 @@ export default function Cart() {
                                 {item.product.category}
                               </span>
                             </span>
-                            {item.size && (
-                              <span>
-                                Size:{" "}
-                                <span className="text-foreground font-medium">
+                            {/* Always show size — empty string means "no size on record" */}
+                            <span>
+                              Size:{" "}
+                              {item.size ? (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-foreground text-background text-xs font-bold tracking-wide">
                                   {item.size}
                                 </span>
-                              </span>
-                            )}
+                              ) : (
+                                <span className="text-muted-foreground font-medium">—</span>
+                              )}
+                            </span>
                             <span>
                               Price:{" "}
                               <span className="text-foreground font-medium">

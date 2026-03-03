@@ -20,7 +20,8 @@ type StatusVariant =
   | 'processing'
   | 'shipped'
   | 'delivered'
-  | 'cancelled';
+  | 'cancelled'
+  | 'refunded';
 
 const variantStyles: Record<StatusVariant, string> = {
   active: 'bg-green-50 text-green-700 ring-green-600/20',
@@ -45,6 +46,8 @@ const variantStyles: Record<StatusVariant, string> = {
   cancelled: 'bg-red-50 text-red-700 ring-red-600/20',
   blocked: 'bg-red-50 text-red-700 ring-red-600/20',
 
+  refunded: 'bg-purple-50 text-purple-700 ring-purple-600/20',
+
   admin: 'bg-purple-50 text-purple-700 ring-purple-600/20',
 };
 
@@ -67,6 +70,7 @@ const variantLabels: Record<StatusVariant, string> = {
   rejected: 'Rejected',
   cancelled: 'Cancelled',
   blocked: 'Blocked',
+  refunded: 'Returned',
   admin: 'Admin',
 };
 

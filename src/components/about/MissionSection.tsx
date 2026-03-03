@@ -68,7 +68,7 @@ export function MissionSection() {
 
           {/* Image */}
           <ScrollReveal direction="right">
-            <div className="relative">
+            <div className="relative overflow-hidden sm:overflow-visible">
               <div className="aspect-[4/5] rounded-2xl overflow-hidden">
                 <img
                   src={missionImg}
@@ -76,8 +76,8 @@ export function MissionSection() {
                   className="w-full h-full object-cover"
                 />
               </div>
-              {/* Decorative frame */}
-              <div className="absolute -bottom-4 -right-4 w-full h-full border border-border rounded-2xl -z-10" />
+              {/* Decorative frame — hidden on mobile to avoid overflow */}
+              <div className="hidden sm:block absolute -bottom-4 -right-4 w-full h-full border border-border rounded-2xl -z-10" />
             </div>
           </ScrollReveal>
         </div>

@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Package, ChevronRight, Calendar, Search, Loader2 } from "lucide-react";
+import { Package, ChevronRight, Calendar, Search, Loader2, RotateCcw } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ordersApi, Order, ApiResponse } from "@/services/api";
+import { ordersApi, returnsApi, Order, ApiResponse, ReturnRequest } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 const statusStyles = {
@@ -32,6 +32,13 @@ export default function Orders() {
     queryKey: ['orders'],
     queryFn: () => ordersApi.getMyOrders(),
   });
+
+  // Fetch return requests to show return status on each order
+  const { data: returnsData } = useQuery({
+    queryKey: ["my-returns"],
+    queryFn: returnsApi.getMyRequests,
+  });
+  const allReturns: ReturnRequest[] = returnsData?.data || [];
 
   // Cancel order mutation
   const cancelOrderMutation = useMutation({
@@ -137,15 +144,17 @@ export default function Orders() {
 
           {/* Filter Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-            <TabsList className="grid grid-cols-2 lg:grid-cols-7 w-full">
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="pending">Pending</TabsTrigger>
-              <TabsTrigger value="paid">Paid</TabsTrigger>
-              <TabsTrigger value="processing">Processing</TabsTrigger>
-              <TabsTrigger value="shipped">Shipped</TabsTrigger>
-              <TabsTrigger value="delivered">Delivered</TabsTrigger>
-              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto pb-1">
+              <TabsList className="flex lg:grid lg:grid-cols-7 w-max lg:w-full min-w-full">
+                <TabsTrigger value="all" className="whitespace-nowrap px-4">All</TabsTrigger>
+                <TabsTrigger value="pending" className="whitespace-nowrap px-4">Pending</TabsTrigger>
+                <TabsTrigger value="paid" className="whitespace-nowrap px-4">Paid</TabsTrigger>
+                <TabsTrigger value="processing" className="whitespace-nowrap px-4">Processing</TabsTrigger>
+                <TabsTrigger value="shipped" className="whitespace-nowrap px-4">Shipped</TabsTrigger>
+                <TabsTrigger value="delivered" className="whitespace-nowrap px-4">Delivered</TabsTrigger>
+                <TabsTrigger value="cancelled" className="whitespace-nowrap px-4">Cancelled</TabsTrigger>
+              </TabsList>
+            </div>
           </Tabs>
 
           {/* Orders List */}
@@ -156,22 +165,47 @@ export default function Orders() {
                   key={order.id}
                   className="glass rounded-2xl border border-border/50 p-6 hover:border-accent hover:shadow-lg transition-all duration-300 group"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <h3 className="text-lg font-semibold group-hover:text-accent transition-colors">
-                          {order.orderNumber || `Order #₹{order.id.slice(0, 8)}`}
-                        </h3>
-                        <Badge
-                          variant="outline"
-                          className={
-                            statusStyles[order.status as keyof typeof statusStyles]
-                          }
-                        >
-                          {order.status.charAt(0) + order.status.slice(1).toLowerCase()}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                  <div className="mb-4">
+                    {/* Top row: order number + badge */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2">
+                      <h3 className="text-base font-semibold group-hover:text-accent transition-colors truncate">
+                        {order.orderNumber || `Order #${order.id.slice(0, 8)}`}
+                      </h3>
+                      <Badge
+                        variant="outline"
+                        className={
+                          statusStyles[order.status as keyof typeof statusStyles]
+                        }
+                      >
+                        {order.status.charAt(0) + order.status.slice(1).toLowerCase()}
+                      </Badge>
+                      {/* Return/Replacement badge */}
+                      {(() => {
+                        const ret = allReturns.find(
+                          (r) => r.orderId === order.id && !["CANCELLED", "REJECTED"].includes(r.status)
+                        );
+                        if (!ret) return null;
+                        const isCompleted = ret.status === "COMPLETED";
+                        return (
+                          <Link to={`/returns/${ret.id}`}>
+                            <Badge
+                              variant="outline"
+                              className={isCompleted
+                                ? "bg-purple-100 text-purple-700 border-purple-200 gap-1"
+                                : "bg-orange-100 text-orange-700 border-orange-200 gap-1"}
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              {isCompleted
+                                ? (ret.type === "REPLACEMENT" ? "Replaced" : "Returned")
+                                : (ret.type === "REPLACEMENT" ? "Replacement Requested" : "Return Requested")}
+                            </Badge>
+                          </Link>
+                        );
+                      })()}
+                    </div>
+                    {/* Second row: meta + View Details */}
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3.5 w-3.5" />
                           {formatDate(order.createdAt)}
@@ -186,10 +220,8 @@ export default function Orders() {
                           ₹{Number(order.total).toFixed(2)}
                         </span>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Link to={`/orders/₹{order.id}`}>
-                        <Button variant="outline" size="sm" className="gap-2">
+                      <Link to={`/orders/${order.id}`} className="flex-shrink-0">
+                        <Button variant="outline" size="sm" className="gap-1">
                           View Details
                           <ChevronRight className="h-4 w-4" />
                         </Button>

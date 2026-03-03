@@ -1,178 +1,196 @@
-// Payment Service Abstraction
-// Currently mocked, ready for Stripe/Razorpay integration
+﻿// Payment Service — PhonePe Node.js Backend SDK v2.0.3
+// Docs: https://developer.phonepe.com/payment-gateway/backend-sdk/nodejs-be-sdk
 
+const { StandardCheckoutClient, Env, StandardCheckoutPayRequest, MetaInfo, RefundRequest } = require('pg-sdk-node');
+const config = require('../config/env');
 const logger = require('../config/logger');
-const { generateOrderNumber } = require('../utils/helpers');
+
+// 
+// SDK client initialisation (singleton)
+// 
+let _client = null;
+
+function getClient() {
+  if (_client) return _client;
+
+  const { clientId, clientSecret, clientVersion, env } = config.phonepe;
+
+  if (!clientId || !clientSecret) {
+    logger.warn('  PhonePe credentials not set — payments will be unavailable until configured.');
+    return null;
+  }
+
+  const sdkEnv = env === 'PRODUCTION' ? Env.PRODUCTION : Env.SANDBOX;
+  _client = StandardCheckoutClient.getInstance(clientId, clientSecret, clientVersion, sdkEnv);
+
+  logger.info(' PhonePe SDK initialised in ' + env + ' mode');
+  return _client;
+}
 
 class PaymentService {
+  // 
+  // Initiate Payment (redirect user to PhonePe)
+  // 
   /**
-   * Create Payment Intent
-   * @param {Object} orderData - {amount, currency, metadata}
-   * @returns {Promise<Object>} {paymentId, status, clientSecret}
+   * Create a PhonePe Standard Checkout payment.
+   * @param {Object} opts
+   * @param {string} opts.merchantOrderId  - Your unique order ID (we use DB order.id)
+   * @param {number} opts.amountInPaise    - Amount in paisa  (INR 1 = 100 paise)
+   * @param {string} opts.redirectUrl      - URL to redirect after payment (success or failure)
+   * @param {Object} [opts.metaInfo]       - Optional UDFs stored in PhonePe
+   * @returns {Promise<{redirectUrl: string, phonePeOrderId: string, state: string, expireAt: string}>}
    */
-  async createPaymentIntent(orderData) {
+  async initiatePayment({ merchantOrderId, amountInPaise, redirectUrl, metaInfo = {} }) {
+    const client = getClient();
+    if (!client) {
+      throw new Error('PhonePe SDK not initialised — check PHONEPE_CLIENT_ID / PHONEPE_CLIENT_SECRET in .env');
+    }
+
     try {
-      const { amount, currency = 'usd', metadata = {} } = orderData;
+      const meta = MetaInfo.builder()
+        .udf1(metaInfo.udf1 || '')
+        .udf2(metaInfo.udf2 || '')
+        .udf3(metaInfo.udf3 || '')
+        .build();
 
-      // ============================================
-      // 🚀 PRODUCTION UPGRADE POINT: Payment Gateway
-      // ============================================
-      // Replace mock with actual payment service
-      // Options: Stripe, Razorpay, PayPal, Square
-      //
-      // Example Stripe implementation:
-      // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      // const paymentIntent = await stripe.paymentIntents.create({
-      //   amount: Math.round(amount * 100), // Convert to cents
-      //   currency: currency,
-      //   metadata: metadata,
-      //   automatic_payment_methods: {
-      //     enabled: true,
-      //   },
-      // });
-      // return {
-      //   paymentId: paymentIntent.id,
-      //   status: paymentIntent.status,
-      //   clientSecret: paymentIntent.client_secret,
-      // };
-      // ============================================
+      const request = StandardCheckoutPayRequest.builder()
+        .merchantOrderId(merchantOrderId)
+        .amount(amountInPaise)
+        .redirectUrl(redirectUrl)
+        .expireAfter(1800)
+        .metaInfo(meta)
+        .build();
 
-      // Mock successful payment creation
-      const paymentId = `pay_mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      console.log('\n💳 ===== PAYMENT INTENT CREATED =====');
-      console.log(`💰 Amount: $${amount.toFixed(2)} ${currency.toUpperCase()}`);
-      console.log(`🆔 Payment ID: ${paymentId}`);
-      console.log(`📦 Metadata:`, metadata);
-      console.log('=====================================\n');
+      const response = await client.pay(request);
 
-      logger.info(`Payment intent created: ${paymentId} for amount: $${amount}`);
+      logger.info('PhonePe payment initiated | merchantOrderId=' + merchantOrderId + ' | state=' + response.state);
 
       return {
-        paymentId,
-        status: 'pending',
-        clientSecret: `${paymentId}_secret_mock`,
+        redirectUrl: response.redirectUrl,
+        phonePeOrderId: response.orderId,
+        state: response.state,
+        expireAt: response.expireAt,
       };
     } catch (error) {
-      logger.error(`Failed to create payment intent: ${error.message}`);
+      logger.error('PhonePe initiatePayment error: ' + error.message);
       throw error;
     }
   }
 
+  // 
+  // Check Order Status
+  // 
   /**
-   * Verify Payment
-   * @param {String} paymentId - Payment ID to verify
-   * @returns {Promise<Object>} {success, status, transactionId}
+   * Check the current status of a PhonePe order.
+   * @param {string} merchantOrderId - The same ID passed during initiation
    */
-  async verifyPayment(paymentId) {
+  async getOrderStatus(merchantOrderId) {
+    const client = getClient();
+    if (!client) throw new Error('PhonePe SDK not initialised');
+
     try {
-      // ============================================
-      // 🚀 PRODUCTION UPGRADE POINT: Payment Verification
-      // ============================================
-      // Replace mock with actual payment verification
-      //
-      // Example Stripe implementation:
-      // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      // const paymentIntent = await stripe.paymentIntents.retrieve(paymentId);
-      // return {
-      //   success: paymentIntent.status === 'succeeded',
-      //   status: paymentIntent.status,
-      //   transactionId: paymentIntent.id,
-      //   amount: paymentIntent.amount / 100,
-      // };
-      // ============================================
-
-      // Mock successful payment verification
-      const isSuccessful = Math.random() > 0.1; // 90% success rate for testing
-
-      console.log('\n✅ ===== PAYMENT VERIFICATION =====');
-      console.log(`🆔 Payment ID: ${paymentId}`);
-      console.log(`📊 Status: ${isSuccessful ? 'SUCCEEDED' : 'FAILED'}`);
-      console.log('===================================\n');
-
-      logger.info(`Payment verified: ${paymentId} - ${isSuccessful ? 'SUCCESS' : 'FAILED'}`);
-
+      const response = await client.getOrderStatus(merchantOrderId);
       return {
-        success: isSuccessful,
-        status: isSuccessful ? 'succeeded' : 'failed',
-        transactionId: paymentId,
+        state: response.state,
+        amount: response.amount,
+        orderId: response.orderId,
+        paymentDetails: response.paymentDetails || [],
       };
     } catch (error) {
-      logger.error(`Failed to verify payment: ${error.message}`);
+      logger.error('PhonePe getOrderStatus error: ' + error.message);
       throw error;
     }
   }
 
+  // 
+  // Validate Webhook Callback
+  // 
   /**
-   * Process Refund
-   * @param {String} paymentId - Payment ID to refund
-   * @param {Number} amount - Amount to refund
-   * @returns {Promise<Object>} {success, refundId}
+   * Validate an incoming PhonePe S2S webhook.
+   * @param {string} authorization  - from request headers
+   * @param {string} responseBody   - raw string body
    */
-  async processRefund(paymentId, amount) {
+  validateWebhook(authorization, responseBody) {
+    const client = getClient();
+    if (!client) throw new Error('PhonePe SDK not initialised');
+
+    const { webhookUsername, webhookPassword } = config.phonepe;
+
+    return client.validateCallback(
+      webhookUsername,
+      webhookPassword,
+      authorization,
+      responseBody,
+    );
+  }
+
+  // 
+  // Initiate Refund
+  // 
+  /**
+   * Initiate a PhonePe refund.
+   * @param {Object} opts
+   * @param {string} opts.merchantRefundId        - Your unique refund ID
+   * @param {string} opts.originalMerchantOrderId - The order ID the refund is for
+   * @param {number} opts.amountInPaise            - Amount to refund in paisa
+   */
+  async initiateRefund({ merchantRefundId, originalMerchantOrderId, amountInPaise }) {
+    const client = getClient();
+    if (!client) throw new Error('PhonePe SDK not initialised');
+
     try {
-      // ============================================
-      // 🚀 PRODUCTION UPGRADE POINT: Refund Processing
-      // ============================================
-      // Replace mock with actual refund service
-      //
-      // Example Stripe implementation:
-      // const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-      // const refund = await stripe.refunds.create({
-      //   payment_intent: paymentId,
-      //   amount: Math.round(amount * 100),
-      // });
-      // return {
-      //   success: refund.status === 'succeeded',
-      //   refundId: refund.id,
-      // };
-      // ============================================
+      const request = RefundRequest.builder()
+        .merchantRefundId(merchantRefundId)
+        .originalMerchantOrderId(originalMerchantOrderId)
+        .amount(amountInPaise)
+        .build();
 
-      const refundId = `refund_mock_${Date.now()}`;
+      const response = await client.refund(request);
 
-      console.log('\n💸 ===== REFUND PROCESSED =====');
-      console.log(`🆔 Payment ID: ${paymentId}`);
-      console.log(`💰 Refund Amount: $${amount.toFixed(2)}`);
-      console.log(`🔖 Refund ID: ${refundId}`);
-      console.log('===============================\n');
-
-      logger.info(`Refund processed: ${refundId} for payment: ${paymentId}`);
+      logger.info('PhonePe refund initiated | merchantRefundId=' + merchantRefundId + ' | state=' + response.state);
 
       return {
-        success: true,
-        refundId,
+        refundId: response.refundId,
+        state: response.state,
+        amount: response.amount,
       };
     } catch (error) {
-      logger.error(`Failed to process refund: ${error.message}`);
+      logger.error('PhonePe initiateRefund error: ' + error.message);
       throw error;
     }
   }
 
+  // 
+  // Check Refund Status
+  // 
   /**
-   * Process COD (Cash on Delivery) Order
-   * @param {Object} orderData - Order details
-   * @returns {Promise<Object>} {paymentId, status}
+   * Check status of a PhonePe refund.
+   * @param {string} merchantRefundId - The refund ID used during initiation
    */
+  async getRefundStatus(merchantRefundId) {
+    const client = getClient();
+    if (!client) throw new Error('PhonePe SDK not initialised');
+
+    try {
+      const response = await client.getRefundStatus(merchantRefundId);
+      return {
+        state: response.state,
+        amount: response.amount,
+        merchantRefundId: response.merchantRefundId,
+      };
+    } catch (error) {
+      logger.error('PhonePe getRefundStatus error: ' + error.message);
+      throw error;
+    }
+  }
+
+  // 
+  // COD — legacy helper (unchanged)
+  // 
   async processCOD(orderData) {
-    try {
-      const paymentId = `cod_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      console.log('\n💵 ===== COD ORDER =====');
-      console.log(`🆔 Payment ID: ${paymentId}`);
-      console.log(`💰 Amount: $${orderData.amount.toFixed(2)}`);
-      console.log(`📦 Order will be paid on delivery`);
-      console.log('=======================\n');
-
-      logger.info(`COD order created: ${paymentId}`);
-
-      return {
-        paymentId,
-        status: 'cod_pending',
-      };
-    } catch (error) {
-      logger.error(`Failed to process COD: ${error.message}`);
-      throw error;
-    }
+    const paymentId = 'cod_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    logger.info('COD order created: ' + paymentId);
+    return { paymentId, status: 'cod_pending' };
   }
 }
 

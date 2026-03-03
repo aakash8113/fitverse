@@ -86,7 +86,7 @@ class CartService {
 
     const sizeKey = size || '';
 
-    // Check if item with same size already in cart
+    // Check if item with same productId+size already in cart
     const existingItem = await prisma.cartItem.findFirst({
       where: {
         cartId: cart.id,
@@ -119,7 +119,7 @@ class CartService {
       });
     }
 
-    logger.info(`Item added to cart: User ${userId}, Product ${productId}`);
+    logger.info(`Item added to cart: User ${userId}, Product ${productId}, Size ${sizeKey}`);
 
     // Return updated cart
     return await this.getOrCreateCart(userId);

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard, RotateCcw } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -196,6 +196,12 @@ export function Navbar() {
                         <Link to="/orders" className="flex items-center cursor-pointer">
                           <Package className="mr-2 h-4 w-4" />
                           <span>Orders</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/returns" className="flex items-center cursor-pointer">
+                          <RotateCcw className="mr-2 h-4 w-4" />
+                          <span>My Returns</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>

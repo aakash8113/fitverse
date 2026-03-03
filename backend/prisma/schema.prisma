@@ -41,6 +41,7 @@ model User {
   addresses       Address[]
   thriftListings  ThriftListing[]
   thriftItems     ThriftItem[]
+  returnRequests  ReturnRequest[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -248,6 +249,7 @@ model Order {
   user       User        @relation(fields: [userId], references: [id])
   address    Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
   orderItems OrderItem[]
+  returnRequests ReturnRequest[]
   
   // Timestamps
   createdAt     DateTime @default(now())
@@ -271,10 +273,12 @@ model OrderItem {
   productImage String
   price        Decimal @db.Decimal(10, 2)
   quantity     Int
+  size         String  @default("")
   
   // Relations
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
+  returnItems ReturnRequestItem[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -290,8 +294,9 @@ model OrderItem {
 
 enum ThriftListingStatus {
   PENDING           // Awaiting admin review
-  APPROVED          // Admin accepted, pickup scheduled
-  REJECTED          // Admin rejected all items
+  OFFER_SENT        // Admin sent price offer, awaiting user response
+  APPROVED          // User accepted offer, pickup confirmed
+  REJECTED          // Admin rejected OR user declined offer
   PICKED_UP         // Items physically received
   COMPLETED         // All items listed/sold
 }
@@ -315,6 +320,65 @@ enum ThriftItemCondition {
   LIKE_NEW
 }
 
+// ============================================
+// RETURNS & REPLACEMENTS
+// ============================================
+
+model ReturnRequest {
+  id          String   @id @default(uuid())
+  requestNumber String @unique // e.g. "RET20260303001"
+  orderId     String
+  userId      String
+
+  type        String   // "RETURN" | "REPLACEMENT"
+  status      String   @default("REQUESTED")
+  // REQUESTED → APPROVED / REJECTED
+  // APPROVED  → ITEM_RECEIVED → REFUND_INITIATED / REPLACEMENT_SHIPPED → COMPLETED
+
+  reason      String   // "DAMAGED" | "WRONG_ITEM" | "SIZE_ISSUE" | "QUALITY_ISSUE" | "OTHER"
+  description String?  @db.Text
+  images      String[] @default([])
+
+  // For REPLACEMENT — requested new size
+  replacementSize String?
+
+  // For RETURN of COD order — bank / UPI details
+  bankAccountName String?
+  bankAccountNumber String?
+  bankIFSC        String?
+  upiHandle       String?
+
+  // Admin fields
+  adminNote   String?  @db.Text
+  resolvedAt  DateTime?
+
+  // Relations
+  order       Order          @relation(fields: [orderId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+  items       ReturnRequestItem[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+  @@map("return_requests")
+}
+
+model ReturnRequestItem {
+  id              String @id @default(uuid())
+  returnRequestId String
+  orderItemId     String
+  quantity        Int    @default(1)
+
+  returnRequest   ReturnRequest @relation(fields: [returnRequestId], references: [id], onDelete: Cascade)
+  orderItem       OrderItem     @relation(fields: [orderItemId], references: [id])
+
+  @@index([returnRequestId])
+  @@map("return_request_items")
+}
+
 model ThriftListing {
   id         String              @id @default(uuid())
   userId     String
@@ -330,6 +394,9 @@ model ThriftListing {
 
   // Admin communication
   adminNotes String?             @db.Text
+
+  // Offer negotiation
+  contactRequested Boolean       @default(false) // true when user clicks "Call Us"
 
   // Relations
   user          User          @relation(fields: [userId], references: [id])

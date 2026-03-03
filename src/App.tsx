@@ -18,6 +18,7 @@ import Cart from "./pages/Cart";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
 import Payment from "./pages/Payment";
+import PaymentReturn from "./pages/PaymentReturn";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import Account from "./pages/Account";
 import Orders from "./pages/Orders";
@@ -49,6 +50,10 @@ import AdminRefurbishment from "./pages/admin/AdminRefurbishment";
 import AdminThriftInventory from "./pages/admin/AdminThriftInventory";
 import AdminAIMonitoring from "./pages/admin/AdminAIMonitoring";
 import AdminUsers from "./pages/admin/AdminUsers";
+import ReturnRequestPage from "./pages/ReturnRequest";
+import MyReturns from "./pages/MyReturns";
+import ReturnDetail from "./pages/ReturnDetail";
+import AdminReturns from "./pages/admin/AdminReturns";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -89,6 +94,7 @@ const App = () => (
           <Route path="/cart" element={<ProtectedRoute requireVerification><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute requireVerification><Checkout /></ProtectedRoute>} />
           <Route path="/payment" element={<ProtectedRoute requireVerification><Payment /></ProtectedRoute>} />
+          <Route path="/payment-return" element={<ProtectedRoute requireVerification><PaymentReturn /></ProtectedRoute>} />
           <Route path="/order-confirmation" element={<ProtectedRoute requireVerification><OrderConfirmation /></ProtectedRoute>} />
           <Route path="/wishlist" element={<ProtectedRoute><Wishlist /></ProtectedRoute>} />
           
@@ -116,7 +122,12 @@ const App = () => (
           {/* Legal */}
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/returns" element={<ReturnPolicy />} />
+          <Route path="/return-policy" element={<ReturnPolicy />} />
+
+          {/* Returns & Replacements */}
+          <Route path="/returns/new" element={<ProtectedRoute requireVerification><ReturnRequestPage /></ProtectedRoute>} />
+          <Route path="/returns/:id" element={<ProtectedRoute requireVerification><ReturnDetail /></ProtectedRoute>} />
+          <Route path="/returns" element={<ProtectedRoute requireVerification><MyReturns /></ProtectedRoute>} />
           
           {/* Admin Panel */}
           <Route path="/admin" element={<AdminGuard><Navigate to="/admin/dashboard" replace /></AdminGuard>} />
@@ -128,6 +139,7 @@ const App = () => (
           <Route path="/admin/thrift-inventory" element={<AdminGuard><AdminThriftInventory /></AdminGuard>} />
           <Route path="/admin/ai-monitoring" element={<AdminGuard><AdminAIMonitoring /></AdminGuard>} />
           <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+          <Route path="/admin/returns" element={<AdminGuard><AdminReturns /></AdminGuard>} />
 
           {/* 404 - Must be last */}
           <Route path="*" element={<NotFound />} />

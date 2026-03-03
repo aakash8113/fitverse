@@ -27,6 +27,7 @@ router.put('/users/:id/unblock', adminController.unblockUser);
 router.get('/thrift/requests', adminController.getAllThriftListings);
 router.get('/thrift/requests/:id', adminController.getThriftListingById);
 router.put('/thrift/requests/:id/review', adminController.reviewThriftListing);
+router.put('/thrift/requests/:id/offer', adminController.updateThriftOffer); // edit offer after sending
 router.put('/thrift/requests/:id/pickup', adminController.markListingPickedUp);
 
 // Individual item management

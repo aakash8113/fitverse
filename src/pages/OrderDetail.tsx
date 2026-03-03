@@ -1,12 +1,12 @@
-﻿import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, MapPin, Package, Truck, CheckCircle, Loader2 } from "lucide-react";
+﻿import { Link, useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, MapPin, Package, Truck, CheckCircle, Loader2, RotateCcw } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ordersApi } from "@/services/api";
+import { ordersApi, returnsApi } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 
 const statusStyles = {
@@ -20,10 +20,16 @@ const statusStyles = {
 
 export default function OrderDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch order details
+  const { data: returnsData } = useQuery({
+    queryKey: ["my-returns"],
+    queryFn: returnsApi.getMyRequests,
+  });
+
   const { data: orderData, isLoading, error } = useQuery({
     queryKey: ["order", id],
     queryFn: () => ordersApi.getOrder(id!),
@@ -110,6 +116,28 @@ export default function OrderDetail() {
 
   const canCancel = order.status === "PENDING" || order.status === "PAID";
 
+  const deliveredDate = order.deliveredAt ? new Date(order.deliveredAt) : new Date(order.updatedAt);
+  const daysSinceDelivery = (Date.now() - deliveredDate.getTime()) / (1000 * 60 * 60 * 24);
+
+  // Find any existing return request for this order (ignore cancelled/rejected — those allow re-requesting)
+  const allReturns = returnsData?.data || [];
+  const activeReturn = allReturns.find(
+    (r) => r.orderId === order.id && !["CANCELLED", "REJECTED"].includes(r.status)
+  );
+  const canReturn = order.status === "DELIVERED" && daysSinceDelivery <= 7 && !activeReturn;
+
+  // Order item IDs that have been replaced (replacement shipped or completed)
+  const replacedOrderItemIds = new Set(
+    allReturns
+      .filter(
+        (r) =>
+          r.orderId === order.id &&
+          r.type === "REPLACEMENT" &&
+          ["REPLACEMENT_SHIPPED", "COMPLETED"].includes(r.status)
+      )
+      .flatMap((r) => r.items.map((i) => i.orderItemId))
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -132,7 +160,7 @@ export default function OrderDetail() {
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h1 className="text-2xl font-bold mb-2">
-                      Order {order.orderNumber || `#₹{order.id.slice(0, 8)}`}
+                      Order {order.orderNumber || `#${order.id.slice(0, 8)}`}
                     </h1>
                     <p className="text-sm text-muted-foreground">
                       Placed on {formatDate(order.createdAt)} at {formatTime(order.createdAt)}
@@ -140,7 +168,7 @@ export default function OrderDetail() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`?${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
+                    className={`${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}
                   >
                     {order.status.charAt(0) + order.status.slice(1).toLowerCase()}
                   </Badge>
@@ -167,6 +195,35 @@ export default function OrderDetail() {
                     )}
                   </Button>
                 )}
+
+                {canReturn && (
+                  <Button
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => navigate(`/returns/new?orderId=${order.id}`)}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                    Request Return / Replacement
+                  </Button>
+                )}
+
+                {/* Show existing return request status */}
+                {activeReturn && (
+                  <div className="flex items-center gap-3 mt-2 p-3 rounded-xl bg-muted/50 border border-border/60">
+                    <RotateCcw className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex-1 text-sm">
+                      <span className="font-medium">
+                        {activeReturn.type === "REPLACEMENT" ? "Replacement" : "Return"} request
+                      </span>{" "}
+                      <span className="text-muted-foreground">
+                        {activeReturn.status === "COMPLETED" ? "completed" : "in progress"} · {activeReturn.requestNumber}
+                      </span>
+                    </div>
+                    <Link to={`/returns/${activeReturn.id}`}>
+                      <Button variant="outline" size="sm">View Request</Button>
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Order Items */}
@@ -178,14 +235,17 @@ export default function OrderDetail() {
                       ? item.product.images[0]
                       : `http://localhost:5000/${item.product?.images?.[0] || ""}`;
 
+                    const isReplaced = replacedOrderItemIds.has(item.id);
+
                     return (
                       <div
                         key={index}
-                        className="flex gap-4 p-4 rounded-xl border border-border hover:border-accent transition-colors"
+                        className="flex flex-col sm:flex-row gap-4 p-4 rounded-xl border border-border hover:border-accent transition-colors"
                       >
+                        {/* Image */}
                         <Link
                           to={`/product/${item.product?.id}`}
-                          className="w-20 h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0"
+                          className="w-full sm:w-20 h-40 sm:h-20 rounded-lg overflow-hidden bg-secondary flex-shrink-0"
                         >
                           <img
                             src={imageUrl}
@@ -197,23 +257,39 @@ export default function OrderDetail() {
                             }}
                           />
                         </Link>
-                        <div className="flex-1">
-                          <Link to={`/product/${item.product?.id}`}>
-                            <h3 className="font-semibold hover:text-accent transition-colors">
-                              {item.product?.name || "Product"}
-                            </h3>
-                          </Link>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Quantity: {item.quantity}
+                        {/* Info */}
+                        <div className="flex-1 flex flex-col gap-1">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Link to={`/product/${item.product?.id}`}>
+                                <h3 className="font-semibold hover:text-accent transition-colors">
+                                  {item.product?.name || item.productName || "Product"}
+                                </h3>
+                              </Link>
+                              {isReplaced && (
+                                <Badge className="bg-violet-100 text-violet-700 border-violet-200 text-[10px] px-2 py-0.5 font-semibold" variant="outline">
+                                  Replaced
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="font-semibold flex-shrink-0">
+                              ₹{(Number(item.price) * item.quantity).toFixed(2)}
+                            </p>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Qty: {item.quantity}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Price: ₹{Number(item.price).toFixed(2)} each
+                            Price: ₹{Number(item.price).toFixed(2)}
                           </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-semibold">
-                            ₹{(Number(item.price) * item.quantity).toFixed(2)}
-                          </p>
+                          {item.size && (
+                            <p className="text-sm text-muted-foreground">
+                              Size:{" "}
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-foreground text-background text-xs font-bold tracking-wide">
+                                {item.size}
+                              </span>
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
@@ -234,7 +310,7 @@ export default function OrderDetail() {
                     <p className="font-medium mb-1">{order.address.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {order.address.addressLine1}
-                      {order.address.addressLine2 && `, ₹{order.address.addressLine2}`}
+                      {order.address.addressLine2 && `, ${order.address.addressLine2}`}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {order.address.city}, {order.address.state} {order.address.zipCode}
@@ -307,7 +383,7 @@ export default function OrderDetail() {
                       Contact Support
                     </Button>
                   </Link>
-                  <Link to={`/product/₹{order.items[0]?.productId}`}>
+                  <Link to={`/product/${order.items[0]?.productId}`}>
                     <Button variant="outline" className="w-full">
                       Buy Again
                     </Button>
