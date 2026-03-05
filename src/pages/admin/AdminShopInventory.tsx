@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
 import {
-  Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight,
+  Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 
 // â”€â”€â”€ Category Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -61,13 +61,11 @@ interface ProductFormData {
   category: string;
   subCategory: string;
   availableSizes: string[];
-  image?: File | null;
 }
 
 const emptyForm: ProductFormData = {
   name: '', description: '', price: '', stock: '', brand: '',
   gender: '', wearType: '', category: '', subCategory: '', availableSizes: [],
-  image: null,
 };
 
 const AdminShopInventory: React.FC = () => {
@@ -80,7 +78,10 @@ const AdminShopInventory: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProductFormData>(emptyForm);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [removingImage, setRemovingImage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -127,6 +128,17 @@ const AdminShopInventory: React.FC = () => {
     onError: (e: any) => toast({ title: 'Validation Error', description: getErrorDescription(e), variant: 'destructive' }),
   });
 
+  const deleteImageMutation = useMutation({
+    mutationFn: ({ productId, imagePath }: { productId: string; imagePath: string }) =>
+      productsApi.deleteProductImage(productId, imagePath),
+    onSuccess: (_data, { imagePath }) => {
+      setExistingImages((prev) => prev.filter((img) => img !== imagePath));
+      qc.invalidateQueries({ queryKey: ['admin', 'products'] });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Failed to remove image', variant: 'destructive' }),
+    onSettled: () => setRemovingImage(null),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => productsApi.deleteProduct(id),
     onSuccess: () => {
@@ -140,7 +152,9 @@ const AdminShopInventory: React.FC = () => {
   const openCreate = () => {
     setEditingProduct(null);
     setForm(emptyForm);
-    setImagePreview(null);
+    setExistingImages([]);
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
     setDialogOpen(true);
   };
 
@@ -157,9 +171,10 @@ const AdminShopInventory: React.FC = () => {
       category: p.category || '',
       subCategory: p.subCategory || '',
       availableSizes: p.availableSizes || [],
-      image: null,
     });
-    setImagePreview(p.images?.[0] || null);
+    setExistingImages(p.images || []);
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
     setDialogOpen(true);
   };
 
@@ -168,11 +183,23 @@ const AdminShopInventory: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setForm((f) => ({ ...f, image: file }));
-    setImagePreview(URL.createObjectURL(file));
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setNewImageFiles((prev) => [...prev, ...files]);
+    setNewImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+    e.target.value = '';
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (imagePath: string) => {
+    if (!editingProduct) return;
+    setRemovingImage(imagePath);
+    deleteImageMutation.mutate({ productId: editingProduct.id, imagePath });
   };
 
   const setFormField = (field: keyof ProductFormData, value: any) => {
@@ -214,7 +241,7 @@ const AdminShopInventory: React.FC = () => {
     if (form.subCategory) fd.append('subCategory', form.subCategory);
     fd.append('availableSizes', JSON.stringify(form.availableSizes));
     fd.append('isThrift', 'false');
-    if (form.image) fd.append('images', form.image);
+    newImageFiles.forEach((file) => fd.append('images', file));
 
     if (editingProduct) {
       updateMutation.mutate({ id: editingProduct.id, fd });
@@ -357,20 +384,60 @@ const AdminShopInventory: React.FC = () => {
             <DialogTitle>{editingProduct ? 'Edit Product' : 'Add Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Image upload */}
-            <div
-              className="border-2 border-dashed border-gray-200 rounded-lg h-32 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors relative overflow-hidden"
-              onClick={() => fileRef.current?.click()}
-            >
-              {imagePreview ? (
-                <img src={imagePreview} alt="preview" className="h-full w-full object-cover" />
-              ) : (
-                <>
-                  <ImagePlus className="h-6 w-6 text-gray-300 mb-1" />
-                  <p className="text-xs text-gray-400">Click to upload image</p>
-                </>
+            {/* Multi-image upload */}
+            <div className="space-y-2">
+              <Label className="text-xs">Images {editingProduct ? '(click × to remove existing)' : ''}</Label>
+              <div className="flex flex-wrap gap-2">
+                {/* Existing images (edit mode) */}
+                {existingImages.map((src, i) => (
+                  <div key={`ex-${i}`} className="relative h-20 w-20 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                    <img
+                      src={src.startsWith('http') ? src : `http://localhost:5000/${src}`}
+                      alt={`img ${i + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(src)}
+                      disabled={removingImage === src}
+                      className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center transition-colors"
+                    >
+                      {removingImage === src
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <X className="h-3 w-3" />}
+                    </button>
+                  </div>
+                ))}
+                {/* New staged images */}
+                {newImagePreviews.map((src, i) => (
+                  <div key={`new-${i}`} className="relative h-20 w-20 rounded-lg overflow-hidden border-2 border-blue-300 shrink-0">
+                    <img src={src} alt={`new ${i + 1}`} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(i)}
+                      className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <span className="absolute bottom-0 left-0 right-0 bg-blue-600/70 text-white text-[9px] text-center py-0.5">new</span>
+                  </div>
+                ))}
+                {/* Add more button */}
+                {(existingImages.length + newImagePreviews.length) < 8 && (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="h-20 w-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center hover:border-gray-500 transition-colors shrink-0"
+                  >
+                    <ImagePlus className="h-5 w-5 text-gray-400 mb-0.5" />
+                    <span className="text-[10px] text-gray-400">Add</span>
+                  </button>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagesChange} />
+              </div>
+              {newImagePreviews.length > 0 && (
+                <p className="text-[10px] text-blue-600">{newImagePreviews.length} new image{newImagePreviews.length !== 1 ? 's' : ''} ready to upload</p>
               )}
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">

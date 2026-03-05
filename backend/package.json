@@ -4,6 +4,7 @@
   "description": "Production-grade ecommerce backend for Fitverse",
   "main": "server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "nodemon server.js",
     "start": "node server.js",
     "prisma:generate": "prisma generate",

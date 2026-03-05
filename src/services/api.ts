@@ -320,6 +320,14 @@ export const productsApi = {
     const response = await api.delete<ApiResponse>(`/products/${id}`);
     return response.data;
   },
+
+  // Delete a single product image (admin only)
+  deleteProductImage: async (productId: string, imagePath: string) => {
+    const response = await api.delete<ApiResponse>(`/products/${productId}/images`, {
+      data: { imagePath },
+    });
+    return response.data;
+  },
 };
 
 // ============================================
