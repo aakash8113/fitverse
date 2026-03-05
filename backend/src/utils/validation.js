@@ -167,10 +167,12 @@ const createOrderSchema = Joi.object({
     'string.empty': 'Address ID is required',
     'string.guid': 'Invalid address ID format',
   }),
-  paymentMethod: Joi.string().valid('CARD', 'COD', 'WALLET').required().messages({
+  paymentMethod: Joi.string().valid('CARD', 'COD', 'WALLET', 'COINS').required().messages({
     'any.only': 'Invalid payment method',
     'any.required': 'Payment method is required',
   }),
+  coinsToUse: Joi.number().integer().min(0).optional(),
+  productIds: Joi.array().items(Joi.string().uuid()).optional(),
 });
 
 // ============================================
