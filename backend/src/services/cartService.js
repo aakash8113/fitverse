@@ -69,8 +69,10 @@ class CartService {
       throw new BadRequestError('Product is not available');
     }
 
-    if (product.stock < quantity) {
-      throw new BadRequestError(`Only ${product.stock} items available in stock`);
+    const sizeStockMap = product.sizeStock || {};
+    const sizeAvailable = sizeStockMap[size || ''] ?? 0;
+    if (sizeAvailable < quantity) {
+      throw new BadRequestError(`Only ${sizeAvailable} items available in size ${size || 'selected'}`);
     }
 
     // Get or create cart
@@ -98,9 +100,9 @@ class CartService {
     if (existingItem) {
       // Update quantity if total doesn't exceed stock
       const newQuantity = existingItem.quantity + quantity;
-      
-      if (newQuantity > product.stock) {
-        throw new BadRequestError(`Cannot add more. Only ${product.stock} items available.`);
+      const existingSizeAvailable = (product.sizeStock || {})[sizeKey] ?? 0;
+      if (newQuantity > existingSizeAvailable) {
+        throw new BadRequestError(`Cannot add more. Only ${existingSizeAvailable} items available in size ${sizeKey || 'selected'}.`);
       }
 
       await prisma.cartItem.update({
@@ -150,9 +152,10 @@ class CartService {
       throw new BadRequestError('Unauthorized');
     }
 
-    // Check stock
-    if (quantity > cartItem.product.stock) {
-      throw new BadRequestError(`Only ${cartItem.product.stock} items available`);
+    // Check per-size stock
+    const itemSizeAvailable = (cartItem.product.sizeStock || {})[cartItem.size || ''] ?? 0;
+    if (quantity > itemSizeAvailable) {
+      throw new BadRequestError(`Only ${itemSizeAvailable} items available in size ${cartItem.size || 'selected'}`);
     }
 
     // Update quantity

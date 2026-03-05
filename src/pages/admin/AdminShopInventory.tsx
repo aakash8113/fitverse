@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { productsApi, Product } from '@/services/api';
+import { productsApi, Product, getTotalStock } from '@/services/api';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -54,7 +54,7 @@ interface ProductFormData {
   name: string;
   description: string;
   price: string;
-  stock: string;
+  sizeStock: Record<string, number>;
   brand: string;
   gender: string;
   wearType: string;
@@ -64,7 +64,7 @@ interface ProductFormData {
 }
 
 const emptyForm: ProductFormData = {
-  name: '', description: '', price: '', stock: '', brand: '',
+  name: '', description: '', price: '', sizeStock: {}, brand: '',
   gender: '', wearType: '', category: '', subCategory: '', availableSizes: [],
 };
 
@@ -164,7 +164,7 @@ const AdminShopInventory: React.FC = () => {
       name: p.name,
       description: p.description || '',
       price: String(p.price),
-      stock: String(p.stock ?? 0),
+      sizeStock: (p.sizeStock as Record<string, number>) || {},
       brand: p.brand || '',
       gender: p.gender || '',
       wearType: p.wearType || '',
@@ -208,7 +208,7 @@ const AdminShopInventory: React.FC = () => {
       return;
     }
     if (field === 'wearType') {
-      setForm((f) => ({ ...f, wearType: value, category: '', subCategory: '', availableSizes: [] }));
+      setForm((f) => ({ ...f, wearType: value, category: '', subCategory: '', availableSizes: [], sizeStock: {} }));
       return;
     }
     if (field === 'category') {
@@ -219,12 +219,22 @@ const AdminShopInventory: React.FC = () => {
   };
 
   const toggleSize = (size: string) => {
-    setForm((f) => ({
-      ...f,
-      availableSizes: f.availableSizes.includes(size)
-        ? f.availableSizes.filter((s) => s !== size)
-        : [...f.availableSizes, size],
-    }));
+    setForm((f) => {
+      const removing = f.availableSizes.includes(size);
+      const newSizeStock = { ...f.sizeStock };
+      if (removing) {
+        delete newSizeStock[size];
+      } else {
+        newSizeStock[size] = 0;
+      }
+      return {
+        ...f,
+        availableSizes: removing
+          ? f.availableSizes.filter((s) => s !== size)
+          : [...f.availableSizes, size],
+        sizeStock: newSizeStock,
+      };
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -233,7 +243,7 @@ const AdminShopInventory: React.FC = () => {
     fd.append('name', form.name);
     fd.append('description', form.description);
     fd.append('price', form.price);
-    fd.append('stock', form.stock);
+    fd.append('sizeStock', JSON.stringify(form.sizeStock));
     fd.append('brand', form.brand);
     fd.append('gender', form.gender);
     fd.append('wearType', form.wearType);
@@ -335,9 +345,9 @@ const AdminShopInventory: React.FC = () => {
                       </td>
                       <td className="px-4 py-3 text-gray-600">{p.category || '—'}</td>
                       <td className="px-4 py-3 text-gray-900 font-medium">₹{parseFloat(String(p.price)).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-700">{p.stock ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-700">{getTotalStock(p.sizeStock as Record<string, number>)}</td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={(p.stock || 0) > 0 ? 'active' : 'inactive'} customLabel={(p.stock || 0) > 0 ? 'In Stock' : 'Out of Stock'} />
+                        <StatusBadge status={getTotalStock(p.sizeStock as Record<string, number>) > 0 ? 'active' : 'inactive'} customLabel={getTotalStock(p.sizeStock as Record<string, number>) > 0 ? 'In Stock' : 'Out of Stock'} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
@@ -453,19 +463,14 @@ const AdminShopInventory: React.FC = () => {
                 />
               </div>
 
-              {/* Price & Stock */}
+              {/* Price */}
               <div className="space-y-1">
                 <Label className="text-xs">Price (₹) *</Label>
                 <Input type="number" min="0" step="0.01" value={form.price}
                   onChange={(e) => setFormField('price', e.target.value)} required className="h-9 text-sm" />
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Stock *</Label>
-                <Input type="number" min="0" value={form.stock}
-                  onChange={(e) => setFormField('stock', e.target.value)} required className="h-9 text-sm" />
-              </div>
 
-              {/* Brand */}
+              {/* Brand (full width) */}
               <div className="col-span-2 space-y-1">
                 <Label className="text-xs">Brand</Label>
                 <Input value={form.brand} onChange={(e) => setFormField('brand', e.target.value)}
@@ -516,22 +521,49 @@ const AdminShopInventory: React.FC = () => {
                 </Select>
               </div>
 
-              {/* Available Sizes */}
+              {/* Available Sizes + per-size stock */}
               {sizesForWearType.length > 0 && (
                 <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Available Sizes</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {sizesForWearType.map((size) => (
-                      <label key={size} className="flex items-center gap-1.5 cursor-pointer">
-                        <Checkbox
-                          checked={form.availableSizes.includes(size)}
-                          onCheckedChange={() => toggleSize(size)}
-                          className="h-3.5 w-3.5"
-                        />
-                        <span className="text-xs text-gray-700">{size}</span>
-                      </label>
-                    ))}
+                  <Label className="text-xs">Sizes & Stock *</Label>
+                  <div className="space-y-2">
+                    {sizesForWearType.map((size) => {
+                      const checked = form.availableSizes.includes(size);
+                      return (
+                        <div key={size} className="flex items-center gap-3">
+                          <label className="flex items-center gap-1.5 cursor-pointer w-14 shrink-0">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={() => toggleSize(size)}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs font-medium text-gray-700">{size}</span>
+                          </label>
+                          {checked && (
+                            <div className="flex items-center gap-1.5">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={form.sizeStock[size] ?? 0}
+                                onChange={(e) =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    sizeStock: { ...f.sizeStock, [size]: parseInt(e.target.value) || 0 },
+                                  }))
+                                }
+                                className="h-7 w-20 text-sm text-center"
+                              />
+                              <span className="text-xs text-gray-400">units</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
+                  {form.availableSizes.length > 0 && (
+                    <p className="text-[10px] text-gray-500">
+                      Total: {Object.values(form.sizeStock).reduce((s, v) => s + v, 0)} units across {form.availableSizes.length} size{form.availableSizes.length !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               )}
 

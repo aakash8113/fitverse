@@ -1,10 +1,9 @@
-// AdminThriftInventory � Full CRUD for thrift products in the store
-// Replaced old read-only card view with full add/edit/delete + pagination.
+﻿// AdminThriftInventory - Full CRUD for thrift products in the store
 import React, { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { productsApi, Product } from '@/services/api';
+import { productsApi, Product, getTotalStock } from '@/services/api';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '@/components/ui/dialog';
@@ -15,9 +14,10 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
 import {
-  Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight,
+  Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 
 // --- Category Constants -------------------------------------------------------
@@ -55,20 +55,18 @@ interface ThriftProductFormData {
   name: string;
   description: string;
   price: string;
-  stock: string;
+  sizeStock: Record<string, number>;
   brand: string;
   gender: string;
   wearType: string;
   category: string;
   subCategory: string;
-  size: string;
-  image?: File | null;
+  availableSizes: string[];
 }
 
 const emptyForm: ThriftProductFormData = {
-  name: '', description: '', price: '', stock: '1', brand: '',
-  gender: '', wearType: '', category: '', subCategory: '',
-  size: '', image: null,
+  name: '', description: '', price: '', sizeStock: {}, brand: '',
+  gender: '', wearType: '', category: '', subCategory: '', availableSizes: [],
 };
 
 const AdminThriftInventory: React.FC = () => {
@@ -81,7 +79,10 @@ const AdminThriftInventory: React.FC = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState<ThriftProductFormData>(emptyForm);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+  const [newImagePreviews, setNewImagePreviews] = useState<string[]>([]);
+  const [removingImage, setRemovingImage] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data, isLoading } = useQuery({
@@ -129,6 +130,17 @@ const AdminThriftInventory: React.FC = () => {
     onError: (e: any) => toast({ title: 'Validation Error', description: getErrorDescription(e), variant: 'destructive' }),
   });
 
+  const deleteImageMutation = useMutation({
+    mutationFn: ({ productId, imagePath }: { productId: string; imagePath: string }) =>
+      productsApi.deleteProductImage(productId, imagePath),
+    onSuccess: (_data, { imagePath }) => {
+      setExistingImages((prev) => prev.filter((img) => img !== imagePath));
+      qc.invalidateQueries({ queryKey: ['admin', 'thrift-inventory'] });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Failed to remove image', variant: 'destructive' }),
+    onSettled: () => setRemovingImage(null),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => productsApi.deleteProduct(id),
     onSuccess: () => {
@@ -142,7 +154,9 @@ const AdminThriftInventory: React.FC = () => {
   const openCreate = () => {
     setEditingProduct(null);
     setForm(emptyForm);
-    setImagePreview(null);
+    setExistingImages([]);
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
     setDialogOpen(true);
   };
 
@@ -152,16 +166,17 @@ const AdminThriftInventory: React.FC = () => {
       name: p.name,
       description: p.description || '',
       price: String(p.price),
-      stock: String(p.stock ?? 1),
+      sizeStock: (p.sizeStock as Record<string, number>) || {},
       brand: p.brand || '',
       gender: p.gender || '',
       wearType: p.wearType || '',
       category: p.category || '',
       subCategory: p.subCategory || '',
-      size: p.availableSizes?.[0] || '',
-      image: null,
+      availableSizes: p.availableSizes || [],
     });
-    setImagePreview(p.images?.[0] || null);
+    setExistingImages(p.images || []);
+    setNewImageFiles([]);
+    setNewImagePreviews([]);
     setDialogOpen(true);
   };
 
@@ -170,20 +185,32 @@ const AdminThriftInventory: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setForm((f) => ({ ...f, image: file }));
-    setImagePreview(URL.createObjectURL(file));
+  const handleImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setNewImageFiles((prev) => [...prev, ...files]);
+    setNewImagePreviews((prev) => [...prev, ...files.map((f) => URL.createObjectURL(f))]);
+    e.target.value = '';
+  };
+
+  const removeNewImage = (index: number) => {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (imagePath: string) => {
+    if (!editingProduct) return;
+    setRemovingImage(imagePath);
+    deleteImageMutation.mutate({ productId: editingProduct.id, imagePath });
   };
 
   const setFormField = (field: keyof ThriftProductFormData, value: any) => {
     if (field === 'gender') {
-      setForm((f) => ({ ...f, gender: value, wearType: '', category: '', subCategory: '', size: '' }));
+      setForm((f) => ({ ...f, gender: value, wearType: '', category: '', subCategory: '', availableSizes: [], sizeStock: {} }));
       return;
     }
     if (field === 'wearType') {
-      setForm((f) => ({ ...f, wearType: value, category: '', subCategory: '', size: '' }));
+      setForm((f) => ({ ...f, wearType: value, category: '', subCategory: '', availableSizes: [], sizeStock: {} }));
       return;
     }
     if (field === 'category') {
@@ -193,21 +220,40 @@ const AdminThriftInventory: React.FC = () => {
     setForm((f) => ({ ...f, [field]: value }));
   };
 
+  const toggleSize = (size: string) => {
+    setForm((f) => {
+      const removing = f.availableSizes.includes(size);
+      const newSizeStock = { ...f.sizeStock };
+      if (removing) {
+        delete newSizeStock[size];
+      } else {
+        newSizeStock[size] = 0;
+      }
+      return {
+        ...f,
+        availableSizes: removing
+          ? f.availableSizes.filter((s) => s !== size)
+          : [...f.availableSizes, size],
+        sizeStock: newSizeStock,
+      };
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const fd = new FormData();
     fd.append('name', form.name);
     fd.append('description', form.description);
     fd.append('price', form.price);
-    fd.append('stock', form.stock);
+    fd.append('sizeStock', JSON.stringify(form.sizeStock));
     fd.append('brand', form.brand);
     fd.append('gender', form.gender);
     fd.append('wearType', form.wearType);
     fd.append('category', form.category);
     if (form.subCategory) fd.append('subCategory', form.subCategory);
-    fd.append('availableSizes', JSON.stringify(form.size ? [form.size] : []));
+    fd.append('availableSizes', JSON.stringify(form.availableSizes));
     fd.append('isThrift', 'true');
-    if (form.image) fd.append('images', form.image);
+    newImageFiles.forEach((file) => fd.append('images', file));
 
     if (editingProduct) {
       updateMutation.mutate({ id: editingProduct.id, fd });
@@ -273,7 +319,6 @@ const AdminThriftInventory: React.FC = () => {
                     <th className="text-left px-4 py-3 font-medium">Product</th>
                     <th className="text-left px-4 py-3 font-medium">Gender / Type</th>
                     <th className="text-left px-4 py-3 font-medium">Category</th>
-                    <th className="text-left px-4 py-3 font-medium">Size</th>
                     <th className="text-left px-4 py-3 font-medium">Price</th>
                     <th className="text-left px-4 py-3 font-medium">Stock</th>
                     <th className="text-left px-4 py-3 font-medium">Status</th>
@@ -304,11 +349,10 @@ const AdminThriftInventory: React.FC = () => {
                         {p.gender ? `${p.gender} / ${p.wearType || '—'}` : '—'}
                       </td>
                       <td className="px-4 py-3 text-gray-600">{p.category || '—'}</td>
-                      <td className="px-4 py-3 text-gray-600">{p.availableSizes?.[0] || '—'}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium">₹{parseFloat(String(p.price)).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-700">{p.stock ?? '—'}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">&#8377;{parseFloat(String(p.price)).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-gray-700">{getTotalStock(p.sizeStock as Record<string, number>)}</td>
                       <td className="px-4 py-3">
-                        <StatusBadge status={(p.stock || 0) > 0 ? 'active' : 'inactive'} customLabel={(p.stock || 0) > 0 ? 'Available' : 'Sold'} />
+                        <StatusBadge status={getTotalStock(p.sizeStock as Record<string, number>) > 0 ? 'active' : 'inactive'} customLabel={getTotalStock(p.sizeStock as Record<string, number>) > 0 ? 'Available' : 'Sold'} />
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
@@ -355,20 +399,60 @@ const AdminThriftInventory: React.FC = () => {
             <DialogTitle>{editingProduct ? 'Edit Thrift Product' : 'Add Thrift Product'}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Image upload */}
-            <div
-              className="border-2 border-dashed border-gray-200 rounded-lg h-32 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors relative overflow-hidden"
-              onClick={() => fileRef.current?.click()}
-            >
-              {imagePreview ? (
-                <img src={imagePreview} alt="preview" className="h-full w-full object-cover" />
-              ) : (
-                <>
-                  <ImagePlus className="h-6 w-6 text-gray-300 mb-1" />
-                  <p className="text-xs text-gray-400">Click to upload image</p>
-                </>
+            {/* Multi-image upload */}
+            <div className="space-y-2">
+              <Label className="text-xs">Images {editingProduct ? '(click x to remove existing)' : ''}</Label>
+              <div className="flex flex-wrap gap-2">
+                {/* Existing images (edit mode) */}
+                {existingImages.map((src, i) => (
+                  <div key={`ex-${i}`} className="relative h-20 w-20 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                    <img
+                      src={src.startsWith('http') ? src : `http://localhost:5000/${src}`}
+                      alt={`img ${i + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExistingImage(src)}
+                      disabled={removingImage === src}
+                      className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center transition-colors"
+                    >
+                      {removingImage === src
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <X className="h-3 w-3" />}
+                    </button>
+                  </div>
+                ))}
+                {/* New staged images */}
+                {newImagePreviews.map((src, i) => (
+                  <div key={`new-${i}`} className="relative h-20 w-20 rounded-lg overflow-hidden border-2 border-blue-300 shrink-0">
+                    <img src={src} alt={`new ${i + 1}`} className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => removeNewImage(i)}
+                      className="absolute top-0.5 right-0.5 bg-black/60 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                    <span className="absolute bottom-0 left-0 right-0 bg-blue-600/70 text-white text-[9px] text-center py-0.5">new</span>
+                  </div>
+                ))}
+                {/* Add more button */}
+                {(existingImages.length + newImagePreviews.length) < 8 && (
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    className="h-20 w-20 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center hover:border-gray-500 transition-colors shrink-0"
+                  >
+                    <ImagePlus className="h-5 w-5 text-gray-400 mb-0.5" />
+                    <span className="text-[10px] text-gray-400">Add</span>
+                  </button>
+                )}
+                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImagesChange} />
+              </div>
+              {newImagePreviews.length > 0 && (
+                <p className="text-[10px] text-blue-600">{newImagePreviews.length} new image{newImagePreviews.length !== 1 ? 's' : ''} ready to upload</p>
               )}
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -384,16 +468,11 @@ const AdminThriftInventory: React.FC = () => {
                 />
               </div>
 
-              {/* Price & Stock */}
+              {/* Price */}
               <div className="space-y-1">
-                <Label className="text-xs">Price (₹) *</Label>
+                <Label className="text-xs">Price (&#8377;) *</Label>
                 <Input type="number" min="0" step="0.01" value={form.price}
                   onChange={(e) => setFormField('price', e.target.value)} required className="h-9 text-sm" />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Stock *</Label>
-                <Input type="number" min="0" value={form.stock}
-                  onChange={(e) => setFormField('stock', e.target.value)} required className="h-9 text-sm" />
               </div>
 
               {/* Brand */}
@@ -447,26 +526,49 @@ const AdminThriftInventory: React.FC = () => {
                 </Select>
               </div>
 
-              {/* Size � single selection (thrift = one size per item) */}
+              {/* Sizes & Stock */}
               {sizesForWearType.length > 0 && (
                 <div className="col-span-2 space-y-2">
-                  <Label className="text-xs">Size <span className="text-gray-400">(select one)</span></Label>
-                  <div className="flex flex-wrap gap-2">
-                    {sizesForWearType.map((size) => (
-                      <button
-                        key={size}
-                        type="button"
-                        onClick={() => setFormField('size', form.size === size ? '' : size)}
-                        className={`px-3 py-1 rounded border text-xs font-medium transition-colors ${
-                          form.size === size
-                            ? 'bg-gray-900 text-white border-gray-900'
-                            : 'bg-white text-gray-700 border-gray-200 hover:border-gray-400'
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
+                  <Label className="text-xs">Sizes & Stock *</Label>
+                  <div className="space-y-2">
+                    {sizesForWearType.map((size) => {
+                      const checked = form.availableSizes.includes(size);
+                      return (
+                        <div key={size} className="flex items-center gap-3">
+                          <label className="flex items-center gap-1.5 cursor-pointer w-14 shrink-0">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={() => toggleSize(size)}
+                              className="h-3.5 w-3.5"
+                            />
+                            <span className="text-xs font-medium text-gray-700">{size}</span>
+                          </label>
+                          {checked && (
+                            <div className="flex items-center gap-1.5">
+                              <Input
+                                type="number"
+                                min="0"
+                                value={form.sizeStock[size] ?? 0}
+                                onChange={(e) =>
+                                  setForm((f) => ({
+                                    ...f,
+                                    sizeStock: { ...f.sizeStock, [size]: parseInt(e.target.value) || 0 },
+                                  }))
+                                }
+                                className="h-7 w-20 text-sm text-center"
+                              />
+                              <span className="text-xs text-gray-400">units</span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
+                  {form.availableSizes.length > 0 && (
+                    <p className="text-[10px] text-gray-500">
+                      Total: {Object.values(form.sizeStock).reduce((s, v) => s + v, 0)} units across {form.availableSizes.length} size{form.availableSizes.length !== 1 ? 's' : ''}
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -523,5 +625,3 @@ const AdminThriftInventory: React.FC = () => {
 };
 
 export default AdminThriftInventory;
-
-

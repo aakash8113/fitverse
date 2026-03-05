@@ -12,7 +12,7 @@ import { FilterSidebar, ShopFilters } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { productsApi, Product as ApiProduct } from "@/services/api";
+import { productsApi, Product as ApiProduct, getTotalStock } from "@/services/api";
 
 // Convert API product to frontend product format
 const convertProduct = (apiProduct: ApiProduct) => {
@@ -33,7 +33,7 @@ const convertProduct = (apiProduct: ApiProduct) => {
     category: apiProduct.gender?.toLowerCase() || '',
     isNew: false,
     description: apiProduct.description,
-    stock: apiProduct.stock,
+    stock: getTotalStock(apiProduct.sizeStock),
   };
 };
 

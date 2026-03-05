@@ -79,11 +79,13 @@ const createProductSchema = Joi.object({
     'number.positive': 'Price must be positive',
     'any.required': 'Price is required',
   }),
-  stock: Joi.number().integer().min(0).required().messages({
-    'number.base': 'Stock must be a number',
-    'number.integer': 'Stock must be an integer',
-    'number.min': 'Stock cannot be negative',
-  }),
+  // sizeStock: JSON string or object, e.g. {"S":4,"M":10}
+  sizeStock: Joi.alternatives()
+    .try(
+      Joi.object().pattern(Joi.string(), Joi.number().integer().min(0)),
+      Joi.string(),
+    )
+    .optional(),
   brand: Joi.string().max(100).optional().allow(''),
   gender: Joi.string().valid(...GENDERS).required().messages({
     'any.only': 'Gender must be MENS or WOMENS',
@@ -112,7 +114,12 @@ const updateProductSchema = Joi.object({
   name: Joi.string().min(3).max(200).optional(),
   description: Joi.string().min(10).optional(),
   price: Joi.number().positive().precision(2).optional(),
-  stock: Joi.number().integer().min(0).optional(),
+  sizeStock: Joi.alternatives()
+    .try(
+      Joi.object().pattern(Joi.string(), Joi.number().integer().min(0)),
+      Joi.string(),
+    )
+    .optional(),
   brand: Joi.string().max(100).optional().allow(''),
   gender: Joi.string().valid(...GENDERS).optional(),
   wearType: Joi.string().valid(...WEAR_TYPES).optional(),

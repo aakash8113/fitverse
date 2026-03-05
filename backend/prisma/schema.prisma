@@ -131,7 +131,6 @@ model Product {
   name        String
   description String               @db.Text
   price       Decimal              @db.Decimal(10, 2)
-  stock       Int                  @default(0)
   brand       String?
 
   // Category hierarchy
@@ -148,6 +147,9 @@ model Product {
 
   // Images
   images      String[]             @default([])
+
+  // Per-size stock: e.g. {"S":4,"M":10,"XL":3}
+  sizeStock   Json                 @default("{}")
 
   // Soft delete
   isActive    Boolean              @default(true)

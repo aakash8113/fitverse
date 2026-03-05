@@ -9,7 +9,7 @@ import { ProductCard } from "@/components/shop/ProductCard";
 import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { productsApi, Product as ApiProduct, PaginatedResponse } from "@/services/api";
+import { productsApi, Product as ApiProduct, PaginatedResponse, getTotalStock } from "@/services/api";
 
 // Same converter as Shop.tsx
 const convertProduct = (apiProduct: ApiProduct) => {
@@ -32,7 +32,7 @@ const convertProduct = (apiProduct: ApiProduct) => {
     category: apiProduct.category.toLowerCase(),
     isNew: false,
     description: apiProduct.description,
-    stock: apiProduct.stock,
+    stock: getTotalStock(apiProduct.sizeStock),
   };
 };
 

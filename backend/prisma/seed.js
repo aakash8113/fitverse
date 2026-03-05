@@ -10,14 +10,23 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...\n');
 
-  // Clear existing data
+  // Safety guard — refuse to seed if real products already exist in the database.
+  // This prevents accidentally wiping admin-created data on a shared/production DB.
+  const existingProductCount = await prisma.product.count();
+  if (existingProductCount > 0) {
+    console.log(`⚠️  Seed aborted: ${existingProductCount} products already exist in the database.`);
+    console.log('   The seed script is meant for fresh/empty databases only.');
+    console.log('   If you truly want to reset, manually delete data first via Prisma Studio or Supabase dashboard.');
+    return;
+  }
+
+  // Clear existing data (safe — only runs on empty DB per guard above)
   console.log('🗑️  Clearing existing data...');
   await prisma.orderItem.deleteMany();
   await prisma.cartItem.deleteMany();
   await prisma.order.deleteMany();
   await prisma.cart.deleteMany();
   await prisma.address.deleteMany();
-  await prisma.product.deleteMany();
   await prisma.thriftListing.deleteMany();
   await prisma.user.deleteMany();
   console.log('✅ Existing data cleared\n');
@@ -393,7 +402,14 @@ async function main() {
   ];
 
   for (const productData of products) {
-    await prisma.product.create({ data: productData });
+    const { stock, ...rest } = productData;
+    // Distribute total stock evenly across available sizes
+    const sizeStock = {};
+    if (rest.availableSizes && rest.availableSizes.length > 0) {
+      const perSize = Math.floor((stock || 0) / rest.availableSizes.length);
+      rest.availableSizes.forEach((s) => { sizeStock[s] = perSize; });
+    }
+    await prisma.product.create({ data: { ...rest, sizeStock } });
   }
   
   console.log(`✅ ${products.length} products created\n`);

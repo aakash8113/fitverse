@@ -22,7 +22,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { cn } from "@/lib/utils";
-import { productsApi, cartApi, Product as ApiProduct } from "@/services/api";
+import { productsApi, cartApi, Product as ApiProduct, getTotalStock, getSizeStock } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlistContext } from "@/contexts/WishlistContext";
@@ -43,7 +43,7 @@ const convertToCardProduct = (apiProduct: ApiProduct) => ({
   category: apiProduct.category.toLowerCase(),
   isNew: false,
   description: apiProduct.description,
-  stock: apiProduct.stock,
+  stock: getTotalStock(apiProduct.sizeStock),
 });
 
 // Sizes come from product.availableSizes
@@ -125,6 +125,13 @@ export default function ProductDetails() {
 
   const product = productData?.data;
   const availableSizes = product?.availableSizes || [];
+
+  // Stock for the currently selected size (or total if no size selected)
+  const selectedSizeStock = product
+    ? selectedSize
+      ? getSizeStock(product.sizeStock as Record<string, number>, selectedSize)
+      : getTotalStock(product.sizeStock as Record<string, number>)
+    : 0;
 
   // Auto-select first size when product loads
   useEffect(() => {
@@ -294,7 +301,7 @@ export default function ProductDetails() {
                       image: productImages[0] || "",
                       price: Number(product.price),
                       category: product.category,
-                      stock: product.stock,
+                      stock: getTotalStock(product.sizeStock as Record<string, number>),
                     });
                     toast({
                       title: isWishlisted(product.id) ? "Removed from wishlist" : "Added to wishlist",
@@ -354,9 +361,9 @@ export default function ProductDetails() {
                   <span className="text-sm font-medium">{averageRating}</span>
                   <Badge
                     variant="secondary"
-                    className={cn("text-xs", product.stock > 10 ? "bg-green-50 text-green-700 border-green-200" : product.stock > 0 ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-red-50 text-red-700 border-red-200")}
+                    className={cn("text-xs", selectedSizeStock > 10 ? "bg-green-50 text-green-700 border-green-200" : selectedSizeStock > 0 ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-red-50 text-red-700 border-red-200")}
                   >
-                    {product.stock > 10 ? "In Stock" : product.stock > 0 ? `Only ${product.stock} left` : "Out of Stock"}
+                    {selectedSizeStock > 10 ? "In Stock" : selectedSizeStock > 0 ? `Only ${selectedSizeStock} left in ${selectedSize || 'stock'}` : "Out of Stock"}
                   </Badge>
                 </div>
               </div>
@@ -462,9 +469,9 @@ export default function ProductDetails() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                    onClick={() => setQuantity(Math.min(selectedSizeStock, quantity + 1))}
                     className="h-12 w-12 rounded-none"
-                    disabled={quantity >= product.stock}
+                    disabled={quantity >= selectedSizeStock}
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -476,7 +483,7 @@ export default function ProductDetails() {
                   size="lg"
                   className="h-12 text-base font-semibold"
                   onClick={handleAddToCart}
-                  disabled={addingToCart || product.stock === 0}
+                  disabled={addingToCart || selectedSizeStock === 0}
                 >
                   {addingToCart ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Adding...</>
@@ -489,7 +496,7 @@ export default function ProductDetails() {
                   variant="outline"
                   className="h-12 text-base font-semibold"
                   onClick={handleBuyNow}
-                  disabled={buyingNow || addingToCart || product.stock === 0}
+                  disabled={buyingNow || addingToCart || selectedSizeStock === 0}
                 >
                   {buyingNow ? (
                     <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>

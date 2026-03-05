@@ -100,7 +100,7 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  stock: number;
+  sizeStock: Record<string, number>;
   brand?: string;
   gender: Gender;
   wearType: WearType;
@@ -113,6 +113,14 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
 }
+
+/** Sum of stock across all sizes */
+export const getTotalStock = (sizeStock?: Record<string, number>): number =>
+  Object.values(sizeStock || {}).reduce((s, v) => s + (v || 0), 0);
+
+/** Stock for a specific size */
+export const getSizeStock = (sizeStock: Record<string, number> | undefined, size: string): number =>
+  (sizeStock || {})[size] ?? 0;
 
 export interface PaginatedResponse<T> {
   success: boolean;

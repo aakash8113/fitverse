@@ -57,11 +57,12 @@ class OrderService {
       throw new BadRequestError('No matching items found in cart');
     }
 
-    // Validate stock for items being ordered
+    // Validate per-size stock for items being ordered
     for (const item of itemsToOrder) {
-      if (item.product.stock < item.quantity) {
+      const sizeAvail = (item.product.sizeStock || {})[item.size || ''] ?? 0;
+      if (sizeAvail < item.quantity) {
         throw new BadRequestError(
-          `Insufficient stock for ${item.product.name}. Only ${item.product.stock} available.`
+          `Insufficient stock for ${item.product.name} in size ${item.size || 'selected'}. Only ${sizeAvail} available.`
         );
       }
 
@@ -156,15 +157,12 @@ class OrderService {
           },
         });
 
-        // Reduce product stock
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
+        // Reduce per-size stock
+        const curProduct = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
+        const newSizeStock = { ...(curProduct.sizeStock || {}) };
+        const sk = item.size || '';
+        newSizeStock[sk] = Math.max(0, (newSizeStock[sk] || 0) - item.quantity);
+        await tx.product.update({ where: { id: item.productId }, data: { sizeStock: newSizeStock } });
       }
 
       // Only remove ordered items from cart (supports buy-now partial checkout)
@@ -317,16 +315,14 @@ class OrderService {
         },
       });
 
-      // Restore product stock
+      // Restore per-size stock
       for (const item of order.orderItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              increment: item.quantity,
-            },
-          },
-        });
+        const curP = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
+        if (!curP) continue;
+        const restoreStock = { ...(curP.sizeStock || {}) };
+        const rsk = item.size || '';
+        restoreStock[rsk] = (restoreStock[rsk] || 0) + item.quantity;
+        await tx.product.update({ where: { id: item.productId }, data: { sizeStock: restoreStock } });
       }
     });
 
@@ -486,8 +482,9 @@ class OrderService {
     if (itemsToOrder.length === 0) throw new BadRequestError('No matching items found in cart');
 
     for (const item of itemsToOrder) {
-      if (item.product.stock < item.quantity)
-        throw new BadRequestError(`Insufficient stock for ${item.product.name}. Only ${item.product.stock} available.`);
+      const avail = (item.product.sizeStock || {})[item.size || ''] ?? 0;
+      if (avail < item.quantity)
+        throw new BadRequestError(`Insufficient stock for ${item.product.name} in size ${item.size || 'selected'}. Only ${avail} available.`);
       if (!item.product.isActive)
         throw new BadRequestError(`${item.product.name} is no longer available`);
     }
@@ -529,10 +526,12 @@ class OrderService {
           },
         });
 
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
-        });
+        // Reduce per-size stock
+        const cur = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
+        const updSizeStock = { ...(cur.sizeStock || {}) };
+        const skp = item.size || '';
+        updSizeStock[skp] = Math.max(0, (updSizeStock[skp] || 0) - item.quantity);
+        await tx.product.update({ where: { id: item.productId }, data: { sizeStock: updSizeStock } });
       }
 
       // Remove ordered items from cart immediately
@@ -580,12 +579,14 @@ class OrderService {
     if (!order) return;
 
     await prisma.$transaction(async (tx) => {
-      // Restore stock
+      // Restore per-size stock
       for (const item of order.orderItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { increment: item.quantity } },
-        });
+        const failedProd = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
+        if (!failedProd) continue;
+        const failStock = { ...(failedProd.sizeStock || {}) };
+        const fsk = item.size || '';
+        failStock[fsk] = (failStock[fsk] || 0) + item.quantity;
+        await tx.product.update({ where: { id: item.productId }, data: { sizeStock: failStock } });
       }
       // Cancel order
       await tx.order.update({

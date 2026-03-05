@@ -28,12 +28,21 @@ class ProductService {
     }
     if (!Array.isArray(availableSizes)) availableSizes = [];
 
+    // Parse sizeStock — e.g. {"S":4,"M":10,"XL":3}
+    let sizeStock = productData.sizeStock || {};
+    if (typeof sizeStock === 'string') {
+      try { sizeStock = JSON.parse(sizeStock); } catch { sizeStock = {}; }
+    }
+    sizeStock = Object.fromEntries(
+      Object.entries(sizeStock).map(([k, v]) => [k, parseInt(v, 10) || 0])
+    );
+
     const product = await prisma.product.create({
       data: {
         name: productData.name,
         description: productData.description,
         price: Math.round(parseFloat(productData.price) * 100) / 100,
-        stock: parseInt(productData.stock, 10),
+        sizeStock,
         brand: productData.brand || null,
         gender: productData.gender,
         wearType: productData.wearType,
@@ -187,8 +196,16 @@ class ProductService {
     if (updateData.price) {
       updateData.price = parseFloat(updateData.price);
     }
-    if (updateData.stock !== undefined) {
-      updateData.stock = parseInt(updateData.stock, 10);
+    delete updateData.stock; // Replaced by sizeStock
+
+    // Parse sizeStock if provided
+    if (updateData.sizeStock !== undefined) {
+      if (typeof updateData.sizeStock === 'string') {
+        try { updateData.sizeStock = JSON.parse(updateData.sizeStock); } catch { updateData.sizeStock = {}; }
+      }
+      updateData.sizeStock = Object.fromEntries(
+        Object.entries(updateData.sizeStock).map(([k, v]) => [k, parseInt(v, 10) || 0])
+      );
     }
 
     // Parse availableSizes if provided
