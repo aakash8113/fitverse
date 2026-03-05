@@ -63,6 +63,7 @@ export interface User {
   role: 'USER' | 'ADMIN';
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  coinBalance: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -187,13 +188,14 @@ export interface Order {
   orderNumber: string;
   userId: string;
   addressId: string;
-  paymentMethod: 'CARD' | 'COD' | 'WALLET';
+  paymentMethod: 'CARD' | 'COD' | 'WALLET' | 'COINS';
   paymentStatus: string;
   paymentId?: string;
   subtotal: number;
   shipping: number;
   tax: number;
   total: number;
+  coinsUsed?: number;
   status: 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   deliveredAt?: string;
   items: OrderItem[];
@@ -380,7 +382,7 @@ export const cartApi = {
 
 export const ordersApi = {
   // Create order
-  createOrder: async (data: { addressId: string; paymentMethod: 'CARD' | 'COD' | 'WALLET'; productIds?: string[] }) => {
+  createOrder: async (data: { addressId: string; paymentMethod: 'CARD' | 'COD' | 'WALLET' | 'COINS'; productIds?: string[]; coinsToUse?: number }) => {
     const response = await api.post<ApiResponse<Order>>('/orders', data);
     return response.data;
   },
@@ -469,6 +471,17 @@ export const addressesApi = {
 export interface AdminUser extends User {
   _count?: { orders: number };
   isBlocked?: boolean;
+  coinBalance: number;
+}
+
+export interface CoinTransaction {
+  id: string;
+  userId: string;
+  amount: number; // positive = credit, negative = debit
+  type: 'THRIFT_REWARD' | 'ORDER_PAYMENT' | 'ADMIN_ADJUSTMENT';
+  description: string;
+  referenceId?: string;
+  createdAt: string;
 }
 
 export interface DashboardStats {
@@ -823,6 +836,7 @@ export const paymentApi = {
     addressId: string;
     paymentMethod: 'CARD' | 'WALLET';
     productIds?: string[];
+    coinsToUse?: number;
   }) => {
     const response = await api.post<ApiResponse<{
       orderId: string;
@@ -949,6 +963,24 @@ export const returnsApi = {
 
   adminUpdateStatus: async (id: string, data: { status: ReturnStatus; adminNote?: string }) => {
     const response = await api.patch<ApiResponse<ReturnRequest>>(`/returns/admin/${id}`, data);
+    return response.data;
+  },
+};
+
+// ============================================
+// FITVERSE COINS API
+// ============================================
+
+export const coinsApi = {
+  // Get coin balance and transaction history
+  getHistory: async () => {
+    const response = await api.get<ApiResponse<{ coinBalance: number; transactions: CoinTransaction[] }>>('/coins/history');
+    return response.data;
+  },
+
+  // Admin: adjust coins for a user
+  adminAdjust: async (userId: string, amount: number, description: string) => {
+    const response = await api.put<ApiResponse<{ id: string; coinBalance: number }>>(`/admin/users/${userId}/coins`, { amount, description });
     return response.data;
   },
 };

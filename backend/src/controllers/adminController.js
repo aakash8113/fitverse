@@ -93,6 +93,7 @@ const getUsers = asyncHandler(async (req, res) => {
       role: true,
       isEmailVerified: true,
       isPhoneVerified: true,
+      coinBalance: true,
       createdAt: true,
       updatedAt: true,
       _count: { select: { orders: true } },
@@ -118,6 +119,7 @@ const getUserById = asyncHandler(async (req, res) => {
       role: true,
       isEmailVerified: true,
       isPhoneVerified: true,
+      coinBalance: true,
       createdAt: true,
       updatedAt: true,
       orders: {
@@ -386,16 +388,24 @@ const updateThriftOffer = asyncHandler(async (req, res) => {
 
 /**
  * PUT /api/admin/thrift/requests/:id/pickup
- * Mark listing + all approved items as PICKED_UP
+ * Mark listing + all approved items as PICKED_UP, then credit Fitverse Coins
  */
 const markListingPickedUp = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
-  const listing = await prisma.thriftListing.findUnique({ where: { id } });
+  const listing = await prisma.thriftListing.findUnique({
+    where: { id },
+    include: { items: { where: { status: 'APPROVED' } } },
+  });
   if (!listing) throw new NotFoundError('Listing not found');
   if (listing.status !== 'APPROVED') {
     throw new BadRequestError('Listing must be APPROVED before marking picked up');
   }
+
+  // Calculate coins to credit (1 coin = ₹1, based on estimatedValue of APPROVED items)
+  const totalCoins = listing.items.reduce((sum, item) => {
+    return sum + Math.round(parseFloat(item.estimatedValue || '0'));
+  }, 0);
 
   // Update all APPROVED items to PICKED_UP
   await prisma.thriftItem.updateMany({
@@ -403,16 +413,38 @@ const markListingPickedUp = asyncHandler(async (req, res) => {
     data: { status: 'PICKED_UP' },
   });
 
-  const updated = await prisma.thriftListing.update({
-    where: { id },
-    data: { status: 'PICKED_UP' },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-      items: true,
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedListing = await tx.thriftListing.update({
+      where: { id },
+      data: { status: 'PICKED_UP' },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+        items: true,
+      },
+    });
+
+    // Credit coins to user if any
+    if (totalCoins > 0) {
+      await tx.user.update({
+        where: { id: listing.userId },
+        data: { coinBalance: { increment: totalCoins } },
+      });
+
+      await tx.coinTransaction.create({
+        data: {
+          userId: listing.userId,
+          amount: totalCoins,
+          type: 'THRIFT_REWARD',
+          description: `Reward for thrift pickup — ${listing.items.length} item(s) approved`,
+          referenceId: id,
+        },
+      });
+    }
+
+    return updatedListing;
   });
 
-  res.json({ success: true, data: updated, message: 'Marked as picked up' });
+  res.json({ success: true, data: updated, message: `Marked as picked up${totalCoins > 0 ? `. ${totalCoins} Fitverse Coins credited to user.` : ''}` });
 });
 
 /**
@@ -692,6 +724,56 @@ const moveRefurbishmentItemToInventory = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * PUT /api/admin/users/:id/coins
+ * Admin manually adds or deducts Fitverse Coins for a user
+ * Body: { amount: number (positive=credit, negative=debit), description: string }
+ */
+const adjustUserCoins = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { amount, description } = req.body;
+
+  if (amount === 0 || amount == null || isNaN(parseInt(amount))) {
+    throw new BadRequestError('Amount must be a non-zero integer');
+  }
+  if (!description || !description.trim()) {
+    throw new BadRequestError('Description is required');
+  }
+
+  const parsedAmount = parseInt(amount);
+
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundError('User not found');
+
+  // Prevent balance going negative
+  if (parsedAmount < 0 && user.coinBalance + parsedAmount < 0) {
+    throw new BadRequestError(`Cannot deduct ${Math.abs(parsedAmount)} coins — user only has ${user.coinBalance}`);
+  }
+
+  const [updatedUser] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: { coinBalance: { increment: parsedAmount } },
+      select: { id: true, name: true, email: true, coinBalance: true },
+    }),
+    prisma.coinTransaction.create({
+      data: {
+        userId: id,
+        amount: parsedAmount,
+        type: 'ADMIN_ADJUSTMENT',
+        description: description.trim(),
+        referenceId: null,
+      },
+    }),
+  ]);
+
+  res.json({
+    success: true,
+    data: updatedUser,
+    message: `${parsedAmount > 0 ? 'Credited' : 'Deducted'} ${Math.abs(parsedAmount)} Fitverse Coins`,
+  });
+});
+
 module.exports = {
   getDashboardStats,
   getUsers,
@@ -700,6 +782,8 @@ module.exports = {
   blockUser,
   unblockUser,
   getAllOrders,
+  // Coins
+  adjustUserCoins,
   // Thrift
   getAllThriftListings,
   getThriftListingById,

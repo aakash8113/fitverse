@@ -54,6 +54,7 @@ import ReturnRequestPage from "./pages/ReturnRequest";
 import MyReturns from "./pages/MyReturns";
 import ReturnDetail from "./pages/ReturnDetail";
 import AdminReturns from "./pages/admin/AdminReturns";
+import MyCoins from "./pages/MyCoins";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -111,6 +112,7 @@ const App = () => (
           <Route path="/addresses" element={<ProtectedRoute requireVerification><MyAddresses /></ProtectedRoute>} />
           <Route path="/payment-methods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/coins" element={<ProtectedRoute requireVerification><MyCoins /></ProtectedRoute>} />
           
           {/* Information Pages */}
           <Route path="/contact" element={<Contact />} />

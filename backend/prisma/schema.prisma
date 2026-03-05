@@ -35,6 +35,9 @@ model User {
   phoneOTP        String?
   otpExpiresAt    DateTime?
   
+  // Fitverse Coins
+  coinBalance     Int              @default(0)
+
   // Relations
   cart            Cart?
   orders          Order[]
@@ -42,6 +45,7 @@ model User {
   thriftListings  ThriftListing[]
   thriftItems     ThriftItem[]
   returnRequests  ReturnRequest[]
+  coinTransactions CoinTransaction[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -225,6 +229,7 @@ enum PaymentMethod {
   CARD
   COD
   WALLET
+  COINS
 }
 
 model Order {
@@ -243,6 +248,7 @@ model Order {
   shipping      Decimal       @db.Decimal(10, 2)
   tax           Decimal       @db.Decimal(10, 2)
   total         Decimal       @db.Decimal(10, 2)
+  coinsUsed     Int           @default(0)
   
   // Status
   status        OrderStatus   @default(PENDING)
@@ -455,4 +461,25 @@ model ThriftItem {
   @@index([userId])
   @@index([status])
   @@map("thrift_items")
+}
+
+// ============================================
+// FITVERSE COINS
+// ============================================
+
+model CoinTransaction {
+  id          String   @id @default(uuid())
+  userId      String
+  amount      Int      // positive = credit, negative = debit
+  type        String   // THRIFT_REWARD | ORDER_PAYMENT | ADMIN_ADJUSTMENT
+  description String
+  referenceId String?  // listingId or orderId
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@map("coin_transactions")
 }

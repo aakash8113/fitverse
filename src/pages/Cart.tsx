@@ -74,8 +74,7 @@ export default function Cart() {
     0
   );
   const shipping = subtotal > 0 ? 15.0 : 0;
-  const tax = subtotal * 0.08; // 8% tax
-  const total = subtotal + shipping + tax;
+  const total = subtotal + shipping;
 
   const steps = [
     { number: 1, label: "Cart" },
@@ -328,11 +327,6 @@ export default function Cart() {
                       <span className="text-muted-foreground">Shipping</span>
                       <span className="font-medium">₹{shipping.toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Tax (8%)</span>
-                      <span className="font-medium">₹{tax.toFixed(2)}</span>
-                    </div>
-
                     <Separator />
 
                     <div className="flex justify-between text-lg">

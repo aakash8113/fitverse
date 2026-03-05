@@ -226,6 +226,7 @@ class AuthService {
         role: true,
         isEmailVerified: true,
         isPhoneVerified: true,
+        coinBalance: true,
         createdAt: true,
         updatedAt: true,
       },

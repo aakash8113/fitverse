@@ -1,26 +1,30 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CreditCard, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CreditCard, Loader2, CircleDollarSign } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cartApi, ordersApi, paymentApi } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Payment() {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const addressId = searchParams.get("addressId") || "";
   const [currentStep] = useState(3);
   const [paymentMethod, setPaymentMethod] = useState<string>("COD");
+  const [useCoins, setUseCoins] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const buyNowProductId: string | undefined = (location.state as any)?.buyNowProductId;
@@ -61,8 +65,13 @@ export default function Payment() {
     0
   );
   const shipping = subtotal > 0 ? 15.0 : 0;
-  const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
+  const orderTotal = subtotal + shipping;
+
+  // Fitverse Coins
+  const coinBalance = user?.coinBalance ?? 0;
+  const coinsToApply = useCoins ? Math.min(coinBalance, Math.ceil(orderTotal)) : 0;
+  const total = Math.max(0, orderTotal - coinsToApply);
+  const fullyPaidByCoins = total === 0 && coinsToApply > 0;
 
   const steps = [
     { number: 1, label: "Cart" },
@@ -92,12 +101,13 @@ export default function Payment() {
 
     setIsProcessing(true);
     try {
-      if (paymentMethod === "COD") {
-        // COD: create order immediately, navigate to confirmation
+      if (paymentMethod === "COD" || fullyPaidByCoins) {
+        // COD or fully paid by coins: create order immediately
         await createOrderMutation.mutateAsync({
           addressId,
-          paymentMethod: "COD",
+          paymentMethod: fullyPaidByCoins ? "COINS" : "COD",
           ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
+          coinsToUse: coinsToApply,
         });
       } else {
         // CARD / WALLET: create a pending order and redirect to PhonePe
@@ -105,6 +115,7 @@ export default function Payment() {
           addressId,
           paymentMethod: paymentMethod as "CARD" | "WALLET",
           ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
+          coinsToUse: coinsToApply,
         });
         // Navigate user to PhonePe hosted checkout
         window.location.href = response.data.redirectUrl;
@@ -196,6 +207,15 @@ export default function Payment() {
               <h2 className="text-2xl font-bold mb-2">Payment Method</h2>
               <p className="text-muted-foreground mb-6">Choose how you'd like to pay</p>
 
+              {fullyPaidByCoins ? (
+                <div className="border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-5 flex items-center gap-3">
+                  <CircleDollarSign className="h-7 w-7 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-semibold text-yellow-800 dark:text-yellow-300">Paying with Fitverse Coins</p>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400">Your coins cover the full order total — no additional payment needed.</p>
+                  </div>
+                </div>
+              ) : (
               <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                 <div className="space-y-3">
                   {/* Cash on Delivery */}
@@ -273,6 +293,7 @@ export default function Payment() {
                   </div>
                 </div>
               </RadioGroup>
+              )}
             </div>
           </div>
 
@@ -329,16 +350,47 @@ export default function Payment() {
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="font-medium">₹{shipping.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax (8%)</span>
-                    <span className="font-medium">₹{tax.toFixed(2)}</span>
-                  </div>
+
+                  {/* Fitverse Coins Toggle */}
+                  {coinBalance > 0 && (
+                    <div className="rounded-xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-800 p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CircleDollarSign className="h-4 w-4 text-yellow-600" />
+                          <div>
+                            <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                              Fitverse Coins
+                            </p>
+                            <p className="text-xs text-yellow-600 dark:text-yellow-400">
+                              {coinBalance} coins available (₹{coinBalance} off)
+                            </p>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={useCoins}
+                          onCheckedChange={setUseCoins}
+                          className="data-[state=checked]:bg-yellow-500"
+                        />
+                      </div>
+                      {useCoins && (
+                        <div className="flex justify-between text-sm mt-2 pt-2 border-t border-yellow-200 dark:border-yellow-800">
+                          <span className="text-yellow-700 dark:text-yellow-300 font-medium">Coins discount</span>
+                          <span className="text-yellow-700 dark:text-yellow-300 font-semibold">-₹{coinsToApply.toFixed(2)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <Separator />
 
                   <div className="flex justify-between text-lg">
                     <span className="font-bold">Total</span>
-                    <span className="font-bold">₹{total.toFixed(2)}</span>
+                    <div className="text-right">
+                      {coinsToApply > 0 && (
+                        <p className="text-xs text-muted-foreground line-through">₹{orderTotal.toFixed(2)}</p>
+                      )}
+                      <span className="font-bold">₹{total.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -352,12 +404,17 @@ export default function Payment() {
                   {isProcessing ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      {paymentMethod === "COD" ? "Placing Order..." : "Redirecting to PhonePe..."}
+                      {fullyPaidByCoins ? "Placing Order..." : paymentMethod === "COD" ? "Placing Order..." : "Redirecting to PhonePe..."}
                     </>
                   ) : (
                     <>
-                      {paymentMethod === "COD" ? "Place Order" : "Proceed to PhonePe"}
-                      <ArrowRight className="w-5 h-5" />
+                      {fullyPaidByCoins ? (
+                        <>
+                          <CircleDollarSign className="w-4 h-4" />
+                          Pay with Fitverse Coins
+                        </>
+                      ) : paymentMethod === "COD" ? "Place Order" : "Proceed to PhonePe"}
+                      {!fullyPaidByCoins && <ArrowRight className="w-5 h-5" />}
                     </>
                   )}
                 </Button>

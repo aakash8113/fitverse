@@ -52,7 +52,6 @@ export default function OrderConfirmation() {
               <div className="space-y-3">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span className="font-medium">₹{Number(order.subtotal).toFixed(2)}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Shipping</span><span className="font-medium">₹{Number(order.shipping).toFixed(2)}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Tax</span><span className="font-medium">₹{Number(order.tax).toFixed(2)}</span></div>
                 <Separator />
                 <div className="flex justify-between text-lg"><span className="font-bold">Total</span><span className="font-bold">₹{Number(order.total).toFixed(2)}</span></div>
               </div>

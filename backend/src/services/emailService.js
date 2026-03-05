@@ -273,10 +273,6 @@ async function sendOrderConfirmationEmail(to, name, order) {
         <td style="padding:6px 0;font-size:13px;color:#64748b;text-align:right;">₹${parseFloat(order.shipping || 0).toFixed(2)}</td>
       </tr>
       <tr>
-        <td style="padding:6px 0;font-size:13px;color:#64748b;">Tax</td>
-        <td style="padding:6px 0;font-size:13px;color:#64748b;text-align:right;">₹${parseFloat(order.tax || 0).toFixed(2)}</td>
-      </tr>
-      <tr>
         <td style="padding:12px 0 0;border-top:2px solid #e2e8f0;font-size:16px;font-weight:700;color:#0f172a;">Total</td>
         <td style="padding:12px 0 0;border-top:2px solid #e2e8f0;font-size:16px;font-weight:700;color:#0f172a;text-align:right;">₹${parseFloat(order.total || 0).toFixed(2)}</td>
       </tr>

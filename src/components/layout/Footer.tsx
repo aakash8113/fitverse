@@ -48,7 +48,6 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-primary-foreground/70">
               <li><Link to="/shop?category=WOMEN" className="hover:text-primary-foreground transition-colors">Women</Link></li>
               <li><Link to="/shop?category=MEN" className="hover:text-primary-foreground transition-colors">Men</Link></li>
-              <li><Link to="/shop?category=UNISEX" className="hover:text-primary-foreground transition-colors">Unisex</Link></li>
               <li><Link to="/collections" className="hover:text-primary-foreground transition-colors">Collections</Link></li>
             </ul>
           </div>

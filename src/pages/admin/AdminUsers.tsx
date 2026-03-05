@@ -2,15 +2,16 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { adminApi, AdminUser } from '@/services/api';
+import { adminApi, AdminUser, coinsApi } from '@/services/api';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import {
-  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert,
+  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert, CircleDollarSign,
 } from 'lucide-react';
 
 const MOCK_USERS: AdminUser[] = [
@@ -46,6 +47,10 @@ const AdminUsers: React.FC = () => {
   const [roleFilter, setRoleFilter] = useState<'all' | 'USER' | 'ADMIN'>('all');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [coinUser, setCoinUser] = useState<AdminUser | null>(null);
+  const [coinDialogOpen, setCoinDialogOpen] = useState(false);
+  const [coinAmount, setCoinAmount] = useState('');
+  const [coinDescription, setCoinDescription] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users'],
@@ -65,6 +70,20 @@ const AdminUsers: React.FC = () => {
     onError: () => toast({ title: 'Error', description: 'Failed to update user', variant: 'destructive' }),
   });
 
+  const coinMutation = useMutation({
+    mutationFn: ({ userId, amount, description }: { userId: string; amount: number; description: string }) =>
+      coinsApi.adminAdjust(userId, amount, description),
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast({ title: 'Coins adjusted', description: data.message });
+      setCoinDialogOpen(false);
+      setCoinAmount('');
+      setCoinDescription('');
+    },
+    onError: (err: any) =>
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to adjust coins', variant: 'destructive' }),
+  });
+
   const filtered = users.filter((u) => {
     const matchSearch =
       !search ||
@@ -77,6 +96,13 @@ const AdminUsers: React.FC = () => {
   const openDetail = (u: AdminUser) => {
     setSelectedUser(u);
     setDetailOpen(true);
+  };
+
+  const openCoinDialog = (u: AdminUser) => {
+    setCoinUser(u);
+    setCoinAmount('');
+    setCoinDescription('');
+    setCoinDialogOpen(true);
   };
 
   const exportCSV = () => {
@@ -165,6 +191,7 @@ const AdminUsers: React.FC = () => {
                     <th className="text-left px-4 py-3 font-medium">Role</th>
                     <th className="text-left px-4 py-3 font-medium">Verified</th>
                     <th className="text-left px-4 py-3 font-medium">Orders</th>
+                    <th className="text-left px-4 py-3 font-medium">Coins</th>
                     <th className="text-left px-4 py-3 font-medium">Joined</th>
                     <th className="text-left px-4 py-3 font-medium">Status</th>
                     <th className="text-right px-4 py-3 font-medium">Actions</th>
@@ -196,6 +223,12 @@ const AdminUsers: React.FC = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-gray-700">{user._count?.orders ?? 0}</td>
+                      <td className="px-4 py-3">
+                        <span className="flex items-center gap-1 text-xs text-yellow-700 font-medium">
+                          <CircleDollarSign className="h-3 w-3" />
+                          {user.coinBalance ?? 0}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-gray-500">
                         {new Date(user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
@@ -214,6 +247,13 @@ const AdminUsers: React.FC = () => {
                             title="View profile"
                           >
                             <Eye className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => openCoinDialog(user)}
+                            className="text-gray-400 hover:text-yellow-600 p-1 rounded hover:bg-yellow-50 transition-colors"
+                            title="Adjust coins"
+                          >
+                            <CircleDollarSign className="h-3.5 w-3.5" />
                           </button>
                           {user.role !== 'ADMIN' && (
                             <button
@@ -239,6 +279,79 @@ const AdminUsers: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Coin Adjustment Dialog */}
+      <Dialog open={coinDialogOpen} onOpenChange={setCoinDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CircleDollarSign className="h-5 w-5 text-yellow-600" />
+              Adjust Fitverse Coins
+            </DialogTitle>
+          </DialogHeader>
+          {coinUser && (
+            <div className="space-y-4">
+              <div className="text-sm text-gray-600 bg-yellow-50 rounded-lg p-3">
+                <p className="font-medium text-gray-800">{coinUser.name}</p>
+                <p className="text-xs text-gray-500">{coinUser.email}</p>
+                <p className="text-xs text-yellow-700 font-medium mt-1">
+                  Current balance: {coinUser.coinBalance ?? 0} coins
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coin-amount" className="text-sm font-medium">
+                  Amount <span className="text-gray-400 font-normal">(positive to credit, negative to deduct)</span>
+                </Label>
+                <Input
+                  id="coin-amount"
+                  type="number"
+                  placeholder="e.g. 50 or -20"
+                  value={coinAmount}
+                  onChange={(e) => setCoinAmount(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="coin-desc" className="text-sm font-medium">Reason / Description</Label>
+                <Input
+                  id="coin-desc"
+                  placeholder="e.g. Loyalty bonus, correction, etc."
+                  value={coinDescription}
+                  onChange={(e) => setCoinDescription(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => setCoinDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white"
+                  disabled={coinMutation.isPending || !coinAmount || !coinDescription}
+                  onClick={() => {
+                    if (!coinUser) return;
+                    coinMutation.mutate({
+                      userId: coinUser.id,
+                      amount: parseInt(coinAmount),
+                      description: coinDescription,
+                    });
+                  }}
+                >
+                  {coinMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : 'Apply'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* User detail dialog */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>

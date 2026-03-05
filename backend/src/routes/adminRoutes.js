@@ -22,6 +22,7 @@ router.get('/users/:id', adminController.getUserById);
 router.get('/users/:id/orders', adminController.getUserOrders);
 router.put('/users/:id/block', adminController.blockUser);
 router.put('/users/:id/unblock', adminController.unblockUser);
+router.put('/users/:id/coins', adminController.adjustUserCoins);
 
 // Thrift requests (listing review workflow)
 router.get('/thrift/requests', adminController.getAllThriftListings);

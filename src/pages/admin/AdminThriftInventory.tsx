@@ -22,7 +22,7 @@ import {
 
 // --- Category Constants -------------------------------------------------------
 
-const GENDERS = [{ value: 'MENS', label: "Men's" }, { value: 'WOMENS', label: "Women's" }, { value: 'UNISEX', label: 'Unisex' }];
+const GENDERS = [{ value: 'MENS', label: "Men's" }, { value: 'WOMENS', label: "Women's" }];
 const WEAR_TYPES = [{ value: 'TOPWEAR', label: 'Topwear' }, { value: 'BOTTOMWEAR', label: 'Bottomwear' }];
 const TOPWEAR_CATS = [
   { value: 'TSHIRT', label: 'T-Shirt' }, { value: 'SHIRT', label: 'Shirt' },

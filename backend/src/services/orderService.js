@@ -17,7 +17,7 @@ class OrderService {
    * @returns {Promise<Object>} Created order
    */
   async createOrder(userId, orderData) {
-    const { addressId, paymentMethod, productIds } = orderData;
+    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse } = orderData;
 
     // Verify address exists and belongs to user
     const address = await prisma.address.findUnique({
@@ -77,9 +77,14 @@ class OrderService {
     }, 0);
 
     const shipping = 15.00; // Fixed shipping cost
-    const taxRate = 0.08; // 8% tax
-    const tax = subtotal * taxRate;
-    const total = subtotal + shipping + tax;
+    const tax = 0; // Prices are inclusive of tax
+
+    // Fitverse Coins discount
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
+    const maxCoins = Math.ceil(subtotal + shipping);
+    const coinsToUse = Math.min(Math.max(0, parseInt(rawCoinsToUse || 0)), user.coinBalance, maxCoins);
+    const total = Math.max(0, subtotal + shipping - coinsToUse);
+    const effectivePaymentMethod = total === 0 ? 'COINS' : paymentMethod;
 
     // Generate unique order number
     const orderNumber = generateOrderNumber();
@@ -90,13 +95,13 @@ class OrderService {
     let paymentStatus = 'PENDING';
 
     try {
-      if (paymentMethod === 'COD') {
+      if (paymentMethod === 'COD' || effectivePaymentMethod === 'COINS') {
         paymentResult = await paymentService.processCOD({
           amount: total,
           orderNumber,
         });
         paymentId = paymentResult.paymentId;
-        paymentStatus = 'COD_PENDING';
+        paymentStatus = total === 0 ? 'COMPLETED' : 'COD_PENDING';
       } else {
         // Create payment intent
         paymentResult = await paymentService.createPaymentIntent({
@@ -131,14 +136,15 @@ class OrderService {
           orderNumber,
           userId,
           addressId,
-          paymentMethod,
+          paymentMethod: effectivePaymentMethod,
           paymentStatus,
           paymentId,
           subtotal,
           shipping,
           tax,
           total,
-          status: paymentMethod === 'COD' ? 'PENDING' : 'PAID',
+          coinsUsed: coinsToUse,
+          status: effectivePaymentMethod === 'COD' ? 'PENDING' : 'PAID',
         },
       });
 
@@ -172,6 +178,23 @@ class OrderService {
           productId: { in: itemsToOrder.map((i) => i.productId) },
         },
       });
+
+      // Deduct coins from user balance if used
+      if (coinsToUse > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { coinBalance: { decrement: coinsToUse } },
+        });
+        await tx.coinTransaction.create({
+          data: {
+            userId,
+            amount: -coinsToUse,
+            type: 'ORDER_PAYMENT',
+            description: `Coins used for order ${orderNumber}`,
+            referenceId: newOrder.id,
+          },
+        });
+      }
 
       return newOrder;
     });
@@ -464,7 +487,7 @@ class OrderService {
    * @returns {Promise<Object>} The newly created order
    */
   async createPendingOrder(userId, orderData) {
-    const { addressId, paymentMethod, productIds } = orderData;
+    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse } = orderData;
 
     const address = await prisma.address.findUnique({ where: { id: addressId } });
     if (!address) throw new NotFoundError('Address not found');
@@ -491,9 +514,14 @@ class OrderService {
 
     const subtotal = itemsToOrder.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
     const shipping = 15.0;
-    const taxRate = 0.08;
-    const tax = subtotal * taxRate;
-    const total = subtotal + shipping + tax;
+    const tax = 0; // Prices are inclusive of tax
+
+    // Fitverse Coins discount
+    const userForCoins = await prisma.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
+    const maxCoinsP = Math.ceil(subtotal + shipping);
+    const coinsToUse = Math.min(Math.max(0, parseInt(rawCoinsToUse || 0)), userForCoins.coinBalance, maxCoinsP);
+    const total = Math.max(0, subtotal + shipping - coinsToUse);
+    const effectivePaymentMethod = total === 0 ? 'COINS' : paymentMethod;
     const orderNumber = generateOrderNumber();
 
     const order = await prisma.$transaction(async (tx) => {
@@ -502,14 +530,15 @@ class OrderService {
           orderNumber,
           userId,
           addressId,
-          paymentMethod,
-          paymentStatus: 'PENDING',
+          paymentMethod: effectivePaymentMethod,
+          paymentStatus: total === 0 ? 'COMPLETED' : 'PENDING',
           paymentId: null,
           subtotal,
           shipping,
           tax,
           total,
-          status: 'PENDING',
+          coinsUsed: coinsToUse,
+          status: total === 0 ? 'PAID' : 'PENDING',
         },
       });
 
@@ -541,6 +570,23 @@ class OrderService {
           productId: { in: itemsToOrder.map((i) => i.productId) },
         },
       });
+
+      // Deduct coins from user balance if used
+      if (coinsToUse > 0) {
+        await tx.user.update({
+          where: { id: userId },
+          data: { coinBalance: { decrement: coinsToUse } },
+        });
+        await tx.coinTransaction.create({
+          data: {
+            userId,
+            amount: -coinsToUse,
+            type: 'ORDER_PAYMENT',
+            description: `Coins used for order ${orderNumber}`,
+            referenceId: newOrder.id,
+          },
+        });
+      }
 
       return newOrder;
     });
