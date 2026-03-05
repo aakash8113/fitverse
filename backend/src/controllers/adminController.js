@@ -395,14 +395,15 @@ const markListingPickedUp = asyncHandler(async (req, res) => {
 
   const listing = await prisma.thriftListing.findUnique({
     where: { id },
-    include: { items: { where: { status: 'APPROVED' } } },
+    include: { items: true },
   });
   if (!listing) throw new NotFoundError('Listing not found');
   if (listing.status !== 'APPROVED') {
     throw new BadRequestError('Listing must be APPROVED before marking picked up');
   }
 
-  // Calculate coins to credit (1 coin = ₹1, based on estimatedValue of APPROVED items)
+  // Calculate coins from all items that have an estimatedValue (regardless of current item status)
+  // The listing-level APPROVED→PICKED_UP guard ensures coins are only credited once
   const totalCoins = listing.items.reduce((sum, item) => {
     return sum + Math.round(parseFloat(item.estimatedValue || '0'));
   }, 0);
