@@ -985,5 +985,74 @@ export const coinsApi = {
   },
 };
 
+// ============================================
+// REVIEWS
+// ============================================
+
+export interface Review {
+  id: string;
+  userId: string;
+  author: string;
+  rating: number;
+  title?: string;
+  comment: string;
+  images: string[];
+  helpfulCount: number;
+  markedHelpful: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  distribution: { stars: number; count: number }[];
+}
+
+export interface ReviewsResponse {
+  reviews: Review[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+  stats: ReviewStats;
+}
+
+export const reviewsApi = {
+  getProductReviews: async (productId: string, page = 1, limit = 10) => {
+    const response = await api.get<ApiResponse<ReviewsResponse>>(`/reviews/${productId}`, { params: { page, limit } });
+    return response.data;
+  },
+
+  getMyReview: async (productId: string) => {
+    const response = await api.get<ApiResponse<Review | null>>(`/reviews/${productId}/my`);
+    return response.data;
+  },
+
+  canReview: async (productId: string) => {
+    const response = await api.get<ApiResponse<{ canReview: boolean }>>(`/reviews/${productId}/can-review`);
+    return response.data;
+  },
+
+  createOrUpdateReview: async (productId: string, data: { rating: number; title?: string; comment: string; images?: File[] }) => {
+    const formData = new FormData();
+    formData.append('rating', String(data.rating));
+    formData.append('comment', data.comment);
+    if (data.title) formData.append('title', data.title);
+    (data.images || []).forEach((img) => formData.append('images', img));
+    const response = await api.post<ApiResponse<Review>>(`/reviews/${productId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  deleteReview: async (reviewId: string) => {
+    const response = await api.delete<ApiResponse<null>>(`/reviews/${reviewId}/delete`);
+    return response.data;
+  },
+
+  toggleHelpful: async (reviewId: string) => {
+    const response = await api.post<ApiResponse<{ marked: boolean }>>(`/reviews/${reviewId}/helpful`);
+    return response.data;
+  },
+};
+
 // Export everything
 export default api;

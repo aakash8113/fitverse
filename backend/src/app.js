@@ -22,6 +22,7 @@ const thriftRoutes = require('./routes/thriftRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const returnRoutes = require('./routes/returnRoutes');
 const coinRoutes = require('./routes/coinRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
 
 // Create Express app
 const app = express();
@@ -73,6 +74,7 @@ app.use('/api/thrift/listings', thriftRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/coins', coinRoutes);
+app.use('/api/reviews', reviewRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

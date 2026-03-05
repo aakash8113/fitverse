@@ -46,6 +46,8 @@ model User {
   thriftItems     ThriftItem[]
   returnRequests  ReturnRequest[]
   coinTransactions CoinTransaction[]
+  reviews         Review[]
+  helpfulReviews  ReviewHelpful[]
   
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -161,6 +163,7 @@ model Product {
   // Relations
   cartItems   CartItem[]
   orderItems  OrderItem[]
+  reviews     Review[]
 
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
@@ -482,4 +485,43 @@ model CoinTransaction {
 
   @@index([userId])
   @@map("coin_transactions")
+}
+
+// ============================================
+// PRODUCT REVIEWS
+// ============================================
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  userId    String
+  rating    Int      // 1-5
+  title     String?
+  comment   String   @db.Text
+  images    String[] @default([])
+
+  // Relations
+  product   Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  helpfulBy ReviewHelpful[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([productId, userId]) // one review per user per product
+  @@index([productId])
+  @@index([userId])
+  @@map("reviews")
+}
+
+model ReviewHelpful {
+  id       String @id @default(uuid())
+  reviewId String
+  userId   String
+
+  review   Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, userId])
+  @@map("review_helpful")
 }

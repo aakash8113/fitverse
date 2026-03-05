@@ -82,6 +82,12 @@ const uploadAvatar = wrap(multer({
   fileFilter,
 }));
 
+const uploadReview = wrap(multer({
+  storage: makeStorage('fitverse/reviews'),
+  limits: { fileSize: config.upload.maxFileSize },
+  fileFilter,
+}));
+
 // Default upload (generic folder)
 const upload = wrap(multer({
   storage: makeStorage('fitverse/uploads'),
@@ -93,5 +99,6 @@ const upload = wrap(multer({
 upload.product = uploadProduct;
 upload.thrift  = uploadThrift;
 upload.avatar  = uploadAvatar;
+upload.review  = uploadReview;
 
 module.exports = upload;

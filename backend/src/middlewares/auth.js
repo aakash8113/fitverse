@@ -97,8 +97,30 @@ const requireEmailVerification = (req, res, next) => {
   next();
 };
 
+/**
+ * Optional auth — attaches req.user if a valid token is present, but does NOT fail if missing/invalid.
+ * Used for public endpoints that personalize behavior for logged-in users.
+ */
+const optionalAuth = async (req, _res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return next();
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, config.jwt.secret);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.id },
+      select: { id: true, name: true, email: true, role: true },
+    });
+    if (user) req.user = user;
+  } catch {
+    // Invalid/expired token — silently ignore, treat as guest
+  }
+  next();
+};
+
 module.exports = {
   protect,
   authorize,
   requireEmailVerification,
+  optionalAuth,
 };

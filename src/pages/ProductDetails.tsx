@@ -1,18 +1,21 @@
 ﻿import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { 
   Heart, 
   Star, 
   ChevronRight, 
   Minus, 
   Plus, 
-  ThumbsUp, 
-  MessageCircle,
+  ThumbsUp,
   ChevronLeft,
   Loader2,
   ShoppingCart,
   AlertCircle,
+  Pencil,
+  Trash2,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -20,9 +23,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { cn } from "@/lib/utils";
-import { productsApi, cartApi, Product as ApiProduct, getTotalStock, getSizeStock } from "@/services/api";
+import { productsApi, cartApi, Product as ApiProduct, getTotalStock, getSizeStock, reviewsApi, Review } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlistContext } from "@/contexts/WishlistContext";
@@ -52,47 +57,17 @@ const ALL_SIZES: Record<string, string[]> = {
   BOTTOMWEAR: ["26", "28", "30", "32", "34", "36", "38", "40", "42"],
 };
 
-// Mock reviews data
-const reviews = [
-  {
-    id: 1,
-    author: "Darrell Steward",
-    rating: 5,
-    date: "June 28, 2024 / 7:04 PM",
-    title: "Great quality product, highly recommend for workouts!",
-    helpful: 24,
-    verified: true,
-  },
-  {
-    id: 2,
-    author: "Sarah Johnson",
-    rating: 4,
-    date: "May 15, 2024 / 3:22 PM",
-    title: "Very comfortable and fits true to size.",
-    helpful: 18,
-    verified: true,
-  },
-];
-
 const colors = [
   { name: "Midnight Black", value: "#1a1a1a", available: true },
   { name: "Slate Gray", value: "#708090", available: true },
   { name: "Pure White", value: "#f5f5f5", available: true },
 ];
 
-const ratingDistribution = [
-  { stars: 5, count: 20551 },
-  { stars: 4, count: 30 },
-  { stars: 3, count: 4 },
-  { stars: 2, count: 0 },
-  { stars: 1, count: 0 },
-];
-
 export default function ProductDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: authUser } = useAuth();
   const { toast } = useToast();
   const { toggleWishlist, isWishlisted } = useWishlistContext();
   const [showSizeChart, setShowSizeChart] = useState(false);
@@ -104,6 +79,17 @@ export default function ProductDetails() {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
+
+  // Review state
+  const [reviewPage, setReviewPage] = useState(1);
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewHoverRating, setReviewHoverRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewImages, setReviewImages] = useState<File[]>([]);
+  const [reviewImagePreviews, setReviewImagePreviews] = useState<string[]>([]);
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   // Fetch the specific product by ID from backend
   const { data: productData, isLoading, isError } = useQuery({
@@ -126,6 +112,100 @@ export default function ProductDetails() {
   const product = productData?.data;
   const availableSizes = product?.availableSizes || [];
 
+  // ── Reviews ────────────────────────────────────────────────────────────────
+  const { data: reviewsData, isLoading: reviewsLoading, refetch: refetchReviews } = useQuery({
+    queryKey: ['reviews', id, reviewPage],
+    queryFn: () => reviewsApi.getProductReviews(id!, reviewPage, 10),
+    enabled: !!id,
+  });
+
+  const { data: myReviewData, refetch: refetchMyReview } = useQuery({
+    queryKey: ['myReview', id],
+    queryFn: () => reviewsApi.getMyReview(id!),
+    enabled: !!id && isAuthenticated,
+  });
+
+  const { data: canReviewData } = useQuery({
+    queryKey: ['canReview', id],
+    queryFn: () => reviewsApi.canReview(id!),
+    enabled: !!id && isAuthenticated,
+  });
+
+  const helpfulMutation = useMutation({
+    mutationFn: (reviewId: string) => reviewsApi.toggleHelpful(reviewId),
+    onSuccess: () => { refetchReviews(); },
+  });
+
+  const deleteReviewMutation = useMutation({
+    mutationFn: (reviewId: string) => reviewsApi.deleteReview(reviewId),
+    onSuccess: () => {
+      refetchReviews();
+      refetchMyReview();
+      toast({ title: 'Review deleted' });
+    },
+  });
+
+  const stats = reviewsData?.data?.stats;
+  const reviews = reviewsData?.data?.reviews || [];
+  const reviewPagination = reviewsData?.data?.pagination;
+  const myReview = myReviewData?.data;
+  const canWriteReview = canReviewData?.data?.canReview ?? false;
+  const averageRating = stats?.averageRating ?? 0;
+  const totalReviews = stats?.totalReviews ?? 0;
+
+  const openReviewDialog = () => {
+    if (myReview) {
+      setReviewRating(myReview.rating);
+      setReviewTitle(myReview.title || '');
+      setReviewComment(myReview.comment);
+    } else {
+      setReviewRating(5);
+      setReviewTitle('');
+      setReviewComment('');
+    }
+    setReviewImages([]);
+    setReviewImagePreviews([]);
+    setShowReviewDialog(true);
+  };
+
+  const handleReviewImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const combined = [...reviewImages, ...files].slice(0, 5);
+    setReviewImages(combined);
+    setReviewImagePreviews(combined.map((f) => URL.createObjectURL(f)));
+  };
+
+  const removeReviewImage = (idx: number) => {
+    const imgs = reviewImages.filter((_, i) => i !== idx);
+    setReviewImages(imgs);
+    setReviewImagePreviews(imgs.map((f) => URL.createObjectURL(f)));
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewComment.trim()) {
+      toast({ title: 'Please write a comment', variant: 'destructive' });
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await reviewsApi.createOrUpdateReview(id!, {
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        comment: reviewComment.trim(),
+        images: reviewImages,
+      });
+      toast({ title: myReview ? 'Review updated!' : 'Review submitted! Thank you.' });
+      setShowReviewDialog(false);
+      refetchReviews();
+      refetchMyReview();
+    } catch (err: any) {
+      toast({ title: 'Failed to submit review', description: err.response?.data?.message, variant: 'destructive' });
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+  // ───────────────────────────────────────────────────────────────────────────
+
   // Stock for the currently selected size (or total if no size selected)
   const selectedSizeStock = product
     ? selectedSize
@@ -146,9 +226,6 @@ export default function ProductDetails() {
     .map(convertToCardProduct);
 
   const productImages = product?.images?.map(getImageUrl) || [];
-
-  const totalReviews = ratingDistribution.reduce((acc, curr) => acc + curr.count, 0);
-  const averageRating = 4.5;
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
@@ -353,12 +430,19 @@ export default function ProductDetails() {
                 </div>
                 <Separator orientation="vertical" className="h-6 hidden sm:block" />
                 <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className={cn("w-4 h-4", i < Math.floor(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
-                    ))}
-                  </div>
-                  <span className="text-sm font-medium">{averageRating}</span>
+                  {totalReviews > 0 ? (
+                    <>
+                      <div className="flex">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className={cn("w-4 h-4", i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                        ))}
+                      </div>
+                      <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">({totalReviews})</span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No reviews yet</span>
+                  )}
                   <Badge
                     variant="secondary"
                     className={cn("text-xs", selectedSizeStock > 10 ? "bg-green-50 text-green-700 border-green-200" : selectedSizeStock > 0 ? "bg-yellow-50 text-yellow-700 border-yellow-200" : "bg-red-50 text-red-700 border-red-200")}
@@ -532,118 +616,137 @@ export default function ProductDetails() {
 
       {/* Product Reviews */}
       <div className="section-container py-12">
-        <h2 className="text-2xl font-bold mb-8">Product Reviews</h2>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-          {/* Overall Rating */}
-          <div className="lg:col-span-1">
-            <div className="flex flex-col items-center justify-center p-8 border-2 border-border rounded-2xl">
-              <div className="text-6xl font-bold mb-2">{averageRating}</div>
-              <div className="flex mb-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={cn(
-                      "w-5 h-5",
-                      i < Math.floor(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                    )}
-                  />
-                ))}
-              </div>
-              <p className="text-sm text-muted-foreground">{totalReviews.toLocaleString()} User reviews</p>
-            </div>
-          </div>
-
-          {/* Rating Distribution */}
-          <div className="lg:col-span-2">
-            <div className="space-y-3">
-              {ratingDistribution.map((item) => (
-                <div key={item.stars} className="flex items-center gap-4">
-                  <span className="text-sm font-medium w-8">{item.stars}.0</span>
-                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-foreground"
-                      style={{ width: `?${(item.count / totalReviews) * 100}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-muted-foreground w-12 text-right">
-                    {item.count}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+        <div className="flex items-center justify-between mb-8">
+          <h2 className="text-2xl font-bold">Product Reviews</h2>
+          {isAuthenticated && canWriteReview && (
+            <Button onClick={openReviewDialog} variant="outline" className="gap-2">
+              <Pencil className="w-4 h-4" />
+              {myReview ? 'Edit your review' : 'Write a review'}
+            </Button>
+          )}
         </div>
 
-        {/* Reviews List */}
-        <div className="space-y-6">
-          <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" size="sm">All Reviews</Button>
-            <Button variant="ghost" size="sm">With Photo & Video</Button>
-            <Button variant="ghost" size="sm">With Description</Button>
+        {/* Rating summary */}
+        {totalReviews > 0 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            <div className="lg:col-span-1">
+              <div className="flex flex-col items-center justify-center p-8 border-2 border-border rounded-2xl">
+                <div className="text-6xl font-bold mb-2">{averageRating.toFixed(1)}</div>
+                <div className="flex mb-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className={cn("w-5 h-5", i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">{totalReviews.toLocaleString()} review{totalReviews !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            <div className="lg:col-span-2">
+              <div className="space-y-3">
+                {(stats?.distribution || []).map((item) => (
+                  <div key={item.stars} className="flex items-center gap-4">
+                    <span className="text-sm font-medium w-8">{item.stars}.0</span>
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
+                      <div className="h-full bg-foreground" style={{ width: totalReviews > 0 ? `${(item.count / totalReviews) * 100}%` : '0%' }} />
+                    </div>
+                    <span className="text-sm text-muted-foreground w-8 text-right">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            <Star className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+            <p className="font-medium">No reviews yet</p>
+            {isAuthenticated && canWriteReview && (
+              <p className="text-sm mt-1">Be the first to review this product!</p>
+            )}
+          </div>
+        )}
 
+        {/* Reviews list */}
+        {reviewsLoading ? (
+          <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin" /></div>
+        ) : reviews.length > 0 ? (
           <div className="space-y-6">
-            {reviews.map((review) => (
+            {reviews.map((review: Review) => (
               <div key={review.id} className="border-b border-border pb-6">
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
                       <span className="text-sm font-semibold text-blue-600">
-                        {review.author.split(' ').map(n => n[0]).join('')}
+                        {review.author.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()}
                       </span>
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-medium">{review.author}</p>
-                        {review.verified && (
-                          <Badge variant="secondary" className="text-xs">Verified</Badge>
-                        )}
+                        <Badge variant="secondary" className="text-xs">Verified Purchase</Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground">{review.date}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(review.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {review.updatedAt !== review.createdAt && ' (edited)'}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" className="gap-1.5">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost" size="sm"
+                      className={cn("gap-1.5", review.markedHelpful && "text-blue-600")}
+                      onClick={() => isAuthenticated && helpfulMutation.mutate(review.id)}
+                      disabled={!isAuthenticated || review.userId === authUser?.id}
+                    >
                       <ThumbsUp className="w-4 h-4" />
-                      <span className="text-sm">{review.helpful}</span>
+                      <span className="text-sm">{review.helpfulCount}</span>
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MessageCircle className="w-4 h-4" />
-                    </Button>
+                    {review.userId === authUser?.id && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={openReviewDialog}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-600" onClick={() => deleteReviewMutation.mutate(review.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex mb-2">
                   {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={cn(
-                        "w-4 h-4",
-                        i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"
-                      )}
-                    />
+                    <Star key={i} className={cn("w-4 h-4", i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
                   ))}
                 </div>
-                <p className="text-sm">{review.title}</p>
+                {review.title && <p className="font-medium text-sm mb-1">{review.title}</p>}
+                <p className="text-sm text-muted-foreground">{review.comment}</p>
+                {review.images.length > 0 && (
+                  <div className="flex gap-2 mt-3">
+                    {review.images.map((img, idx) => (
+                      <img key={idx} src={img.startsWith('http') ? img : `http://localhost:5000${img}`} alt="review" className="h-16 w-16 object-cover rounded-lg border" />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
-          </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-center gap-2 pt-6">
-            <Button variant="outline" size="icon" disabled>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <Button variant="default" size="sm">1</Button>
-            <Button variant="outline" size="sm">2</Button>
-            <Button variant="outline" size="sm">...</Button>
-            <Button variant="outline" size="sm">10</Button>
-            <Button variant="outline" size="icon">
-              <ChevronRight className="w-4 h-4" />
-            </Button>
+            {/* Pagination */}
+            {reviewPagination && reviewPagination.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-6">
+                <Button variant="outline" size="icon" disabled={reviewPage <= 1} onClick={() => setReviewPage((p) => p - 1)}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                {[...Array(reviewPagination.totalPages)].map((_, i) => (
+                  <Button key={i} variant={reviewPage === i + 1 ? 'default' : 'outline'} size="sm" onClick={() => setReviewPage(i + 1)}>
+                    {i + 1}
+                  </Button>
+                ))}
+                <Button variant="outline" size="icon" disabled={reviewPage >= reviewPagination.totalPages} onClick={() => setReviewPage((p) => p + 1)}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Popular this week */}
@@ -663,6 +766,83 @@ export default function ProductDetails() {
       </div>
 
       <Footer />
+
+      {/* Write / Edit Review Dialog */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{myReview ? 'Edit your review' : 'Write a review'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {/* Star picker */}
+            <div>
+              <p className="text-sm font-medium mb-2">Your rating</p>
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onMouseEnter={() => setReviewHoverRating(star)}
+                    onMouseLeave={() => setReviewHoverRating(0)}
+                    onClick={() => setReviewRating(star)}
+                  >
+                    <Star className={cn("w-7 h-7 transition-colors", (reviewHoverRating || reviewRating) >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Title */}
+            <div>
+              <p className="text-sm font-medium mb-1">Title <span className="text-muted-foreground">(optional)</span></p>
+              <Input
+                placeholder="Summarise your experience"
+                value={reviewTitle}
+                onChange={(e) => setReviewTitle(e.target.value)}
+                maxLength={100}
+              />
+            </div>
+
+            {/* Comment */}
+            <div>
+              <p className="text-sm font-medium mb-1">Review</p>
+              <Textarea
+                placeholder="Tell others about your experience with this product..."
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                rows={4}
+                maxLength={1000}
+              />
+              <p className="text-xs text-muted-foreground text-right mt-1">{reviewComment.length}/1000</p>
+            </div>
+
+            {/* Image upload */}
+            <div>
+              <p className="text-sm font-medium mb-2">Photos <span className="text-muted-foreground">(optional, up to 5)</span></p>
+              <div className="flex flex-wrap gap-2">
+                {reviewImagePreviews.map((src, idx) => (
+                  <div key={idx} className="relative">
+                    <img src={src} alt="" className="h-16 w-16 object-cover rounded-lg border" />
+                    <button type="button" onClick={() => removeReviewImage(idx)} className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </div>
+                ))}
+                {reviewImages.length < 5 && (
+                  <label className="h-16 w-16 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors">
+                    <ImagePlus className="w-5 h-5 text-muted-foreground" />
+                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleReviewImageChange} />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <Button className="w-full" onClick={handleSubmitReview} disabled={submittingReview}>
+              {submittingReview ? <><Loader2 className="w-4 h-4 animate-spin mr-2" />Submitting...</> : myReview ? 'Update review' : 'Submit review'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Size Chart Dialog */}
       <Dialog open={showSizeChart} onOpenChange={setShowSizeChart}>
