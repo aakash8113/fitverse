@@ -411,7 +411,11 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
           <div className="flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 rounded-lg px-3 py-2">
             <CircleDollarSign className="h-4 w-4 shrink-0" />
             <span>
-              You'll earn <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong> when picked up
+              {listing.status === 'PICKED_UP' ? (
+                <>You have earned <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong></>
+              ) : (
+                <>You'll earn <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong> when picked up</>
+              )}
               {rejectedItems.length > 0 && (
                 <span className="text-gray-500 ml-1">
                   ({rejectedItems.length} item{rejectedItems.length !== 1 ? 's' : ''} not accepted)
