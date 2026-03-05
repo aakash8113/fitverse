@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Plus, ChevronLeft, ChevronRight, Package, Clock, CheckCircle,
   XCircle, Truck, Wrench, Tag, Eye, AlertTriangle, Loader2,
-  Calendar, IndianRupee, ImageOff, Phone,
+  Calendar, CircleDollarSign, ImageOff, Phone,
 } from 'lucide-react';
 import { thriftApi, ThriftListing, ThriftItem } from '@/services/api';
 import { toast } from '@/components/ui/use-toast';
@@ -30,7 +30,7 @@ const LISTING_STATUS = {
   OFFER_SENT: {
     label: 'Offer Received',
     color: 'bg-violet-100 text-violet-700 border-violet-200',
-    icon: IndianRupee,
+    icon: CircleDollarSign,
     desc: 'We have evaluated your items and sent you an offer.',
   },
   APPROVED: {
@@ -105,11 +105,11 @@ function OfferBanner({
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
-          <IndianRupee className="h-4 w-4 text-white" />
+          <CircleDollarSign className="h-4 w-4 text-white" />
         </div>
         <div>
           <p className="font-semibold text-violet-900 text-sm">Fitverse has evaluated your items!</p>
-          <p className="text-xs text-violet-600">Review the offer and let us know your decision.</p>
+          <p className="text-xs text-violet-600">If you accept, these coins will be credited when we pick up.</p>
         </div>
       </div>
 
@@ -118,7 +118,10 @@ function OfferBanner({
         {approvedItems.map((item) => (
           <div key={item.id} className="flex items-center justify-between text-sm">
             <span className="text-gray-700 truncate max-w-[60%]">{item.name}</span>
-            <span className="font-semibold text-green-700">₹{fmtPrice(item.estimatedValue)}</span>
+            <span className="font-semibold text-yellow-700 flex items-center gap-1">
+              <CircleDollarSign className="h-3.5 w-3.5" />
+              {Math.round(Number(item.estimatedValue || 0))} coins
+            </span>
           </div>
         ))}
         {rejectedItems.length > 0 && (
@@ -130,8 +133,11 @@ function OfferBanner({
 
       {/* Total */}
       <div className="flex items-center justify-between border-t border-violet-200 pt-2">
-        <span className="text-sm font-semibold text-gray-800">Total Offer</span>
-        <span className="text-lg font-bold text-violet-700">₹{fmtPrice(totalOffer)}</span>
+        <span className="text-sm font-semibold text-gray-800">Total Coins</span>
+        <span className="text-lg font-bold text-yellow-700 flex items-center gap-1">
+          <CircleDollarSign className="h-5 w-5" />
+          {Math.round(totalOffer)} Fitverse Coins
+        </span>
       </div>
 
       {/* Admin note */}
@@ -307,8 +313,8 @@ function ItemTile({ item }: { item: ThriftItem }) {
             <span>Paid: <span className="font-medium text-gray-700">₹{fmtPrice(item.originalPrice)}</span></span>
           )}
           {item.estimatedValue && (
-            <span className="text-green-700 font-semibold flex items-center gap-0.5">
-              <IndianRupee className="h-3 w-3" /> Offer: ₹{fmtPrice(item.estimatedValue)}
+            <span className="text-yellow-700 font-semibold flex items-center gap-0.5">
+              <CircleDollarSign className="h-3 w-3" /> {Math.round(Number(item.estimatedValue))} coins
             </span>
           )}
           {item.listedPrice && (
@@ -402,10 +408,10 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
 
         {/* Offer summary */}
         {totalOffer > 0 && (
-          <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
-            <IndianRupee className="h-4 w-4 shrink-0" />
+          <div className="flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 rounded-lg px-3 py-2">
+            <CircleDollarSign className="h-4 w-4 shrink-0" />
             <span>
-              Total estimated offer: <strong>₹{totalOffer.toLocaleString()}</strong>
+              You'll earn <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong> when picked up
               {rejectedItems.length > 0 && (
                 <span className="text-gray-500 ml-1">
                   ({rejectedItems.length} item{rejectedItems.length !== 1 ? 's' : ''} not accepted)
