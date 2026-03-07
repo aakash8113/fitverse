@@ -50,6 +50,7 @@ import AdminRefurbishment from "./pages/admin/AdminRefurbishment";
 import AdminThriftInventory from "./pages/admin/AdminThriftInventory";
 import AdminAIMonitoring from "./pages/admin/AdminAIMonitoring";
 import AdminUsers from "./pages/admin/AdminUsers";
+import AdminCoupons from "./pages/admin/AdminCoupons";
 import ReturnRequestPage from "./pages/ReturnRequest";
 import MyReturns from "./pages/MyReturns";
 import ReturnDetail from "./pages/ReturnDetail";
@@ -142,6 +143,7 @@ const App = () => (
           <Route path="/admin/ai-monitoring" element={<AdminGuard><AdminAIMonitoring /></AdminGuard>} />
           <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
           <Route path="/admin/returns" element={<AdminGuard><AdminReturns /></AdminGuard>} />
+          <Route path="/admin/coupons" element={<AdminGuard><AdminCoupons /></AdminGuard>} />
 
           {/* 404 - Must be last */}
           <Route path="*" element={<NotFound />} />

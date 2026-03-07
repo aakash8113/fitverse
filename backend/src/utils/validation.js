@@ -173,6 +173,7 @@ const createOrderSchema = Joi.object({
   }),
   coinsToUse: Joi.number().integer().min(0).optional(),
   productIds: Joi.array().items(Joi.string().uuid()).optional(),
+  couponCode: Joi.string().max(50).optional().allow('', null),
 });
 
 // ============================================

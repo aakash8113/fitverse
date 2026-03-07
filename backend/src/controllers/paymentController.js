@@ -16,7 +16,7 @@ const logger = require('../config/logger');
  * Body: { addressId, paymentMethod: 'CARD'|'WALLET', productIds? }
  */
 const initiateOnlinePayment = asyncHandler(async (req, res) => {
-  const { addressId, paymentMethod = 'CARD', productIds } = req.body;
+  const { addressId, paymentMethod = 'CARD', productIds, coinsToUse, couponCode } = req.body;
 
   if (!addressId) throw new BadRequestError('addressId is required');
 
@@ -25,6 +25,8 @@ const initiateOnlinePayment = asyncHandler(async (req, res) => {
     addressId,
     paymentMethod,
     productIds,
+    coinsToUse,
+    couponCode,
   });
 
   // Step 2: Build the redirect URL — PhonePe sends user back here after payment

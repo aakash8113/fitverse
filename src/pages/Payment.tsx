@@ -1,16 +1,17 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CreditCard, Loader2, CircleDollarSign } from "lucide-react";
+import { ArrowLeft, ArrowRight, CreditCard, Loader2, CircleDollarSign, Tag, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { cartApi, ordersApi, paymentApi } from "@/services/api";
+import { cartApi, ordersApi, paymentApi, CouponValidationResult } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -28,6 +29,7 @@ export default function Payment() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const buyNowProductId: string | undefined = (location.state as any)?.buyNowProductId;
+  const appliedCoupon: CouponValidationResult | null = (location.state as any)?.appliedCoupon ?? null;
 
   // Fetch cart data
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -65,13 +67,19 @@ export default function Payment() {
     0
   );
   const shipping = subtotal > 0 ? 15.0 : 0;
-  const orderTotal = subtotal + shipping;
+
+  // Coupon discount is applied before coins
+  const couponDiscount = appliedCoupon?.discountAmount ?? 0;
+  const afterCouponTotal = Math.max(0, subtotal + shipping - couponDiscount);
 
   // Fitverse Coins
   const coinBalance = user?.coinBalance ?? 0;
-  const coinsToApply = useCoins ? Math.min(coinBalance, Math.ceil(orderTotal)) : 0;
-  const total = Math.max(0, orderTotal - coinsToApply);
+  const coinsToApply = useCoins ? Math.min(coinBalance, Math.ceil(afterCouponTotal)) : 0;
+  const total = Math.max(0, afterCouponTotal - coinsToApply);
   const fullyPaidByCoins = total === 0 && coinsToApply > 0;
+
+  // For strikethrough display — original before any discounts
+  const orderTotal = subtotal + shipping;
 
   const steps = [
     { number: 1, label: "Cart" },
@@ -108,6 +116,7 @@ export default function Payment() {
           paymentMethod: fullyPaidByCoins ? "COINS" : "COD",
           ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
           coinsToUse: coinsToApply,
+          couponCode: appliedCoupon?.coupon.code,
         });
       } else {
         // CARD / WALLET: create a pending order and redirect to PhonePe
@@ -116,6 +125,7 @@ export default function Payment() {
           paymentMethod: paymentMethod as "CARD" | "WALLET",
           ...(buyNowProductId ? { productIds: [buyNowProductId] } : {}),
           coinsToUse: coinsToApply,
+          couponCode: appliedCoupon?.coupon.code,
         });
         // Navigate user to PhonePe hosted checkout
         window.location.href = response.data.redirectUrl;
@@ -340,6 +350,15 @@ export default function Payment() {
 
                 <Separator />
 
+                {/* Applied coupon badge (read-only, set on cart page) */}
+                {appliedCoupon && (
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-800 px-3 py-2">
+                    <Tag className="h-4 w-4 shrink-0" />
+                    <span className="text-sm font-semibold">{appliedCoupon.coupon.code}</span>
+                    <span className="text-xs">— ₹{appliedCoupon.discountAmount.toFixed(2)} off</span>
+                  </div>
+                )}
+
                 {/* Price Breakdown */}
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
@@ -350,6 +369,17 @@ export default function Payment() {
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="font-medium">₹{shipping.toFixed(2)}</span>
                   </div>
+
+                  {/* Coupon discount line */}
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                        <Tag className="h-3.5 w-3.5" />
+                        {appliedCoupon!.coupon.code}
+                      </span>
+                      <span className="text-green-600 dark:text-green-400 font-semibold">-₹{couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
 
                   {/* Fitverse Coins Toggle */}
                   {coinBalance > 0 && (
@@ -386,7 +416,7 @@ export default function Payment() {
                   <div className="flex justify-between text-lg">
                     <span className="font-bold">Total</span>
                     <div className="text-right">
-                      {coinsToApply > 0 && (
+                      {(coinsToApply > 0 || couponDiscount > 0) && (
                         <p className="text-xs text-muted-foreground line-through">₹{orderTotal.toFixed(2)}</p>
                       )}
                       <span className="font-bold">₹{total.toFixed(2)}</span>

@@ -4,6 +4,7 @@
 const prisma = require('../config/database');
 const paymentService = require('./paymentService');
 const cartService = require('./cartService');
+const couponService = require('./couponService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const { generateOrderNumber } = require('../utils/helpers');
 const logger = require('../config/logger');
@@ -17,7 +18,7 @@ class OrderService {
    * @returns {Promise<Object>} Created order
    */
   async createOrder(userId, orderData) {
-    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse } = orderData;
+    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse, couponCode } = orderData;
 
     // Verify address exists and belongs to user
     const address = await prisma.address.findUnique({
@@ -79,11 +80,21 @@ class OrderService {
     const shipping = 15.00; // Fixed shipping cost
     const tax = 0; // Prices are inclusive of tax
 
-    // Fitverse Coins discount
+    // Coupon discount (validated server-side — never trust frontend amount)
+    let couponDiscount = 0;
+    let validatedCoupon = null;
+    if (couponCode) {
+      const couponResult = await couponService.validateCoupon(userId, couponCode, itemsToOrder);
+      couponDiscount = couponResult.discountAmount;
+      validatedCoupon = couponResult.coupon;
+    }
+
+    // Fitverse Coins discount (applied on top of coupon discount)
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
-    const maxCoins = Math.ceil(subtotal + shipping);
+    const afterCoupon = Math.max(0, subtotal + shipping - couponDiscount);
+    const maxCoins = Math.ceil(afterCoupon);
     const coinsToUse = Math.min(Math.max(0, parseInt(rawCoinsToUse || 0)), user.coinBalance, maxCoins);
-    const total = Math.max(0, subtotal + shipping - coinsToUse);
+    const total = Math.max(0, afterCoupon - coinsToUse);
     const effectivePaymentMethod = total === 0 ? 'COINS' : paymentMethod;
 
     // Generate unique order number
@@ -144,6 +155,9 @@ class OrderService {
           tax,
           total,
           coinsUsed: coinsToUse,
+          couponId: validatedCoupon?.id || null,
+          couponCode: validatedCoupon?.code || null,
+          couponDiscount,
           status: effectivePaymentMethod === 'COD' ? 'PENDING' : 'PAID',
         },
       });
@@ -194,6 +208,11 @@ class OrderService {
             referenceId: newOrder.id,
           },
         });
+      }
+
+      // Record coupon usage and increment its counter
+      if (validatedCoupon) {
+        await couponService.applyCoupon(tx, validatedCoupon.id, newOrder.id, userId);
       }
 
       return newOrder;
@@ -487,7 +506,7 @@ class OrderService {
    * @returns {Promise<Object>} The newly created order
    */
   async createPendingOrder(userId, orderData) {
-    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse } = orderData;
+    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse, couponCode } = orderData;
 
     const address = await prisma.address.findUnique({ where: { id: addressId } });
     if (!address) throw new NotFoundError('Address not found');
@@ -516,11 +535,21 @@ class OrderService {
     const shipping = 15.0;
     const tax = 0; // Prices are inclusive of tax
 
+    // Coupon discount
+    let couponDiscount = 0;
+    let validatedCoupon = null;
+    if (couponCode) {
+      const couponResult = await couponService.validateCoupon(userId, couponCode, itemsToOrder);
+      couponDiscount = couponResult.discountAmount;
+      validatedCoupon = couponResult.coupon;
+    }
+
     // Fitverse Coins discount
     const userForCoins = await prisma.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
-    const maxCoinsP = Math.ceil(subtotal + shipping);
+    const afterCouponP = Math.max(0, subtotal + shipping - couponDiscount);
+    const maxCoinsP = Math.ceil(afterCouponP);
     const coinsToUse = Math.min(Math.max(0, parseInt(rawCoinsToUse || 0)), userForCoins.coinBalance, maxCoinsP);
-    const total = Math.max(0, subtotal + shipping - coinsToUse);
+    const total = Math.max(0, afterCouponP - coinsToUse);
     const effectivePaymentMethod = total === 0 ? 'COINS' : paymentMethod;
     const orderNumber = generateOrderNumber();
 
@@ -538,6 +567,9 @@ class OrderService {
           tax,
           total,
           coinsUsed: coinsToUse,
+          couponId: validatedCoupon?.id || null,
+          couponCode: validatedCoupon?.code || null,
+          couponDiscount,
           status: total === 0 ? 'PAID' : 'PENDING',
         },
       });
@@ -586,6 +618,11 @@ class OrderService {
             referenceId: newOrder.id,
           },
         });
+      }
+
+      // Record coupon usage
+      if (validatedCoupon) {
+        await couponService.applyCoupon(tx, validatedCoupon.id, newOrder.id, userId);
       }
 
       return newOrder;

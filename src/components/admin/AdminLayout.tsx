@@ -33,6 +33,7 @@ const navItems = [
   { to: '/admin/ai-monitoring', label: 'AI Monitoring', icon: Bot },
   { to: '/admin/returns', label: 'Returns', icon: RotateCcw },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/coupons', label: 'Coupons', icon: Tag },
 ];
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {

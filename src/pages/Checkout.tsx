@@ -1,13 +1,13 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Tag } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { cartApi } from "@/services/api";
+import { cartApi, CouponValidationResult } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { AddressSelector } from "@/components/shared/AddressSelector";
 
@@ -19,6 +19,7 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState<string>("");
 
   const buyNowProductId: string | undefined = (location.state as any)?.buyNowProductId;
+  const appliedCoupon: CouponValidationResult | null = (location.state as any)?.appliedCoupon ?? null;
 
   // Fetch cart data
   const { data: cartData, isLoading: cartLoading } = useQuery({
@@ -36,7 +37,9 @@ export default function Checkout() {
     0
   );
   const shipping = subtotal > 0 ? 15.0 : 0;
-  const total = subtotal + shipping;
+  const couponDiscount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal + shipping - couponDiscount);
+  const orderTotal = subtotal + shipping;
 
   const steps = [
     { number: 1, label: "Cart" },
@@ -54,7 +57,10 @@ export default function Checkout() {
       return;
     }
     navigate(`/payment?addressId=${selectedAddressId}`, {
-      state: buyNowProductId ? { buyNowProductId } : undefined,
+      state: {
+        ...(buyNowProductId ? { buyNowProductId } : {}),
+        ...(appliedCoupon ? { appliedCoupon } : {}),
+      },
     });
   };
 
@@ -213,11 +219,27 @@ export default function Checkout() {
                     <span className="text-muted-foreground">Shipping</span>
                     <span className="font-medium">₹{shipping.toFixed(2)}</span>
                   </div>
+
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                        <Tag className="h-3.5 w-3.5" />
+                        {appliedCoupon!.coupon.code}
+                      </span>
+                      <span className="text-green-600 dark:text-green-400 font-semibold">-₹{couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+
                   <Separator />
 
                   <div className="flex justify-between text-lg">
                     <span className="font-bold">Total</span>
-                    <span className="font-bold">₹{total.toFixed(2)}</span>
+                    <div className="text-right">
+                      {couponDiscount > 0 && (
+                        <p className="text-xs text-muted-foreground line-through">₹{orderTotal.toFixed(2)}</p>
+                      )}
+                      <span className="font-bold">₹{total.toFixed(2)}</span>
+                    </div>
                   </div>
                 </div>
 

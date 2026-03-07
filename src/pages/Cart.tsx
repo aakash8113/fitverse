@@ -1,5 +1,5 @@
-﻿import { Link } from "react-router-dom";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Tag, Loader2 } from "lucide-react";
+﻿import { Link, useNavigate } from "react-router-dom";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Tag, Loader2, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -7,15 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { cartApi } from "@/services/api";
+import { cartApi, couponsApi, CouponValidationResult } from "@/services/api";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Cart() {
-  const [promoCode, setPromoCode] = useState("");
+  const navigate = useNavigate();
   const [currentStep] = useState(1);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Coupon state
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponValidationResult | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   // Fetch cart data
   const { data: cartData, isLoading, error } = useQuery({
@@ -67,6 +72,42 @@ export default function Cart() {
     removeItemMutation.mutate(cartItemId);
   };
 
+  // Coupon handlers
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim();
+    if (!code) return;
+    setCouponLoading(true);
+    try {
+      const result = await couponsApi.validateCoupon({ couponCode: code });
+      if (result.data) {
+        setAppliedCoupon(result.data);
+        toast({
+          title: "Coupon Applied!",
+          description: `${result.data.coupon.code} — ₹${result.data.discountAmount.toFixed(2)} off`,
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: "Invalid Coupon",
+        description: err.response?.data?.message || "This coupon code is not valid",
+        variant: "destructive",
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+  };
+
+  const handleProceedToCheckout = () => {
+    navigate("/checkout", {
+      state: appliedCoupon ? { appliedCoupon } : undefined,
+    });
+  };
+
   // Calculate totals
   const cartItems = cartData?.data?.items || [];
   const subtotal = cartItems.reduce(
@@ -74,7 +115,9 @@ export default function Cart() {
     0
   );
   const shipping = subtotal > 0 ? 15.0 : 0;
-  const total = subtotal + shipping;
+  const couponDiscount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal + shipping - couponDiscount);
+  const orderTotal = subtotal + shipping;
 
   const steps = [
     { number: 1, label: "Cart" },
@@ -327,43 +370,77 @@ export default function Cart() {
                       <span className="text-muted-foreground">Shipping</span>
                       <span className="font-medium">₹{shipping.toFixed(2)}</span>
                     </div>
+
+                    {couponDiscount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-green-600 dark:text-green-400 font-medium flex items-center gap-1">
+                          <Tag className="h-3.5 w-3.5" />
+                          {appliedCoupon!.coupon.code}
+                        </span>
+                        <span className="text-green-600 dark:text-green-400 font-semibold">-₹{couponDiscount.toFixed(2)}</span>
+                      </div>
+                    )}
+
                     <Separator />
 
                     <div className="flex justify-between text-lg">
                       <span className="font-bold">Total</span>
-                      <span className="font-bold">₹{total.toFixed(2)}</span>
+                      <div className="text-right">
+                        {couponDiscount > 0 && (
+                          <p className="text-xs text-muted-foreground line-through">₹{orderTotal.toFixed(2)}</p>
+                        )}
+                        <span className="font-bold">₹{total.toFixed(2)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Promo Code */}
-                  {/* <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Tag className="w-4 h-4" />
-                      <span>Have a promo code?</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        type="text"
-                        placeholder="Enter promo code"
-                        value={promoCode}
-                        onChange={(e) => setPromoCode(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button variant="outline" className="px-6">
-                        Apply
-                      </Button>
-                    </div>
-                  </div> */}
+                  {/* Coupon Code */}
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Coupon Code</p>
+                    {appliedCoupon ? (
+                      <div className="flex items-center justify-between rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-800 px-3 py-2">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                          <Tag className="h-4 w-4" />
+                          <span className="text-sm font-semibold">{appliedCoupon.coupon.code}</span>
+                          <span className="text-xs">— ₹{appliedCoupon.discountAmount.toFixed(2)} off</span>
+                        </div>
+                        <button
+                          onClick={handleRemoveCoupon}
+                          className="text-green-600 hover:text-red-500 transition-colors"
+                          aria-label="Remove coupon"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter coupon code"
+                          value={couponInput}
+                          onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                          className="flex-1 h-9 text-sm"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-9"
+                          onClick={handleApplyCoupon}
+                          disabled={!couponInput.trim() || couponLoading}
+                        >
+                          {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
 
                   <Separator />
 
                   {/* Checkout Button */}
-                  <Link to="/checkout">
-                    <Button size="lg" className="w-full text-base font-semibold gap-2">
-                      Proceed to Checkout
-                      <ArrowRight className="w-5 h-5" />
-                    </Button>
-                  </Link>
+                  <Button size="lg" className="w-full text-base font-semibold gap-2" onClick={handleProceedToCheckout}>
+                    Proceed to Checkout
+                    <ArrowRight className="w-5 h-5" />
+                  </Button>
 
                   {/* Trust Badges */}
                   <div className="pt-4 space-y-2 text-xs text-muted-foreground text-center">

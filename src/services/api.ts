@@ -196,6 +196,8 @@ export interface Order {
   tax: number;
   total: number;
   coinsUsed?: number;
+  couponCode?: string;
+  couponDiscount?: number;
   status: 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   deliveredAt?: string;
   items: OrderItem[];
@@ -382,7 +384,7 @@ export const cartApi = {
 
 export const ordersApi = {
   // Create order
-  createOrder: async (data: { addressId: string; paymentMethod: 'CARD' | 'COD' | 'WALLET' | 'COINS'; productIds?: string[]; coinsToUse?: number }) => {
+  createOrder: async (data: { addressId: string; paymentMethod: 'CARD' | 'COD' | 'WALLET' | 'COINS'; productIds?: string[]; coinsToUse?: number; couponCode?: string }) => {
     const response = await api.post<ApiResponse<Order>>('/orders', data);
     return response.data;
   },
@@ -837,6 +839,7 @@ export const paymentApi = {
     paymentMethod: 'CARD' | 'WALLET';
     productIds?: string[];
     coinsToUse?: number;
+    couponCode?: string;
   }) => {
     const response = await api.post<ApiResponse<{
       orderId: string;
@@ -869,6 +872,113 @@ export const paymentApi = {
       state: string;
       amount: number;
     }>>(`/payment/refund/${orderId}`);
+    return response.data;
+  },
+};
+
+// ============================================
+// COUPONS API
+// ============================================
+
+export type CouponDiscountType = 'PERCENTAGE' | 'FLAT';
+export type CouponScope = 'ALL' | 'CATEGORY' | 'PRODUCT';
+export type CouponTarget = 'SHOP' | 'THRIFT' | 'BOTH';
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description?: string;
+  discountType: CouponDiscountType;
+  discountValue: number;
+  maxDiscountAmount?: number;
+  minOrderAmount?: number;
+  totalUsageLimit?: number;
+  perUserLimit: number;
+  isFirstOrderOnly: boolean;
+  applicableTo: CouponTarget;
+  scope: CouponScope;
+  applicableGenders: string[];
+  applicableWearTypes: string[];
+  applicableCategories: string[];
+  isActive: boolean;
+  startsAt?: string;
+  expiresAt?: string;
+  usageCount: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: { usages: number; products: number; blockedUsers: number };
+}
+
+export interface CouponValidationResult {
+  coupon: {
+    id: string;
+    code: string;
+    discountType: CouponDiscountType;
+    discountValue: number;
+    description?: string;
+  };
+  discountAmount: number;
+  eligibleItemsCount: number;
+}
+
+export const couponsApi = {
+  // Validate a coupon code against the current cart
+  validateCoupon: async (data: { couponCode: string; productIds?: string[] }) => {
+    const response = await api.post<ApiResponse<CouponValidationResult>>('/coupons/validate', data);
+    return response.data;
+  },
+
+  // Admin: list all coupons
+  listCoupons: async (params?: { page?: number; limit?: number; isActive?: boolean; search?: string }) => {
+    const response = await api.get<ApiResponse<{ coupons: Coupon[]; pagination: any }>>('/coupons/admin', { params });
+    return response.data;
+  },
+
+  // Admin: get single coupon
+  getCoupon: async (id: string) => {
+    const response = await api.get<ApiResponse<Coupon>>(`/coupons/admin/${id}`);
+    return response.data;
+  },
+
+  // Admin: create coupon
+  createCoupon: async (data: Partial<Coupon> & { productIds?: string[] }) => {
+    const response = await api.post<ApiResponse<Coupon>>('/coupons/admin', data);
+    return response.data;
+  },
+
+  // Admin: update coupon
+  updateCoupon: async (id: string, data: Partial<Coupon> & { productIds?: string[] }) => {
+    const response = await api.put<ApiResponse<Coupon>>(`/coupons/admin/${id}`, data);
+    return response.data;
+  },
+
+  // Admin: delete coupon
+  deleteCoupon: async (id: string) => {
+    const response = await api.delete<ApiResponse>(`/coupons/admin/${id}`);
+    return response.data;
+  },
+
+  // Admin: get coupon usages
+  getCouponUsages: async (id: string) => {
+    const response = await api.get<ApiResponse<any[]>>(`/coupons/admin/${id}/usages`);
+    return response.data;
+  },
+
+  // Admin: block user from coupon
+  blockUser: async (couponId: string, userId: string) => {
+    const response = await api.post<ApiResponse>(`/coupons/admin/${couponId}/block-user`, { userId });
+    return response.data;
+  },
+
+  // Admin: unblock user from coupon
+  unblockUser: async (couponId: string, userId: string) => {
+    const response = await api.delete<ApiResponse>(`/coupons/admin/${couponId}/block-user/${userId}`);
+    return response.data;
+  },
+
+  // Admin: reset usage count
+  resetUsageCount: async (couponId: string) => {
+    const response = await api.post<ApiResponse>(`/coupons/admin/${couponId}/reset-usage`);
     return response.data;
   },
 };
