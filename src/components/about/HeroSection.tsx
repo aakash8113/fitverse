@@ -1,24 +1,72 @@
 import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
 import { useParallax } from "@/hooks/use-scroll-animation";
+import heroStore from "@/assets/about/hero-store.jpg";
+import heroRack from "@/assets/about/hero-rack.jpg";
 import heroFashion from "@/assets/about/hero-fashion.jpg";
 import { ChevronDown } from "lucide-react";
 
+const SLIDES = [heroStore, heroRack, heroFashion];
+const INTERVAL = 5000;
+const TRANSITION_MS = 900;
+
 export function HeroSection() {
   const scrollY = useParallax();
+  // Append a clone of the first slide for seamless looping
+  const slides = [...SLIDES, SLIDES[0]];
+  const [index, setIndex] = useState(0);
+  const [transitioning, setTransitioning] = useState(true);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = () => {
+    timerRef.current = setInterval(() => {
+      setTransitioning(true);
+      setIndex((i) => i + 1);
+    }, INTERVAL);
+  };
+
+  useEffect(() => {
+    startTimer();
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  // When we land on the cloned first slide, silently jump back to real first
+  useEffect(() => {
+    if (index === slides.length - 1) {
+      const t = setTimeout(() => {
+        setTransitioning(false);
+        setIndex(0);
+      }, TRANSITION_MS);
+      return () => clearTimeout(t);
+    }
+  }, [index]);
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
-      {/* Parallax Background */}
+      {/* Sliding Background */}
       <div
         className="absolute inset-0 z-0"
         style={{ transform: `translateY(${scrollY * 0.3}px)` }}
       >
-        <img
-          src={heroFashion}
-          alt="Premium fashion collection"
-          className="w-full h-[120%] object-cover"
-        />
-        <div className="absolute inset-0 bg-foreground/40" />
+        <div
+          className="flex h-full"
+          style={{
+            width: `${slides.length * 100}%`,
+            transform: `translateX(-${(index / slides.length) * 100}%)`,
+            transition: transitioning ? `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)` : "none",
+          }}
+        >
+          {slides.map((src, i) => (
+            <div
+              key={i}
+              className="h-full flex-shrink-0"
+              style={{ width: `${100 / slides.length}%` }}
+            >
+              <img src={src} alt="" className="w-full h-full object-cover" />
+            </div>
+          ))}
+        </div>
+        <div className="absolute inset-0 bg-foreground/55" />
       </div>
 
       {/* Content */}
@@ -50,6 +98,19 @@ export function HeroSection() {
           Where artificial intelligence meets personal style — empowering confidence,
           embracing sustainability, and transforming the way you discover fashion.
         </motion.p>
+      </div>
+
+      {/* Slide dots */}
+      <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+        {SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => { setTransitioning(true); setIndex(i); }}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              (index % SLIDES.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
+            }`}
+          />
+        ))}
       </div>
 
       {/* Scroll Indicator */}

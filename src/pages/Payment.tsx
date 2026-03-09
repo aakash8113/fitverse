@@ -242,7 +242,6 @@ export default function Payment() {
                       <RadioGroupItem value="COD" id="cod" />
                       <Label htmlFor="cod" className="flex-1 cursor-pointer">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">💵</span>
                           <span className="font-semibold">Cash on Delivery</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
@@ -291,7 +290,6 @@ export default function Payment() {
                       <RadioGroupItem value="WALLET" id="wallet" />
                       <Label htmlFor="wallet" className="flex-1 cursor-pointer">
                         <div className="flex items-center gap-2">
-                          <span className="text-xl">📲</span>
                           <span className="font-semibold">UPI / PhonePe Wallet</span>
                           <span className="ml-auto text-xs font-medium text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
                         </div>

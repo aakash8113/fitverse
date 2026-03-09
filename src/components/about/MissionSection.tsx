@@ -1,5 +1,5 @@
 import { ScrollReveal } from "./ScrollReveal";
-import missionImg from "@/assets/about/mission-fashion.jpg";
+import missionImg from "@/assets/about/mission-image.jpg";
 
 const problems = [
   {

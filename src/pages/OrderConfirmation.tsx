@@ -69,7 +69,7 @@ export default function OrderConfirmation() {
                 <div className="space-y-3 text-sm text-muted-foreground">
                   <p className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" /><span>You will receive shipping updates via email</span></p>
                   <p className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" /><span>Your order will be delivered by {estimatedDelivery}</span></p>
-                  <p className="flex items-start gap-2"><span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" /><span>Free returns within 30 days of delivery</span></p>
+                  <p className="flex items-start gap-2"></p>
                 </div>
               </div>
               <div className="bg-secondary/30 border border-border rounded-2xl p-6"><h4 className="font-semibold mb-2">Need Help?</h4><p className="text-sm text-muted-foreground mb-4">Our customer support team is here to assist you.</p><Link to="/contact"><Button variant="link" className="p-0 h-auto text-purple-600 hover:text-purple-700">Contact Support</Button></Link></div>

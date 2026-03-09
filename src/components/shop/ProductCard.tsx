@@ -47,7 +47,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
     });
     toast({
       title: wishlisted ? "Removed from wishlist" : "Added to wishlist",
-      description: wishlisted ? `?${product.name} removed.` : `?${product.name} saved to wishlist.`,
+      description: wishlisted ? `${product.name} removed from wishlist.` : `${product.name} saved to wishlist.`,
     });
   };
 

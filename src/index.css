@@ -128,10 +128,17 @@ input[type="search"]::-webkit-search-decoration {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     overflow-x: hidden;
+    padding-top: 4rem; /* h-16 mobile navbar */
+  }
+
+  @media (min-width: 1024px) {
+    body {
+      padding-top: 5rem; /* h-20 desktop navbar */
+    }
   }
 
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
   }
 
   h1, h2, h3, h4, h5, h6 {

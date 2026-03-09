@@ -70,17 +70,17 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 z-50 w-full glass border-b border-border/50">
+    <header className="fixed top-0 left-0 right-0 z-50 w-full glass border-b border-border/50">
       <div className="section-container">
         <nav className="flex h-16 items-center justify-between lg:h-20">
           <Link to="/" className="flex items-center gap-3">
             <img 
               src={logoImage} 
               alt="Fitverse Logo" 
-              className=" h-10 w-10 object-contain translate-y-[-5px] sm:translate-y-0 sm:translate-x-[-120px]"
+              className="h-8 w-8 sm:h-10 sm:w-10 object-contain sm:translate-y-[-1px] sm:translate-x-[-120px]"
             />
             <span
-              className="text-[26px] font-bold tracking-wider leading-none sm:translate-y-[4.5px] sm:translate-x-[-120px]"
+              className="translate-y-[4px] text-[20px] sm:text-[26px] font-bold tracking-wider leading-none sm:translate-y-[4.5px] sm:translate-x-[-120px]"
               style={{ fontFamily: 'Mokoto, sans-serif' }}
             >
               FITVERSE
@@ -89,7 +89,7 @@ export function Navbar() {
 
           {/* Nav links — hidden when search is open */}
           <div className={cn(
-            "hidden lg:flex items-center gap-8 transition-all duration-200",
+            "hidden lg:flex items-center gap-24 transition-all duration-200",
             isSearchOpen && "!hidden"
           )}>
             {navLinks.map((link) => (
@@ -97,7 +97,7 @@ export function Navbar() {
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  "nav-link text-sm font-medium transition-colors",
+                  "nav-link text-sm sm:text-base font-medium transition-colors",
                   location.pathname === link.href && "nav-link-active",
                   link.isAI && "gradient-ai-text font-semibold"
                 )}
@@ -122,7 +122,7 @@ export function Navbar() {
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search products..."
-                className="pl-9 pr-4 h-9 w-full rounded-full border-border/60 bg-muted/50 focus:bg-background text-sm"
+                className="pl-9 pr-4 h-9 w-full rounded-full border-2 border-black bg-muted/50 focus:bg-background text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Escape" && closeSearch()}
@@ -130,7 +130,7 @@ export function Navbar() {
             </div>
           </form>
 
-          <div className="flex items-center gap-2">
+          <div className="sm:translate-x-[120px] flex items-center gap-2">
             {/* Search icon toggles; becomes X when open */}
             <Button
               variant="ghost"
@@ -138,12 +138,12 @@ export function Navbar() {
               className="hidden sm:flex hover:bg-gray-100 hover:text-foreground"
               onClick={isSearchOpen ? closeSearch : openSearch}
             >
-              {isSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+              {isSearchOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Search className="h-5 w-5 sm:h-6 sm:w-6" />}
             </Button>
             
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 hover:text-foreground">
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="translate-y-[1px] h-5 w-5 sm:h-6 sm:w-6" />
                 {isAuthenticated && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-white flex items-center justify-center">
                     {cartCount > 99 ? "99+" : cartCount}
@@ -156,7 +156,7 @@ export function Navbar() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-gray-100 hover:text-foreground">
-                    <User className="h-5 w-5" />
+                    <User className="h-5 w-5 sm:h-6 sm:w-6" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
@@ -252,7 +252,7 @@ export function Navbar() {
             ) : (
               <Link to="/login">
                 <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-gray-100 hover:text-foreground">
-                  <LogIn className="h-5 w-5" />
+                  <LogIn className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </Link>
             )}

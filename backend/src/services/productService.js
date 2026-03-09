@@ -72,13 +72,14 @@ class ProductService {
     };
 
     // ── isThrift flag ────────────────────────────────────────────────────────
-    // If caller explicitly passes isThrift=true show only thrift products.
-    // Otherwise default to regular (non-thrift) shop.
+    // Only filter by isThrift when explicitly provided.
+    // Omitting it (e.g. global search) returns both shop and thrift products.
     if (query.isThrift === 'true' || query.isThrift === true) {
       where.isThrift = true;
-    } else {
+    } else if (query.isThrift === 'false' || query.isThrift === false) {
       where.isThrift = false;
     }
+    // else: no filter — search across all products
 
     // ── Gender filter ────────────────────────────────────────────────────────
     if (query.gender) {

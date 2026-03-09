@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, X } from "lucide-react";
@@ -124,8 +124,8 @@ export function FilterSidebar({
   const [maxInput, setMaxInput] = useState("");
   const [priceApplied, setPriceApplied] = useState(false);
 
-  const [gender,      setGender]      = useState<string | undefined>();
-  const [wearType,    setWearType]    = useState<string | undefined>();
+  const [gender,      setGender]      = useState<string | undefined>("MENS");
+  const [wearType,    setWearType]    = useState<string | undefined>("TOPWEAR");
   const [category,    setCategory]    = useState<string | undefined>();
   const [subCategory, setSubCategory] = useState<string | undefined>();
   const [size,        setSize]        = useState<string | undefined>();
@@ -136,6 +136,12 @@ export function FilterSidebar({
     };
     onFilterChange?.(next);
   };
+
+  // Emit default filters on mount so parent query reflects them immediately
+  useEffect(() => {
+    onFilterChange?.({ gender: "MENS", wearType: "TOPWEAR" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleGender = (g: string) => {
     const next = gender === g ? undefined : g;

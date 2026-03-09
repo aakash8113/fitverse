@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Recycle, Leaf, Heart, TrendingUp, Plus, Loader2, List } from "lucide-react";
+import { Recycle, Leaf, Heart, TrendingUp, Plus, Loader2, List, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -8,9 +8,9 @@ import { ProductCard, Product } from "@/components/shop/ProductCard";
 import { FilterSidebar, ShopFilters } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SlidersHorizontal } from "lucide-react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { productsApi } from "@/services/api";
+import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 import thriftHero from "@/assets/thrift-hero.jpg";
 
@@ -62,6 +62,9 @@ export default function Thrift() {
 
   // IntersectionObserver sentinel for infinite scroll
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Scroll animation for sustainability banner
+  const { ref: bannerRef, isVisible: bannerVisible } = useScrollAnimation({ threshold: 0.15 });
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
@@ -236,7 +239,12 @@ export default function Thrift() {
       {/* Sustainability Banner */}
       <section className="py-16 bg-thrift-green/5">
         <div className="section-container">
-          <div className="bg-thrift-green rounded-3xl p-8 lg:p-12 text-white text-center">
+          <div
+            ref={bannerRef}
+            className={`bg-thrift-green rounded-3xl p-8 lg:p-12 text-white text-center transition-all duration-1000 ease-out ${
+              bannerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+            }`}
+          >
             <Recycle className="w-12 h-12 mx-auto mb-6 animate-float" />
             <h2 className="text-3xl font-bold mb-4">Join the Circular Fashion Movement</h2>
             <p className="text-white/80 max-w-2xl mx-auto mb-6">

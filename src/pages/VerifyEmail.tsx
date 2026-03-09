@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { Mail, Sparkles, Loader2 } from 'lucide-react';
+import { Mail, Loader2 } from 'lucide-react';
+import logoImage from '@/assets/logo.jpg';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,10 +60,17 @@ export default function VerifyEmail() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
-          <div className="gradient-ai rounded-lg p-2">
-            <Sparkles className="h-6 w-6 text-white" />
-          </div>
-          <span className="text-2xl font-bold tracking-tight">Fitverse</span>
+          <img
+            src={logoImage}
+            alt="Fitverse Logo"
+            className="h-10 w-10 object-contain translate-y-[-5px]"
+          />
+          <span
+            className="text-[26px] font-bold tracking-wider leading-none"
+            style={{ fontFamily: 'Mokoto, sans-serif' }}
+          >
+            FITVERSE
+          </span>
         </Link>
 
         {/* Verification Card */}

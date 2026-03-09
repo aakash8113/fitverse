@@ -107,7 +107,7 @@ export default function Shop() {
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
       <Navbar />
 
       {/* Hero Banner */}
@@ -123,8 +123,8 @@ export default function Shop() {
       <div className="w-full py-8 px-6">
         <div className="flex gap-6">
           {/* Desktop Filters */}
-          <aside className="hidden lg:block w-56 flex-shrink-0">
-            <div className="sticky top-24">
+          <aside className="hidden lg:block w-56 flex-shrink-0 border-r border-border">
+            <div className="sticky top-24 pr-4">
               <FilterSidebar
                 onFilterChange={handleFilterChange}
                 onPriceRangeChange={handlePriceChange}
