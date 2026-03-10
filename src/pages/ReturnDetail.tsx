@@ -19,7 +19,7 @@ const statusConfig: Record<ReturnStatus, { label: string; color: string }> = {
   REFUND_INITIATED:    { label: "Refund Initiated",    color: "text-indigo-600" },
   REPLACEMENT_SHIPPED: { label: "Replacement Shipped", color: "text-cyan-600" },
   COMPLETED:           { label: "Completed",           color: "text-green-600" },
-  CANCELLED:           { label: "Cancelled",           color: "text-gray-500" },
+  CANCELLED:           { label: "Cancelled",           color: "text-muted-foreground" },
 };
 
 const reasonLabels: Record<string, string> = {

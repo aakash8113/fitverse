@@ -197,9 +197,9 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
   const cond = CONDITIONS.find((c) => c.value === item.condition);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
       {/* Card header */}
-      <div className="flex items-center justify-between px-5 py-3 bg-gray-50 border-b border-gray-100">
+      <div className="flex items-center justify-between px-5 py-3 bg-muted/30 border-b border-border">
         <div className="flex items-center gap-2">
           <div className="h-6 w-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">
             {index + 1}
@@ -532,20 +532,20 @@ export default function ThriftSell() {
   if (submittedId) return <SuccessScreen listingId={submittedId} />;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[hsl(var(--page-background))]">
       <Navbar />
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
           <button
             onClick={() => step === 2 ? setStep(1) : navigate('/thrift')}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-4 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" /> {step === 2 ? 'Back to Items' : 'Back to Thrift Store'}
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Sell Your Pre-Loved Items</h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h1 className="text-2xl font-bold">Sell Your Pre-Loved Items</h1>
+          <p className="text-muted-foreground mt-1 text-sm">
             List up to 10 items in one submission. Add details and photos for a better offer from our team.
           </p>
         </div>
@@ -553,9 +553,9 @@ export default function ThriftSell() {
 
       {/* How it works — only on step 1 */}
       {step === 1 && (
-        <div className="bg-green-50 border-b border-green-100">
+        <div className="bg-green-50 dark:bg-card border-b border-green-100 dark:border-border">
           <div className="max-w-3xl mx-auto md:max-w-none px-4 sm:px-6 md:px-16 py-5 md:flex md:flex-col md:items-center">
-            <p className="text-xs md:text-sm font-semibold text-green-800 uppercase tracking-widest mb-4 md:text-center">How it works</p>
+            <p className="text-xs md:text-sm font-semibold text-green-800 dark:text-foreground uppercase tracking-widest mb-4 md:text-center">How it works</p>
             <div className="flex items-start md:w-full md:max-w-3xl">
               {[
                 { step: '1', title: 'List Items', desc: 'Fill in details & photos' },
@@ -568,11 +568,11 @@ export default function ThriftSell() {
                     <div className="h-9 w-9 md:h-14 md:w-14 rounded-full bg-green-600 text-white flex items-center justify-center font-bold text-sm md:text-xl shadow-sm">
                       {s.step}
                     </div>
-                    <p className="mt-2 text-xs md:text-sm font-semibold text-green-800 whitespace-nowrap">{s.title}</p>
-                    <p className="text-[10px] md:text-xs text-green-600 text-center leading-tight max-w-[80px] md:max-w-[120px]">{s.desc}</p>
+                    <p className="mt-2 text-xs md:text-sm font-semibold text-green-800 dark:text-foreground whitespace-nowrap">{s.title}</p>
+                    <p className="text-[10px] md:text-xs text-green-600 dark:text-muted-foreground text-center leading-tight max-w-[80px] md:max-w-[120px]">{s.desc}</p>
                   </div>
                   {i < arr.length - 1 && (
-                    <div className="flex-1 h-0.5 bg-green-300 mt-4 md:mt-7 mx-2 md:mx-3 shrink" />
+                    <div className="flex-1 h-0.5 bg-green-300 dark:bg-border mt-4 md:mt-7 mx-2 md:mx-3 shrink" />
                   )}
                 </React.Fragment>
               ))}
@@ -593,17 +593,17 @@ export default function ThriftSell() {
             Add Items
           </span>
         </div>
-        <div className="relative flex-1 h-0.5 bg-gray-300 max-w-[60px]">
+        <div className="relative flex-1 h-0.5 bg-border max-w-[60px]">
           <div className={cn('absolute inset-0 bg-green-500 transition-all duration-500', step === 2 ? 'w-full' : 'w-0')} />
         </div>
         <div className="flex items-center gap-2">
           <div className={cn(
             'h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0',
-            step === 2 ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-500',
+            step === 2 ? 'bg-green-600 text-white' : 'bg-muted text-muted-foreground',
           )}>
             2
           </div>
-          <span className={cn('text-sm font-medium', step === 2 ? 'text-gray-900' : 'text-gray-400')}>
+          <span className={cn('text-sm font-medium', step === 2 ? 'text-foreground' : 'text-muted-foreground')}>
             Pickup Address
           </span>
         </div>
@@ -612,7 +612,7 @@ export default function ThriftSell() {
       {/* Notice — only on step 1 */}
       {step === 1 && (
         <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-5">
-          <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
+          <div className="flex gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <p>
               Estimated values are set by our team during review. We aim to offer <strong>40–60% of resale value</strong> based on condition and demand.
@@ -668,11 +668,11 @@ export default function ThriftSell() {
       {/* ─── STEP 2: Address Selection ─── */}
       {step === 2 && (
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <div className="bg-card rounded-xl border border-border p-5">
             <div className="flex items-center gap-2 mb-1">
-              <h2 className="text-lg font-semibold text-gray-900">Select Pickup Address</h2>
+              <h2 className="text-lg font-semibold">Select Pickup Address</h2>
             </div>
-            <p className="text-sm text-gray-500 mb-5">
+            <p className="text-sm text-muted-foreground mb-5">
               Our team will come to this address to collect your items once the listing is approved.
             </p>
 

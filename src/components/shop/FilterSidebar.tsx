@@ -206,7 +206,7 @@ export function FilterSidebar({
   const subCategoryList = category ? (SUBCATEGORIES[category] || []) : [];
 
   return (
-    <div className={cn("bg-background", className)}>
+    <div className={cn("dark:bg-[#121212]", className)}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-lg">Filters</h3>
         <div className="flex items-center gap-2">

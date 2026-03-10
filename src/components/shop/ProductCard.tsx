@@ -84,7 +84,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
           onClick={handleWishlist}
           className={cn(
             "absolute top-3 right-3 h-9 w-9 rounded-full bg-white shadow-soft flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200",
-            wishlisted ? "text-red-500" : "text-gray-400 hover:text-red-500"
+            wishlisted ? "text-red-500" : "text-muted-foreground hover:text-red-500"
           )}
         >
           <Heart className={cn("h-4 w-4", wishlisted && "fill-red-500")} />

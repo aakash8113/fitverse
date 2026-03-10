@@ -389,7 +389,7 @@ export default function ProductDetails() {
                   }}
                   className={cn(
                     "h-10 w-10 rounded-full bg-white shadow-sm flex items-center justify-center transition-colors",
-                    isWishlisted(product.id) ? "text-red-500" : "text-gray-400 hover:text-red-500"
+                    isWishlisted(product.id) ? "text-red-500" : "text-muted-foreground hover:text-red-500"
                   )}
                 >
                   <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-red-500")} />
@@ -434,7 +434,7 @@ export default function ProductDetails() {
                     <>
                       <div className="flex">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className={cn("w-4 h-4", i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                          <Star key={i} className={cn("w-4 h-4", i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30")} />
                         ))}
                       </div>
                       <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
@@ -634,7 +634,7 @@ export default function ProductDetails() {
                 <div className="text-6xl font-bold mb-2">{averageRating.toFixed(1)}</div>
                 <div className="flex mb-2">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={cn("w-5 h-5", i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                    <Star key={i} className={cn("w-5 h-5", i < Math.round(averageRating) ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30")} />
                   ))}
                 </div>
                 <p className="text-sm text-muted-foreground">{totalReviews.toLocaleString()} review{totalReviews !== 1 ? 's' : ''}</p>
@@ -657,7 +657,7 @@ export default function ProductDetails() {
           </div>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
-            <Star className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+            <Star className="w-12 h-12 mx-auto mb-3 text-muted-foreground/20" />
             <p className="font-medium">No reviews yet</p>
             {isAuthenticated && canWriteReview && (
               <p className="text-sm mt-1">Be the first to review this product!</p>
@@ -714,7 +714,7 @@ export default function ProductDetails() {
                 </div>
                 <div className="flex mb-2">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className={cn("w-4 h-4", i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                    <Star key={i} className={cn("w-4 h-4", i < review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30")} />
                   ))}
                 </div>
                 {review.title && <p className="font-medium text-sm mb-1">{review.title}</p>}
@@ -786,7 +786,7 @@ export default function ProductDetails() {
                     onMouseLeave={() => setReviewHoverRating(0)}
                     onClick={() => setReviewRating(star)}
                   >
-                    <Star className={cn("w-7 h-7 transition-colors", (reviewHoverRating || reviewRating) >= star ? "fill-yellow-400 text-yellow-400" : "text-gray-300")} />
+                    <Star className={cn("w-7 h-7 transition-colors", (reviewHoverRating || reviewRating) >= star ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30")} />
                   </button>
                 ))}
               </div>

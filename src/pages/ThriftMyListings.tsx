@@ -101,15 +101,15 @@ function OfferBanner({
   const totalOffer = approvedItems.reduce((sum, i) => sum + Math.round(Number(i.estimatedValue || 0) * 100) / 100, 0);
 
   return (
-    <div className="border border-violet-200 bg-violet-50 rounded-xl p-4 space-y-3">
+    <div className="border border-violet-200 dark:border-violet-700/30 bg-violet-50 dark:bg-violet-950/20 rounded-xl p-4 space-y-3">
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center shrink-0">
           <CircleDollarSign className="h-4 w-4 text-white" />
         </div>
         <div>
-          <p className="font-semibold text-violet-900 text-sm">Fitverse has evaluated your items!</p>
-          <p className="text-xs text-violet-600">If you accept, these coins will be credited when we pick up.</p>
+          <p className="font-semibold text-violet-900 dark:text-violet-100 text-sm">Fitverse has evaluated your items!</p>
+          <p className="text-xs text-violet-600 dark:text-violet-300">If you accept, these coins will be credited when we pick up.</p>
         </div>
       </div>
 
@@ -117,7 +117,7 @@ function OfferBanner({
       <div className="space-y-1.5">
         {approvedItems.map((item) => (
           <div key={item.id} className="flex items-center justify-between text-sm">
-            <span className="text-gray-700 truncate max-w-[60%]">{item.name}</span>
+            <span className="dark:text-gray-200 truncate max-w-[60%]">{item.name}</span>
             <span className="font-semibold text-yellow-700 flex items-center gap-1">
               <CircleDollarSign className="h-3.5 w-3.5" />
               {Math.round(Number(item.estimatedValue || 0))} coins
@@ -132,8 +132,8 @@ function OfferBanner({
       </div>
 
       {/* Total */}
-      <div className="flex items-center justify-between border-t border-violet-200 pt-2">
-        <span className="text-sm font-semibold text-gray-800">Total Coins</span>
+      <div className="flex items-center justify-between border-t border-violet-200 dark:border-violet-800/30 pt-2">
+        <span className="text-sm font-semibold dark:text-gray-200">Total Coins</span>
         <span className="text-lg font-bold text-yellow-700 flex items-center gap-1">
           <CircleDollarSign className="h-5 w-5" />
           {Math.round(totalOffer)} Fitverse Coins
@@ -142,14 +142,14 @@ function OfferBanner({
 
       {/* Admin note */}
       {listing.adminNotes && (
-        <div className="text-xs text-violet-800 bg-violet-100 rounded-lg px-3 py-2">
+        <div className="text-xs text-violet-800 dark:text-violet-200 bg-violet-100 dark:bg-violet-900/30 rounded-lg px-3 py-2">
           <span className="font-medium">Message from Fitverse: </span>{listing.adminNotes}
         </div>
       )}
 
       {/* Pickup info */}
       {listing.pickupDate && (
-        <div className="text-xs text-blue-700 bg-blue-50 rounded-lg px-3 py-2 flex items-center gap-1.5">
+        <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 rounded-lg px-3 py-2 flex items-center gap-1.5">
           <Calendar className="h-3.5 w-3.5 shrink-0" />
           Proposed pickup: <strong>{format(new Date(listing.pickupDate), 'EEE, dd MMM yyyy')}{listing.pickupSlot ? ` · ${listing.pickupSlot}` : ''}</strong>
         </div>
@@ -157,7 +157,7 @@ function OfferBanner({
 
       {/* Call requested confirmation */}
       {listing.contactRequested && (
-        <div className="text-xs text-blue-700 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 flex items-center gap-2">
+        <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/30 rounded-lg px-3 py-2 flex items-center gap-2">
           <Phone className="h-3.5 w-3.5 shrink-0" />
           You requested a call. Our team will reach out to you shortly to discuss the pricing.
         </div>
@@ -276,9 +276,9 @@ function ItemTile({ item }: { item: ThriftItem }) {
   const StatusIcon = statusCfg?.icon || Package;
 
   return (
-    <div className="flex gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50 hover:bg-white transition-colors">
+    <div className="flex gap-3 p-3 rounded-lg border border-border bg-muted/30 hover:bg-card transition-colors">
       {/* Image */}
-      <div className="h-16 w-16 rounded-md border border-gray-200 overflow-hidden shrink-0 bg-gray-100">
+      <div className="h-16 w-16 rounded-md border border-border overflow-hidden shrink-0 bg-muted">
         {item.images?.[0] ? (
           <img
             src={item.images[0].startsWith('http') ? item.images[0] : `http://localhost:5000/${item.images[0]}`}
@@ -296,8 +296,8 @@ function ItemTile({ item }: { item: ThriftItem }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <p className="font-medium text-sm text-gray-800 truncate">{item.name}</p>
-            <p className="text-xs text-gray-400">
+            <p className="font-medium text-sm truncate">{item.name}</p>
+            <p className="text-xs text-muted-foreground">
               {item.brand && `${item.brand} · `}{CONDITION_LABELS[item.condition]}{item.size && ` · ${item.size}`}
             </p>
           </div>
@@ -308,9 +308,9 @@ function ItemTile({ item }: { item: ThriftItem }) {
         </div>
 
         {/* Values */}
-        <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-gray-500">
+        <div className="mt-1.5 flex flex-wrap gap-3 text-xs text-muted-foreground">
           {item.originalPrice && (
-            <span>Paid: <span className="font-medium text-gray-700">₹{fmtPrice(item.originalPrice)}</span></span>
+            <span>Paid: <span className="font-medium">₹{fmtPrice(item.originalPrice)}</span></span>
           )}
           {item.estimatedValue && (
             <span className="text-yellow-700 font-semibold flex items-center gap-0.5">
@@ -332,7 +332,7 @@ function ItemTile({ item }: { item: ThriftItem }) {
 
         {/* Admin notes */}
         {item.adminNotes && item.status !== 'REJECTED' && (
-          <p className="mt-1.5 text-xs text-gray-500 italic">"{item.adminNotes}"</p>
+          <p className="mt-1.5 text-xs text-muted-foreground italic">"{item.adminNotes}"</p>
         )}
       </div>
     </div>
@@ -359,11 +359,11 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
   const totalOffer = approvedItems.reduce((sum, i) => sum + Math.round(Number(i.estimatedValue || 0) * 100) / 100, 0);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="flex items-start justify-between px-5 py-4 bg-gray-50 border-b border-gray-100">
+      <div className="flex items-start justify-between px-5 py-4 bg-muted/30 border-b border-border">
         <div>
-          <p className="text-xs text-gray-400 mb-1">
+          <p className="text-xs text-muted-foreground mb-1">
             Submitted {format(new Date(listing.createdAt), 'dd MMM yyyy, h:mm a')}
           </p>
           <div className="flex items-center gap-2">
@@ -375,7 +375,7 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
             >
               <Icon className="h-3.5 w-3.5" /> {cfg.label}
             </span>
-            <span className="text-xs text-gray-400">{listing.items.length} item{listing.items.length !== 1 ? 's' : ''}</span>
+            <span className="text-xs text-muted-foreground">{listing.items.length} item{listing.items.length !== 1 ? 's' : ''}</span>
           </div>
         </div>
         <button
@@ -390,7 +390,7 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
       <div className="px-5 py-4 space-y-3">
         {/* Pickup info */}
         {listing.pickupDate && (
-          <div className="flex items-center gap-2 text-sm text-blue-700 bg-blue-50 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 rounded-lg px-3 py-2">
             <Calendar className="h-4 w-4 shrink-0" />
             <span>
               Pickup: <strong>{format(new Date(listing.pickupDate), 'EEEE, dd MMM yyyy')}</strong>
@@ -401,14 +401,14 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
 
         {/* Admin notes */}
         {listing.adminNotes && (
-          <div className="text-xs text-gray-600 bg-yellow-50 border border-yellow-100 rounded px-3 py-2">
+          <div className="text-xs text-gray-600 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-100 dark:border-yellow-900/30 rounded px-3 py-2">
             <span className="font-medium">Admin note: </span>{listing.adminNotes}
           </div>
         )}
 
         {/* Offer summary */}
         {totalOffer > 0 && (
-          <div className="flex items-center gap-2 text-sm text-yellow-700 bg-yellow-50 rounded-lg px-3 py-2">
+          <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg px-3 py-2">
             <CircleDollarSign className="h-4 w-4 shrink-0" />
             <span>
               {listing.status === 'PICKED_UP' ? (
@@ -417,7 +417,7 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
                 <>You'll earn <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong> when picked up</>
               )}
               {rejectedItems.length > 0 && (
-                <span className="text-gray-500 ml-1">
+                <span className="text-muted-foreground ml-1">
                   ({rejectedItems.length} item{rejectedItems.length !== 1 ? 's' : ''} not accepted)
                 </span>
               )}
@@ -452,7 +452,7 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
 
       {/* Cancel button only for PENDING */}
       {listing.status === 'PENDING' && (
-        <div className="px-5 py-3 border-t border-gray-100 flex justify-end">
+        <div className="px-5 py-3 border-t border-border flex justify-end">
           <Button
             variant="outline"
             size="sm"
@@ -506,7 +506,7 @@ function ListingDetailDialog({
 
           {/* Pickup */}
           {listing.pickupDate && listing.status !== 'OFFER_SENT' && (
-            <div className="bg-blue-50 rounded-lg px-4 py-3 text-sm text-blue-700">
+            <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg px-4 py-3 text-sm text-blue-700 dark:text-blue-300">
               <p className="font-medium mb-0.5 flex items-center gap-2">
                 <Calendar className="h-4 w-4" /> Scheduled Pickup
               </p>
@@ -516,7 +516,7 @@ function ListingDetailDialog({
 
           {/* Admin notes (non-offer context) */}
           {listing.adminNotes && listing.status !== 'OFFER_SENT' && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800">
+            <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-lg px-4 py-3 text-sm text-amber-800 dark:text-amber-200">
               <strong>Message from admin:</strong> {listing.adminNotes}
             </div>
           )}
@@ -606,22 +606,22 @@ export default function ThriftMyListings() {
   const paginatedListings = listings.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[hsl(var(--page-background))]">
       <Navbar />
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-background border-b border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-5">
           <button
             onClick={() => navigate('/thrift')}
-            className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 mb-3 transition-colors"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-3 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" /> Back to Thrift Store
           </button>
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Listings</h1>
-              <p className="text-gray-500 text-sm mt-0.5">Track your thrift submissions and earnings</p>
+              <h1 className="text-2xl font-bold">My Listings</h1>
+              <p className="text-muted-foreground text-sm mt-0.5">Track your thrift submissions and earnings</p>
             </div>
             <Button
               onClick={() => navigate('/thrift/sell')}
@@ -635,19 +635,19 @@ export default function ThriftMyListings() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6">
         {isLoading ? (
-          <div className="flex items-center justify-center py-24 text-gray-400">
+          <div className="flex items-center justify-center py-24 text-muted-foreground">
             <Loader2 className="h-8 w-8 animate-spin" />
           </div>
         ) : error ? (
-          <div className="text-center py-24 text-gray-400">
+          <div className="text-center py-24 text-muted-foreground">
             <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-amber-400" />
             <p>Failed to load listings. Please try again.</p>
           </div>
         ) : listings.length === 0 ? (
           <div className="text-center py-24">
-            <Package className="h-14 w-14 mx-auto mb-4 text-gray-200" />
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">No listings yet</h2>
-            <p className="text-gray-400 mb-6 text-sm">Start selling your pre-loved items today!</p>
+            <Package className="h-14 w-14 mx-auto mb-4 text-muted" />
+            <h2 className="text-lg font-semibold mb-2">No listings yet</h2>
+            <p className="text-muted-foreground mb-6 text-sm">Start selling your pre-loved items today!</p>
             <Button
               onClick={() => navigate('/thrift/sell')}
               className="bg-green-600 hover:bg-green-700 text-white"
@@ -657,7 +657,7 @@ export default function ThriftMyListings() {
           </div>
         ) : (
           <div className="space-y-5">
-            <p className="text-sm text-gray-500">{listings.length} listing{listings.length !== 1 ? 's' : ''} total</p>
+            <p className="text-sm text-muted-foreground">{listings.length} listing{listings.length !== 1 ? 's' : ''} total</p>
             {paginatedListings.map((listing) => (
               <ListingCard
                 key={listing.id}
@@ -677,7 +677,7 @@ export default function ThriftMyListings() {
                 <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm text-gray-500">Page {page} of {totalPages}</span>
+                <span className="text-sm text-muted-foreground">Page {page} of {totalPages}</span>
                 <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>

@@ -38,9 +38,9 @@ const variantStyles: Record<StatusVariant, string> = {
   shipped: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   picked_up: 'bg-purple-50 text-purple-700 ring-purple-600/20',
 
-  inactive: 'bg-gray-100 text-gray-600 ring-gray-500/20',
-  user: 'bg-gray-100 text-gray-600 ring-gray-500/20',
-  sold: 'bg-gray-100 text-gray-600 ring-gray-500/20',
+  inactive: 'bg-muted text-muted-foreground ring-border',
+  user: 'bg-muted text-muted-foreground ring-border',
+  sold: 'bg-muted text-muted-foreground ring-border',
 
   rejected: 'bg-red-50 text-red-700 ring-red-600/20',
   cancelled: 'bg-red-50 text-red-700 ring-red-600/20',
@@ -82,7 +82,7 @@ interface StatusBadgeProps {
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, customLabel, className }) => {
   const key = status.toLowerCase().replace(/ /g, '_') as StatusVariant;
-  const styles = variantStyles[key] || 'bg-gray-100 text-gray-600 ring-gray-500/20';
+  const styles = variantStyles[key] || 'bg-muted text-muted-foreground ring-border';
   const label = customLabel || variantLabels[key] || status;
 
   return (

@@ -115,9 +115,9 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
       {/* Empty state — no redirect, prompt to add inline */}
       {addresses.length === 0 && !showForm && (
         <div className="text-center py-6">
-          <MapPin className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-700 font-medium mb-1">No saved addresses</p>
-          <p className="text-sm text-gray-500 mb-4">Add your first address below to continue.</p>
+          <MapPin className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+          <p className="text-foreground font-medium mb-1">No saved addresses</p>
+          <p className="text-sm text-muted-foreground mb-4">Add your first address below to continue.</p>
         </div>
       )}
 
@@ -129,7 +129,7 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
             'flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all',
             selectedId === addr.id
               ? selectedCardClass
-              : 'border-gray-200 hover:border-gray-300 bg-white',
+              : 'border-border hover:border-border/70 bg-card',
           )}
         >
           <input
@@ -142,19 +142,19 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
           />
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-gray-900">{addr.name}</span>
+              <span className="font-medium text-foreground">{addr.name}</span>
               {addr.isDefault && (
                 <span className="text-[11px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
                   Default
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-600 mt-0.5">{addr.phone}</p>
-            <p className="text-sm text-gray-700 mt-1">
+            <p className="text-sm text-muted-foreground mt-0.5">{addr.phone}</p>
+            <p className="text-sm text-foreground mt-1">
               {addr.addressLine1}
               {addr.addressLine2 ? `, ${addr.addressLine2}` : ''}
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {addr.city}, {addr.state} {addr.zipCode}
             </p>
           </div>
@@ -178,9 +178,9 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
       {showForm && (
         <form
           onSubmit={handleSave}
-          className="border border-gray-200 rounded-xl p-4 space-y-3 bg-gray-50 mt-1"
+          className="border border-border rounded-xl p-4 space-y-3 bg-muted/50 mt-1"
         >
-          <p className="text-sm font-semibold text-gray-800">New Address</p>
+          <p className="text-sm font-semibold text-foreground">New Address</p>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">

@@ -66,7 +66,7 @@ export function HeroSection() {
             </div>
           ))}
         </div>
-        <div className="absolute inset-0 bg-foreground/55" />
+        <div className="absolute inset-0 bg-black/55" />
       </div>
 
       {/* Content */}
@@ -75,7 +75,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-sm uppercase tracking-[0.3em] text-background/70 mb-6 font-medium"
+          className="text-sm uppercase tracking-[0.3em] text-background/70 mb-6 font-medium text-white"
         >
           Fitverse
         </motion.p>
@@ -83,7 +83,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.4 }}
-          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-background leading-[1.1] mb-8"
+          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-background leading-[1.1] mb-8 text-white"
         >
           Redefining How Fashion
           <br />
@@ -93,7 +93,7 @@ export function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="text-lg sm:text-xl text-background/80 max-w-2xl mx-auto leading-relaxed font-light"
+          className="text-lg sm:text-xl text-background/80 max-w-2xl mx-auto leading-relaxed font-light text-white"
         >
           Where artificial intelligence meets personal style — empowering confidence,
           embracing sustainability, and transforming the way you discover fashion.

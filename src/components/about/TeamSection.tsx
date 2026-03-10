@@ -34,7 +34,7 @@ const team = [
 
 export function TeamSection() {
   return (
-    <section className="py-24 sm:py-32" style={{ backgroundColor: "hsl(40, 20%, 97%)" }}>
+    <section className="py-24 sm:py-32 bg-background">
       <div className="section-container">
         <ScrollReveal>
           <div className="text-center mb-16">

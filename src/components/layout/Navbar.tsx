@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard, RotateCcw, CircleDollarSign } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard, RotateCcw, CircleDollarSign, Moon, Sun } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import logoImage from "@/assets/logo.jpg";
+import logoWhite from "@/assets/logo_white.png";
 
 const navLinks = [
   { href: "/shop", label: "Shop" },
@@ -31,6 +33,7 @@ export function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   // Auto-focus when search opens
   useEffect(() => {
@@ -75,7 +78,7 @@ export function Navbar() {
         <nav className="flex h-16 items-center justify-between lg:h-20">
           <Link to="/" className="flex items-center gap-3">
             <img 
-              src={logoImage} 
+              src={theme === "dark" ? logoWhite : logoImage}
               alt="Fitverse Logo" 
               className="h-8 w-8 sm:h-10 sm:w-10 object-contain sm:translate-y-[-1px] sm:translate-x-[-120px]"
             />
@@ -135,14 +138,29 @@ export function Navbar() {
             <Button
               variant="ghost"
               size="icon"
-              className="hidden sm:flex hover:bg-gray-100 hover:text-foreground"
+              className="hidden sm:flex hover:bg-secondary hover:text-foreground"
               onClick={isSearchOpen ? closeSearch : openSearch}
             >
               {isSearchOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Search className="h-5 w-5 sm:h-6 sm:w-6" />}
             </Button>
             
+            {/* Dark Mode Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden sm:flex hover:bg-secondary hover:text-foreground"
+              onClick={toggleTheme}
+              title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+            >
+              {theme === "light" ? (
+                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
+              ) : (
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
+              )}
+            </Button>
+            
             <Link to="/cart">
-              <Button variant="ghost" size="icon" className="relative hover:bg-gray-100 hover:text-foreground">
+              <Button variant="ghost" size="icon" className="relative hover:bg-secondary hover:text-foreground">
                 <ShoppingBag className="translate-y-[1px] h-5 w-5 sm:h-6 sm:w-6" />
                 {isAuthenticated && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-white flex items-center justify-center">
@@ -155,7 +173,7 @@ export function Navbar() {
             {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-gray-100 hover:text-foreground">
+                  <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-secondary hover:text-foreground">
                     <User className="h-5 w-5 sm:h-6 sm:w-6" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -251,7 +269,7 @@ export function Navbar() {
               </DropdownMenu>
             ) : (
               <Link to="/login">
-                <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-gray-100 hover:text-foreground">
+                <Button variant="ghost" size="icon" className="hidden sm:flex hover:bg-secondary hover:text-foreground">
                   <LogIn className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </Link>

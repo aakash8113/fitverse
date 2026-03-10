@@ -13,6 +13,14 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { productsApi, Product as ApiProduct, getTotalStock } from "@/services/api";
+import heroStore from "@/assets/about/hero-store.jpg";
+import heroRack from "@/assets/about/hero-rack.jpg";
+import heroFashion from "@/assets/about/hero-fashion.jpg";
+
+// Carousel configuration
+const SLIDES = [heroStore, heroRack, heroFashion];
+const INTERVAL = 5000;
+const TRANSITION_MS = 900;
 
 // Convert API product to frontend product format
 const convertProduct = (apiProduct: ApiProduct) => {
@@ -49,10 +57,42 @@ export default function Shop() {
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
+  // Carousel state
+  const slides = [...SLIDES, SLIDES[0]]; // Clone first slide for seamless loop
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [transitioning, setTransitioning] = useState(true);
+  const carouselTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     const g = searchParams.get("gender")?.toUpperCase() || undefined;
     setFilters((prev) => ({ ...prev, gender: g }));
   }, [searchParams]);
+
+  // Carousel auto-play
+  const startCarouselTimer = () => {
+    carouselTimerRef.current = setInterval(() => {
+      setTransitioning(true);
+      setCarouselIndex((i) => i + 1);
+    }, INTERVAL);
+  };
+
+  useEffect(() => {
+    startCarouselTimer();
+    return () => { 
+      if (carouselTimerRef.current) clearInterval(carouselTimerRef.current); 
+    };
+  }, []);
+
+  // Reset to first slide after reaching cloned slide
+  useEffect(() => {
+    if (carouselIndex === slides.length - 1) {
+      const t = setTimeout(() => {
+        setTransitioning(false);
+        setCarouselIndex(0);
+      }, TRANSITION_MS);
+      return () => clearTimeout(t);
+    }
+  }, [carouselIndex, slides.length]);
 
   const limit = 16;
 
@@ -110,17 +150,53 @@ export default function Shop() {
     <div className="min-h-screen">
       <Navbar />
 
-      {/* Hero Banner */}
-      <section className="bg-secondary/50 py-16">
-        <div className="section-container text-center">
-          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Shop Collection</h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Discover the latest fashion from our Men's and Women's collections
-          </p>
+      {/* Hero Carousel */}
+      <section className="relative h-[500px] flex items-center justify-center overflow-hidden">
+        {/* Sliding Background */}
+        <div className="absolute inset-0 z-0">
+          <div
+            className="flex h-full"
+            style={{
+              width: `${slides.length * 100}%`,
+              transform: `translateX(-${(carouselIndex / slides.length) * 100}%)`,
+              transition: transitioning ? `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)` : "none",
+            }}
+          >
+            {slides.map((src, i) => (
+              <div
+                key={i}
+                className="h-full flex-shrink-0"
+                style={{ width: `${100 / slides.length}%` }}
+              >
+                <img src={src} alt="" className="w-full h-full object-cover" />
+              </div>
+            ))}
+          </div>
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
+
+        {/* Slide dots */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+          {SLIDES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => { 
+                setTransitioning(true); 
+                setCarouselIndex(i);
+                // Restart timer on manual navigation
+                if (carouselTimerRef.current) clearInterval(carouselTimerRef.current);
+                startCarouselTimer();
+              }}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                (carouselIndex % SLIDES.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
+              }`}
+              aria-label={`Go to slide ${i + 1}`}
+            />
+          ))}
         </div>
       </section>
 
-      <div className="w-full py-8 px-6">
+      <div className="w-full py-8 px-6 bg-[hsl(var(--page-background))]">
         <div className="flex gap-6">
           {/* Desktop Filters */}
           <aside className="hidden lg:block w-56 flex-shrink-0 border-r border-border">
@@ -175,7 +251,7 @@ export default function Shop() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn("h-8 w-8 hover:bg-gray-100 hover:text-primary", gridView === "3" && "bg-gray-200")}
+                    className={cn("h-8 w-8 hover:bg-secondary hover:text-primary", gridView === "3" && "bg-secondary")}
                     onClick={() => setGridView("3")}
                   >
                     <Grid3X3 className="w-4 h-4" />
@@ -183,7 +259,7 @@ export default function Shop() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={cn("h-8 w-8 hover:bg-gray-100 hover:text-primary", gridView === "4" && "bg-gray-200")}
+                    className={cn("h-8 w-8 hover:bg-secondary hover:text-primary", gridView === "4" && "bg-secondary")}
                     onClick={() => setGridView("4")}
                   >
                     <LayoutGrid className="w-4 h-4" />

@@ -113,8 +113,7 @@ export function FeaturesSection() {
         {/* TrendScore Highlight */}
         <ScrollReveal>
           <div
-            className="rounded-3xl p-10 sm:p-14 lg:p-16"
-            style={{ backgroundColor: "hsl(40, 20%, 97%)" }}
+            className="rounded-3xl p-10 sm:p-14 lg:p-16 bg-card dark:bg-card"
           >
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12 items-center">
               <div>

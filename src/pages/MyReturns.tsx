@@ -15,7 +15,7 @@ const statusConfig: Record<ReturnStatus, { label: string; className: string }> =
   REFUND_INITIATED:    { label: "Refund Initiated",    className: "bg-indigo-100 text-indigo-800 border-indigo-200" },
   REPLACEMENT_SHIPPED: { label: "Replacement Shipped", className: "bg-cyan-100 text-cyan-800 border-cyan-200" },
   COMPLETED:           { label: "Completed",           className: "bg-green-100 text-green-800 border-green-200" },
-  CANCELLED:           { label: "Cancelled",           className: "bg-gray-100 text-gray-600 border-gray-200" },
+  CANCELLED:           { label: "Cancelled",           className: "bg-muted text-muted-foreground border-border" },
 };
 
 const reasonLabels: Record<string, string> = {

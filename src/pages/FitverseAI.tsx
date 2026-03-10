@@ -33,14 +33,14 @@ export default function FitverseAI() {
         
         
 
-        <div className="section-container relative z-10 bg-blue-100 rounded-3xl p-10 sm:p-14 lg:p-16 shadow-soft">
+        <div className="section-container relative z-10 bg-blue-100 dark:bg-card rounded-3xl p-10 sm:p-14 lg:p-16 shadow-soft dark:bg-[#242F4A]">
           <div className="text-center max-w-3xl mx-auto mb-12">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-foreground">
               Coming Soon
               <br />
               {/* <span className="gradient-ai-text">Powered by AI</span> */}
             </h1>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
               Upload your photo, select any clothing item, and see exactly how it looks on you. 
               No more guessing, no more returns.
             </p>
@@ -53,12 +53,12 @@ export default function FitverseAI() {
                 key={benefit.title}
                 className="flex items-center gap-4 bg-card rounded-2xl p-6 border border-border/50"
               >
-                <div className="w-12 h-12 rounded-xl gradient-ai flex items-center justify-center flex-shrink-0">
-                  <benefit.icon className="w-6 h-6 text-white" />
+                <div className="w-12 h-12 rounded-xl bg-foreground dark:bg-white flex items-center justify-center flex-shrink-0">
+                  <benefit.icon className="w-6 h-6 text-white dark:text-black" />
                 </div>
                 <div>
-                  <h3 className="font-semibold">{benefit.title}</h3>
-                  <p className="text-sm text-muted-foreground">{benefit.description}</p>
+                  <h3 className="font-semibold text-foreground">{benefit.title}</h3>
+                  <p className="text-sm text-foreground/70">{benefit.description}</p>
                 </div>
               </div>
             ))}
@@ -104,8 +104,8 @@ export default function FitverseAI() {
               },
             ].map((item, index) => (
               <div key={item.step} className="text-center">
-                <div className="w-20 h-20 rounded-3xl gradient-ai flex items-center justify-center mx-auto mb-6 shadow-ai">
-                  <span className="text-2xl font-bold text-white">{item.step}</span>
+                <div className="w-20 h-20 rounded-3xl bg-foreground dark:bg-white flex items-center justify-center mx-auto mb-6 shadow-ai">
+                  <span className="text-2xl font-bold text-white dark:text-black">{item.step}</span>
                 </div>
                 <h3 className="text-xl font-semibold mb-3">{item.title}</h3>
                 <p className="text-muted-foreground">{item.description}</p>

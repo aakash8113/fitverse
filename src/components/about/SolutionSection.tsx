@@ -27,7 +27,7 @@ const approaches = [
 
 export function SolutionSection() {
   return (
-    <section className="py-24 sm:py-32" style={{ backgroundColor: "hsl(40, 20%, 97%)" }}>
+    <section className="py-24 sm:py-32 bg-background">
       <div className="section-container">
         <ScrollReveal>
           <div className="text-center mb-20">
@@ -58,9 +58,9 @@ export function SolutionSection() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {approaches.map((item, i) => (
               <ScrollReveal key={item.title} delay={0.1 * (i + 1)}>
-                <div className="group p-6 rounded-2xl bg-background border border-border/50 hover:border-foreground/20 transition-all duration-500 hover:shadow-lg">
-                  <div className="w-10 h-10 rounded-xl bg-foreground flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-5 h-5 text-background" />
+                <div className="group p-6 rounded-2xl bg-card dark:bg-card border border-border/50 hover:border-foreground/20 transition-all duration-500 hover:shadow-lg min-h-[230px]">
+                  <div className="w-10 h-10 rounded-xl bg-foreground dark:bg-white flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <item.icon className="w-5 h-5 text-background dark:text-black" />
                   </div>
                   <h3 className="font-semibold mb-2">{item.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{item.description}</p>
