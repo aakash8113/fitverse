@@ -285,8 +285,8 @@ const AdminCoupons: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Coupons</h1>
-            <p className="text-sm text-gray-500 mt-0.5">{coupons.length} total</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Coupons</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{coupons.length} total</p>
           </div>
           <Button size="sm" className="gap-1.5" onClick={openCreate}>
             <Plus className="h-4 w-4" />
@@ -305,7 +305,7 @@ const AdminCoupons: React.FC = () => {
               className="pl-9 h-9 text-sm"
             />
           </div>
-          <div className="flex rounded-md border border-gray-200 overflow-hidden text-sm">
+          <div className="flex rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden text-sm">
             {(['all', 'active', 'inactive'] as const).map((f) => (
               <button
                 key={f}
@@ -313,8 +313,8 @@ const AdminCoupons: React.FC = () => {
                 className={cn(
                   'px-3 py-1.5 capitalize transition-colors',
                   activeFilter === f
-                    ? 'bg-zinc-900 text-white'
-                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                    ? 'bg-zinc-900 dark:bg-gray-100 text-white dark:text-gray-900'
+                    : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                 )}
               >
                 {f}
@@ -334,10 +334,10 @@ const AdminCoupons: React.FC = () => {
             <p className="text-sm">No coupons found</p>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white">
+          <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                <tr className="border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400">
                   <th className="px-4 py-3 whitespace-nowrap">Code</th>
                   <th className="px-4 py-3 whitespace-nowrap">Discount</th>
                   <th className="px-4 py-3 whitespace-nowrap">Applies To</th>
@@ -349,16 +349,16 @@ const AdminCoupons: React.FC = () => {
                   <th className="px-4 py-3 whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                 {filtered.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition-colors">
                     <td className="px-4 py-3">
-                      <div className="font-mono font-semibold text-zinc-900">{c.code}</div>
+                      <div className="font-mono font-semibold text-zinc-900 dark:text-white">{c.code}</div>
                       {c.description && (
-                        <div className="text-xs text-gray-400 truncate max-w-[180px]">{c.description}</div>
+                        <div className="text-xs text-gray-400 dark:text-gray-500 truncate max-w-[180px]">{c.description}</div>
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium">{discountLabel(c)}</td>
+                    <td className="px-4 py-3 font-medium dark:text-gray-200">{discountLabel(c)}</td>
                     <td className="px-4 py-3">
                       <Badge
                         variant="outline"
@@ -372,24 +372,24 @@ const AdminCoupons: React.FC = () => {
                         {c.applicableTo}
                       </Badge>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{c.scope}</td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{c.scope}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300">
                       {c.minOrderAmount ? `₹${c.minOrderAmount}` : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-gray-800">{c.usageCount}</span>
+                      <span className="text-gray-800 dark:text-gray-200">{c.usageCount}</span>
                       {c.totalUsageLimit && (
-                        <span className="text-gray-400"> / {c.totalUsageLimit}</span>
+                        <span className="text-gray-400 dark:text-gray-500"> / {c.totalUsageLimit}</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-gray-600 whitespace-nowrap">{formatDate(c.expiresAt)}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{formatDate(c.expiresAt)}</td>
                     <td className="px-4 py-3">
                       <Badge
                         className={cn(
                           'text-xs',
                           c.isActive
                             ? 'bg-green-50 text-green-700 border-green-200'
-                            : 'bg-gray-100 text-gray-500 border-gray-200'
+                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600'
                         )}
                         variant="outline"
                       >
@@ -400,35 +400,35 @@ const AdminCoupons: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <button
                           title="View usages"
-                          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                           onClick={() => { setUsagesCoupon(c); setUsagesOpen(true); }}
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </button>
                         <button
                           title="Edit"
-                          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                           onClick={() => openEdit(c)}
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                         <button
                           title="Reset usage count"
-                          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-yellow-600"
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-yellow-600"
                           onClick={() => resetMutation.mutate(c.id)}
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </button>
                         <button
                           title="Block a user"
-                          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-orange-600"
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-orange-600"
                           onClick={() => { setBlockCoupon(c); setBlockOpen(true); }}
                         >
                           <UserX className="h-3.5 w-3.5" />
                         </button>
                         <button
                           title="Delete"
-                          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-red-600"
+                          className="p-1.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-red-600"
                           onClick={() => setDeleteConfirm(c)}
                         >
                           <Trash2 className="h-3.5 w-3.5" />

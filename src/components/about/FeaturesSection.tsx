@@ -101,7 +101,7 @@ export function FeaturesSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-24">
           {features.map((f, i) => (
             <ScrollReveal key={f.title} delay={0.08 * (i + 1)}>
-              <div className="p-6 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-all duration-500 group">
+              <div className="p-6 rounded-2xl border border-border/50 hover:bg-secondary/50 transition-all duration-500 group dark:bg-[#242424] min-h-[178px]">
                 <f.icon className="w-6 h-6 mb-4 text-foreground group-hover:scale-110 transition-transform duration-300" />
                 <h3 className="font-semibold mb-2">{f.title}</h3>
                 <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
@@ -113,7 +113,8 @@ export function FeaturesSection() {
         {/* TrendScore Highlight */}
         <ScrollReveal>
           <div
-            className="rounded-3xl p-10 sm:p-14 lg:p-16 bg-card dark:bg-card"
+            className="rounded-3xl p-10 sm:p-14 lg:p-16"
+            style={{ backgroundColor: "hsl(40, 20%, 97%)" }}
           >
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-12 items-center">
               <div>

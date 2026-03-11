@@ -344,7 +344,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
                   'border rounded-lg p-2 text-xs text-left transition-all',
                   item.condition === c.value
                     ? 'border-green-600 bg-green-50 text-green-700 ring-1 ring-green-400'
-                    : 'border-gray-200 hover:border-gray-400 text-gray-600'
+                    : 'border-gray-200 hover:border-gray-400 text-gray-600 dark:text-white' 
                 )}
               >
                 <div className="font-semibold mb-0.5">{c.label}</div>

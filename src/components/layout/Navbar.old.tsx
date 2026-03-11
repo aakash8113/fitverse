@@ -171,7 +171,7 @@ export function Navbar() {
               </Link>
             )}
             
-            {/* Mobile Menu Toggle */
+            {/* Mobile Menu Toggle */}
             <Button 
               variant="ghost" 
               size="icon" 

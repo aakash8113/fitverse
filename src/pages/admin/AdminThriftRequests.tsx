@@ -499,12 +499,12 @@ function ListingRow({ listing, onReview, onEditOffer, onMarkPickedUp, onManageIt
   const Icon = cfg?.icon || Package;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
       <div className="flex items-center gap-4 px-5 py-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <p className="font-medium text-sm">{listing.user?.name}</p>
-            <span className="text-gray-400 text-xs">{listing.user?.email}</span>
+            <span className="text-gray-400 dark:text-gray-500 text-xs">{listing.user?.email}</span>
             {listing.contactRequested && listing.status === 'OFFER_SENT' && (
               <span className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-700 border border-orange-200 rounded-full px-2 py-0.5">
                 <Phone className="h-3 w-3" /> Call requested
@@ -515,7 +515,7 @@ function ListingRow({ listing, onReview, onEditOffer, onMarkPickedUp, onManageIt
             <span className={cn('inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium', cfg.color)}>
               <Icon className="h-3 w-3" /> {cfg.label}
             </span>
-            <span className="text-xs text-gray-400">{listing.items.length} items - {format(new Date(listing.createdAt), 'dd MMM yyyy')}</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{listing.items.length} items - {format(new Date(listing.createdAt), 'dd MMM yyyy')}</span>
             {listing.pickupDate && (
               <span className="text-xs text-blue-600 flex items-center gap-1">
                 <Calendar className="h-3 w-3" /> {format(new Date(listing.pickupDate), 'dd MMM')}{listing.pickupSlot && ` - ${listing.pickupSlot}`}
@@ -539,13 +539,13 @@ function ListingRow({ listing, onReview, onEditOffer, onMarkPickedUp, onManageIt
               {isMarkingPickedUp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Truck className="h-3.5 w-3.5 mr-1" /> Mark Picked Up</>}
             </Button>
           )}
-          <button onClick={() => setExpanded((p) => !p)} className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100">
+          <button onClick={() => setExpanded((p) => !p)} className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
             {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
         </div>
       </div>
       {expanded && (
-        <div className="border-t border-gray-100 px-5 py-4 bg-gray-50">
+        <div className="border-t border-gray-100 dark:border-gray-700 px-5 py-4 bg-gray-50 dark:bg-gray-800/30">
           {/* Pickup address */}
           {listing.pickupAddress && (
             <div className="flex items-start gap-2 mb-4 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2.5 text-xs">
@@ -564,12 +564,12 @@ function ListingRow({ listing, onReview, onEditOffer, onMarkPickedUp, onManageIt
               const itemCfg = ITEM_STATUS_CFG[item.status as keyof typeof ITEM_STATUS_CFG];
               const canManage = ['PICKED_UP', 'UNDER_REFURBISHMENT'].includes(item.status);
               return (
-                <div key={item.id} className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-3">
+                <div key={item.id} className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
                   <ItemThumb src={item.images?.[0]} alt={item.name} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400">{item.brand && `${item.brand} - `}{CONDITION_LABEL[item.condition]}{item.size && ` - ${item.size}`}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{[item.gender === 'MENS' ? "Men's" : item.gender === 'WOMENS' ? "Women's" : null, item.wearType === 'TOPWEAR' ? 'Topwear' : item.wearType === 'BOTTOMWEAR' ? 'Bottomwear' : null, item.category, item.subCategory?.replace(/_/g, ' ')].filter(Boolean).join(' · ')}</p>
+                    <p className="text-sm font-medium truncate dark:text-gray-200">{item.name}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500">{item.brand && `${item.brand} - `}{CONDITION_LABEL[item.condition]}{item.size && ` - ${item.size}`}</p>
+                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{[item.gender === 'MENS' ? "Men's" : item.gender === 'WOMENS' ? "Women's" : null, item.wearType === 'TOPWEAR' ? 'Topwear' : item.wearType === 'BOTTOMWEAR' ? 'Bottomwear' : null, item.category, item.subCategory?.replace(/_/g, ' ')].filter(Boolean).join(' · ')}</p>
                     <div className="flex items-center gap-3 mt-1 flex-wrap">
                       <span className={cn('text-xs px-1.5 py-0.5 rounded', itemCfg?.color)}>{itemCfg?.label}</span>
                       {item.estimatedValue && <span className="text-xs text-green-700 font-medium">Offer: Rs.{fmtPrice(item.estimatedValue)}</span>}
@@ -628,8 +628,8 @@ export default function AdminThriftRequests() {
     <AdminLayout>
       <div className="p-6 space-y-5">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Thrift Requests</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Review seller submissions, send offers, and schedule pickups</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Thrift Requests</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Review seller submissions, send offers, and schedule pickups</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {[
@@ -641,7 +641,7 @@ export default function AdminThriftRequests() {
             { key: 'COMPLETED',  label: 'Completed', count: counts.completed },
           ].map((s) => (
             <button key={s.key} onClick={() => setStatusFilter(s.key)}
-              className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors', statusFilter === s.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400')}>
+              className={cn('px-3 py-1.5 rounded-full text-xs font-medium border transition-colors', statusFilter === s.key ? 'bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 border-gray-900 dark:border-gray-100' : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-500')}>
               {s.label} <span className="ml-1 font-bold">{s.count}</span>
             </button>
           ))}

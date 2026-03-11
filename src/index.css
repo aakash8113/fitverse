@@ -119,6 +119,31 @@ input[type="search"]::-webkit-search-decoration {
     --sidebar-border: 0 0% 25%;
     --sidebar-ring: 0 0% 88%;
   }
+
+  /* Admin panel: always render in light mode regardless of dark-mode preference.
+     Applied to the AdminLayout wrapper div AND to document.body (for portal components). */
+  .admin-light {
+    --background: 0 0% 97.3%;
+    --foreground: 240 10% 4%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+    --primary: 240 6% 10%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 6% 10%;
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 4% 46%;
+    --accent: 240 6% 10%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 240 6% 10%;
+    color-scheme: light;
+  }
 }
 
 @layer base {

@@ -380,9 +380,9 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
         </div>
         <button
           onClick={onView}
-          className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 border border-gray-200 rounded px-2 py-1 hover:bg-gray-100 transition-colors"
+          className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 border border-gray-200 rounded px-2 py-1 hover:bg-gray-100 transition-colors dark:text-white"
         >
-          <Eye className="h-3.5 w-3.5" /> Details
+          <Eye className="h-3.5 w-3.5 text-white" /> Details
         </button>
       </div>
 

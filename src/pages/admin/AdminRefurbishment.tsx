@@ -109,7 +109,7 @@ const AdminRefurbishment: React.FC = () => {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+          <tr className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
             <th className="text-left px-4 py-3 font-medium">Item</th>
             <th className="text-left px-4 py-3 font-medium">Notes</th>
             <th className="text-left px-4 py-3 font-medium">Refurb Cost</th>
@@ -120,11 +120,11 @@ const AdminRefurbishment: React.FC = () => {
         </thead>
         <tbody>
           {list.map((item, idx) => (
-            <tr key={item.id} className={`border-b border-gray-100 last:border-0 ${idx % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
-              <td className="px-4 py-3 font-medium text-gray-800">{item.itemName}</td>
-              <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate">{item.notes || '—'}</td>
-              <td className="px-4 py-3 text-gray-700">₹{item.cost}</td>
-              <td className="px-4 py-3 font-medium text-gray-900">₹{item.finalPrice}</td>
+            <tr key={item.id} className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${idx % 2 === 0 ? '' : 'bg-gray-50/40 dark:bg-gray-800/20'}`}>
+              <td className="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">{item.itemName}</td>
+              <td className="px-4 py-3 text-gray-600 dark:text-gray-300 max-w-[200px] truncate">{item.notes || '—'}</td>
+              <td className="px-4 py-3 text-gray-700 dark:text-gray-200">₹{item.cost}</td>
+              <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">₹{item.finalPrice}</td>
               <td className="px-4 py-3">
                 <StatusBadge status={item.status.toLowerCase()} customLabel={item.status.replace(/_/g, ' ')} />
               </td>
@@ -132,7 +132,7 @@ const AdminRefurbishment: React.FC = () => {
                 <div className="flex items-center justify-end gap-2">
                   <button
                     onClick={() => openEdit(item)}
-                    className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors"
+                    className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                     title="Edit"
                   >
                     <Edit2 className="h-3.5 w-3.5" />
@@ -160,8 +160,8 @@ const AdminRefurbishment: React.FC = () => {
     <AdminLayout>
       <div className="p-6 space-y-6">
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Refurbishment Tracking</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Add notes, costs, and move items to live thrift inventory</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Refurbishment Tracking</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Add notes, costs, and move items to live thrift inventory</p>
         </div>
 
         {/* Summary */}
@@ -171,9 +171,9 @@ const AdminRefurbishment: React.FC = () => {
             { label: 'Completed', count: completed.length, color: 'bg-green-50 text-green-700' },
             { label: 'In Inventory', count: inInventory.length, color: 'bg-gray-100 text-gray-600' },
           ].map((s) => (
-            <div key={s.label} className="bg-white border border-gray-200 rounded-lg p-4 flex items-center gap-3">
+            <div key={s.label} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center gap-3">
               <div className={`rounded-full px-3 py-1 text-xs font-medium ${s.color}`}>{s.count}</div>
-              <p className="text-sm text-gray-600">{s.label}</p>
+              <p className="text-sm text-gray-600 dark:text-gray-300">{s.label}</p>
             </div>
           ))}
         </div>
@@ -187,10 +187,10 @@ const AdminRefurbishment: React.FC = () => {
             {/* In Progress */}
             {inProgress.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-gray-700 mb-2">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
                   In Progress <span className="ml-1.5 text-xs font-normal text-blue-600">{inProgress.length}</span>
                 </h2>
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                   {renderTable(inProgress, false)}
                 </div>
               </section>
@@ -199,11 +199,11 @@ const AdminRefurbishment: React.FC = () => {
             {/* Completed — Ready to move */}
             {completed.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center gap-2">
                   Ready to Move to Inventory
                   <span className="ml-1.5 text-xs font-normal text-green-600">{completed.length}</span>
                 </h2>
-                <div className="bg-white border border-green-200 rounded-lg overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 border border-green-200 dark:border-green-900 rounded-lg overflow-hidden">
                   {renderTable(completed, true)}
                 </div>
               </section>
@@ -212,11 +212,11 @@ const AdminRefurbishment: React.FC = () => {
             {/* In Inventory (archived) */}
             {inInventory.length > 0 && (
               <section>
-                <h2 className="text-sm font-semibold text-gray-500 mb-2">
+                <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 mb-2">
                   Moved to Inventory
                   <span className="ml-1.5 text-xs font-normal">{inInventory.length}</span>
                 </h2>
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden opacity-70">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden opacity-70">
                   {renderTable(inInventory, false)}
                 </div>
               </section>

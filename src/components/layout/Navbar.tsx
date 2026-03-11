@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
-import logoImage from "@/assets/logo.jpg";
+import logoImage from "@/assets/logo_black.png";
 import logoWhite from "@/assets/logo_white.png";
 
 const navLinks = [

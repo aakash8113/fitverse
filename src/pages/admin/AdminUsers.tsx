@@ -19,25 +19,25 @@ const MOCK_USERS: AdminUser[] = [
     id: 'u1', name: 'Priya Sharma', email: 'priya@example.com', phone: '+91 98765 43210',
     role: 'USER', isEmailVerified: true, isPhoneVerified: false, isBlocked: false,
     createdAt: '2024-10-01T00:00:00Z', updatedAt: '2024-12-19T00:00:00Z',
-    _count: { orders: 4 },
+    coinBalance: 120, _count: { orders: 4 },
   },
   {
     id: 'u2', name: 'Rohan Verma', email: 'rohan@example.com', phone: '+91 87654 32109',
     role: 'USER', isEmailVerified: true, isPhoneVerified: true, isBlocked: false,
     createdAt: '2024-11-15T00:00:00Z', updatedAt: '2024-12-18T00:00:00Z',
-    _count: { orders: 2 },
+    coinBalance: 50, _count: { orders: 2 },
   },
   {
     id: 'u3', name: 'Ananya Das', email: 'ananya@example.com', phone: '+91 76543 21098',
     role: 'USER', isEmailVerified: false, isPhoneVerified: false, isBlocked: true,
     createdAt: '2024-09-22T00:00:00Z', updatedAt: '2024-12-10T00:00:00Z',
-    _count: { orders: 0 },
+    coinBalance: 0, _count: { orders: 0 },
   },
   {
     id: 'adm1', name: 'Admin User', email: 'admin@fitverse.com', phone: '+91 99999 00000',
     role: 'ADMIN', isEmailVerified: true, isPhoneVerified: true, isBlocked: false,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-12-19T00:00:00Z',
-    _count: { orders: 0 },
+    coinBalance: 0, _count: { orders: 0 },
   },
 ];
 
@@ -132,8 +132,8 @@ const AdminUsers: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Users</h1>
-            <p className="text-sm text-gray-500 mt-0.5">View and manage registered users</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Users</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">View and manage registered users</p>
           </div>
           <Button variant="outline" size="sm" className="gap-1.5" onClick={exportCSV}>
             <Download className="h-4 w-4" /> Export CSV
@@ -167,15 +167,15 @@ const AdminUsers: React.FC = () => {
         </div>
 
         {/* Stats bar */}
-        <div className="flex gap-5 text-sm text-gray-500">
-          <span>Total: <strong className="text-gray-900">{users.length}</strong></span>
-          <span>Users: <strong className="text-gray-900">{users.filter((u) => u.role === 'USER').length}</strong></span>
-          <span>Admins: <strong className="text-purple-700">{users.filter((u) => u.role === 'ADMIN').length}</strong></span>
-          <span>Blocked: <strong className="text-red-600">{users.filter((u) => u.isBlocked).length}</strong></span>
+        <div className="flex gap-5 text-sm text-gray-500 dark:text-gray-400">
+          <span>Total: <strong className="text-gray-900 dark:text-white">{users.length}</strong></span>
+          <span>Users: <strong className="text-gray-900 dark:text-white">{users.filter((u) => u.role === 'USER').length}</strong></span>
+          <span>Admins: <strong className="text-purple-700 dark:text-purple-400">{users.filter((u) => u.role === 'ADMIN').length}</strong></span>
+          <span>Blocked: <strong className="text-red-600 dark:text-red-400">{users.filter((u) => u.isBlocked).length}</strong></span>
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-gray-400">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading users...
@@ -186,7 +186,7 @@ const AdminUsers: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+                  <tr className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
                     <th className="text-left px-4 py-3 font-medium">User</th>
                     <th className="text-left px-4 py-3 font-medium">Role</th>
                     <th className="text-left px-4 py-3 font-medium">Verified</th>
@@ -201,16 +201,16 @@ const AdminUsers: React.FC = () => {
                   {filtered.map((user, idx) => (
                     <tr
                       key={user.id}
-                      className={`border-b border-gray-100 last:border-0 ${idx % 2 ? 'bg-gray-50/40' : ''} ${user.isBlocked ? 'opacity-60' : ''}`}
+                      className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${idx % 2 ? 'bg-gray-50/40 dark:bg-gray-800/20' : ''} ${user.isBlocked ? 'opacity-60' : ''}`}
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2.5">
-                          <div className="h-7 w-7 rounded-full bg-zinc-100 border border-gray-200 flex items-center justify-center text-xs font-semibold text-zinc-600 shrink-0">
+                          <div className="h-7 w-7 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-xs font-semibold text-zinc-600 dark:text-zinc-300 shrink-0">
                             {user.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-medium text-gray-800">{user.name}</p>
-                            <p className="text-xs text-gray-400">{user.email}</p>
+                            <p className="font-medium text-gray-800 dark:text-gray-200">{user.name}</p>
+                            <p className="text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
                           </div>
                         </div>
                       </td>
@@ -222,14 +222,14 @@ const AdminUsers: React.FC = () => {
                           {user.isEmailVerified ? '✓ Email' : '✗ Email'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-700">{user._count?.orders ?? 0}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{user._count?.orders ?? 0}</td>
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1 text-xs text-yellow-700 font-medium">
                           <CircleDollarSign className="h-3 w-3" />
                           {user.coinBalance ?? 0}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-gray-500">
+                      <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
                         {new Date(user.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </td>
                       <td className="px-4 py-3">
@@ -243,7 +243,7 @@ const AdminUsers: React.FC = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openDetail(user)}
-                            className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors"
+                            className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             title="View profile"
                           >
                             <Eye className="h-3.5 w-3.5" />
@@ -363,12 +363,12 @@ const AdminUsers: React.FC = () => {
             <div className="space-y-4 text-sm">
               {/* Avatar */}
               <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-full bg-zinc-100 border border-gray-200 flex items-center justify-center text-lg font-semibold text-zinc-600">
+                <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-lg font-semibold text-zinc-600 dark:text-zinc-300">
                   {selectedUser.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">{selectedUser.name}</p>
-                  <p className="text-gray-500">{selectedUser.email}</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{selectedUser.name}</p>
+                  <p className="text-gray-500 dark:text-gray-400">{selectedUser.email}</p>
                 </div>
                 <div className="ml-auto">
                   <StatusBadge status={selectedUser.role.toLowerCase()} />
@@ -383,37 +383,37 @@ const AdminUsers: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
-                  <p className="text-gray-400 mb-0.5">Phone</p>
-                  <p className="text-gray-700">{selectedUser.phone || '—'}</p>
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">Phone</p>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedUser.phone || '—'}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-0.5">Orders</p>
-                  <p className="text-gray-700">{selectedUser._count?.orders ?? 0}</p>
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">Orders</p>
+                  <p className="text-gray-700 dark:text-gray-300">{selectedUser._count?.orders ?? 0}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-0.5">Email Verified</p>
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">Email Verified</p>
                   <p className={selectedUser.isEmailVerified ? 'text-green-700' : 'text-red-500'}>
                     {selectedUser.isEmailVerified ? 'Verified' : 'Not verified'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-0.5">Phone Verified</p>
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">Phone Verified</p>
                   <p className={selectedUser.isPhoneVerified ? 'text-green-700' : 'text-red-500'}>
                     {selectedUser.isPhoneVerified ? 'Verified' : 'Not verified'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-0.5">Member Since</p>
-                  <p className="text-gray-700">{new Date(selectedUser.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">Member Since</p>
+                  <p className="text-gray-700 dark:text-gray-300">{new Date(selectedUser.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400 mb-0.5">Last Updated</p>
-                  <p className="text-gray-700">{new Date(selectedUser.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">Last Updated</p>
+                  <p className="text-gray-700 dark:text-gray-300">{new Date(selectedUser.updatedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' })}</p>
                 </div>
               </div>
 
               {selectedUser.role !== 'ADMIN' && (
-                <div className="pt-2 border-t border-gray-100">
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
                   <Button
                     variant={selectedUser.isBlocked ? 'outline' : 'destructive'}
                     size="sm"

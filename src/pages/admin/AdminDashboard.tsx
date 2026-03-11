@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -62,14 +62,14 @@ interface MetricCardProps {
 const MetricCard: React.FC<MetricCardProps> = ({ label, value, icon: Icon, trend, trendLabel }) => {
   const isPositive = trend !== undefined && trend >= 0;
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-5">
+    <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</span>
-        <div className="bg-gray-50 rounded p-1.5">
-          <Icon className="h-4 w-4 text-gray-600" />
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">{label}</span>
+        <div className="bg-gray-50 dark:bg-gray-800 rounded p-1.5">
+          <Icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
         </div>
       </div>
-      <p className="text-2xl font-semibold text-gray-900">{value}</p>
+      <p className="text-2xl font-semibold text-gray-900 dark:text-white">{value}</p>
       {trend !== undefined && (
         <div className={`flex items-center gap-1 mt-1.5 text-xs ${isPositive ? 'text-green-600' : 'text-red-500'}`}>
           {isPositive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
@@ -81,6 +81,17 @@ const MetricCard: React.FC<MetricCardProps> = ({ label, value, icon: Icon, trend
 };
 
 const AdminDashboard: React.FC = () => {
+  const [isDark, setIsDark] = useState(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  );
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => observer.disconnect();
+  }, []);
+
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['admin', 'stats'],
     queryFn: adminApi.getDashboardStats,
@@ -101,11 +112,11 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <AdminLayout>
-      <div className="p-6 space-y-6">
+      <div className="p-6 space-y-6 dark:bg-[#121212]">
         {/* Header */}
         <div>
-          <h1 className="text-xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Welcome back. Here&apos;s what&apos;s happening.</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Welcome back. Here&apos;s what&apos;s happening.</p>
         </div>
 
         {/* Metric cards */}
@@ -157,8 +168,8 @@ const AdminDashboard: React.FC = () => {
         {/* Charts row */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           {/* Revenue trend */}
-          <div className="xl:col-span-2 bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Revenue Trend</h2>
+          <div className="xl:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Revenue Trend</h2>
             <ResponsiveContainer width="100%" height={220}>
               <AreaChart data={revenueData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <defs>
@@ -180,26 +191,26 @@ const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Category breakdown */}
-          <div className="bg-white border border-gray-200 rounded-lg p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Inventory by Category</h2>
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-5">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">Inventory by Category</h2>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={mockCategoryData} layout="vertical" margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#f0f0f0'} horizontal={false} />
                 <XAxis type="number" tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="category" type="category" tick={{ fontSize: 11, fill: '#6b7280' }} axisLine={false} tickLine={false} width={72} />
+                <YAxis dataKey="category" type="category" tick={{ fontSize: 11, fill: isDark ? '#9ca3af' : '#6b7280' }} axisLine={false} tickLine={false} width={72} />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 6, border: '1px solid #e5e7eb', boxShadow: 'none' }}
+                  contentStyle={{ fontSize: 12, borderRadius: 6, border: isDark ? '1px solid #374151' : '1px solid #e5e7eb', boxShadow: 'none', backgroundColor: isDark ? '#1f2937' : '#ffffff', color: isDark ? '#f3f4f6' : '#111827' }}
                 />
-                <Bar dataKey="count" fill="#18181b" radius={[0, 3, 3, 0]} barSize={14} />
+                <Bar dataKey="count" fill={isDark ? '#e5e7eb' : '#18181b'} radius={[0, 3, 3, 0]} barSize={14} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Recent orders */}
-        <div className="bg-white border border-gray-200 rounded-lg">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-700">Recent Orders</h2>
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">Recent Orders</h2>
             <Link to="/admin/orders" className="text-xs text-blue-600 hover:underline">View all</Link>
           </div>
 
@@ -213,7 +224,7 @@ const AdminDashboard: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs text-gray-500 border-b border-gray-100 bg-gray-50">
+                  <tr className="text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                     <th className="text-left px-5 py-3 font-medium">Order ID</th>
                     <th className="text-left px-5 py-3 font-medium">Customer</th>
                     <th className="text-left px-5 py-3 font-medium">Items</th>
@@ -223,18 +234,18 @@ const AdminDashboard: React.FC = () => {
                 </thead>
                 <tbody>
                   {orders.map((order: any, idx: number) => (
-                    <tr key={order.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}>
-                      <td className="px-5 py-3 font-mono text-xs text-gray-500">#{order.id.slice(-6).toUpperCase()}</td>
-                      <td className="px-5 py-3 text-gray-800">{order.user?.name || '—'}</td>
-                      <td className="px-5 py-3 text-gray-600">{(order.orderItems || order.items || []).length} item(s)</td>
-                      <td className="px-5 py-3 text-gray-900 font-medium">₹{parseFloat(order.total || '0').toFixed(2)}</td>
-                      <td className="px-5 py-3 text-gray-600 text-xs">
+                    <tr key={order.id} className={idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/30'}>
+                      <td className="px-5 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">#{order.id.slice(-6).toUpperCase()}</td>
+                      <td className="px-5 py-3 text-gray-800 dark:text-gray-200">{order.user?.name || '—'}</td>
+                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{(order.orderItems || order.items || []).length} item(s)</td>
+                      <td className="px-5 py-3 text-gray-900 dark:text-white font-medium">₹{parseFloat(order.total || '0').toFixed(2)}</td>
+                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300 text-xs">
                         {order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod === 'CARD' ? 'Card' : order.paymentMethod === 'WALLET' ? 'Wallet' : '—'}
                       </td>
                       <td className="px-5 py-3">
                         <StatusBadge status={order.status?.toLowerCase() || 'pending'} />
                       </td>
-                      <td className="px-5 py-3 text-gray-500">
+                      <td className="px-5 py-3 text-gray-500 dark:text-gray-400">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                       </td>
                     </tr>

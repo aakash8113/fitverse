@@ -47,7 +47,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="fixed inset-0 flex bg-gray-50 dark:bg-[#121212] overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -119,18 +119,18 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar (mobile) */}
-        <header className="lg:hidden flex items-center gap-3 h-14 px-4 bg-white border-b border-gray-200 shrink-0">
+        <header className="lg:hidden flex items-center gap-3 h-14 px-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-foreground">Fitverse Admin</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">Fitverse Admin</span>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-[#121212] text-gray-900 dark:text-white">
           {children}
         </main>
       </div>

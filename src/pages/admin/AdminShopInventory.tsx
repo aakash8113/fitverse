@@ -271,8 +271,8 @@ const AdminShopInventory: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Shop Inventory</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Manage products, stock, and pricing</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Shop Inventory</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Manage products, stock, and pricing</p>
           </div>
           <Button size="sm" className="gap-1.5" onClick={openCreate}>
             <Plus className="h-4 w-4" /> Add Product
@@ -302,7 +302,7 @@ const AdminShopInventory: React.FC = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-gray-400">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading products...
@@ -313,7 +313,7 @@ const AdminShopInventory: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs text-gray-500 bg-gray-50 border-b border-gray-100">
+                  <tr className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
                     <th className="text-left px-4 py-3 font-medium">Product</th>
                     <th className="text-left px-4 py-3 font-medium">Gender / Type</th>
                     <th className="text-left px-4 py-3 font-medium">Category</th>
@@ -325,27 +325,27 @@ const AdminShopInventory: React.FC = () => {
                 </thead>
                 <tbody>
                   {products.map((p: Product, idx: number) => (
-                    <tr key={p.id} className={`border-b border-gray-100 last:border-0 ${idx % 2 === 0 ? '' : 'bg-gray-50/40'}`}>
+                    <tr key={p.id} className={`border-b border-gray-100 dark:border-gray-800 last:border-0 ${idx % 2 === 0 ? '' : 'bg-gray-50/40 dark:bg-gray-800/20'}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded border border-gray-200 bg-gray-100 overflow-hidden shrink-0">
+                          <div className="h-9 w-9 rounded border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 overflow-hidden shrink-0">
                             {p.images?.[0] ? (
                               <img src={p.images[0]} alt={p.name} className="h-full w-full object-cover" />
                             ) : (
-                              <div className="h-full w-full flex items-center justify-center text-gray-300">
+                              <div className="h-full w-full flex items-center justify-center text-gray-300 dark:text-gray-600">
                                 <ImagePlus className="h-4 w-4" />
                               </div>
                             )}
                           </div>
-                          <span className="font-medium text-gray-800 line-clamp-1">{p.name}</span>
+                          <span className="font-medium text-gray-800 dark:text-gray-200 line-clamp-1">{p.name}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-gray-600 text-xs">
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-xs">
                         {p.gender ? `${p.gender} / ${p.wearType || '—'}` : '—'}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{p.category || '—'}</td>
-                      <td className="px-4 py-3 text-gray-900 font-medium">₹{parseFloat(String(p.price)).toFixed(2)}</td>
-                      <td className="px-4 py-3 text-gray-700">{getTotalStock(p.sizeStock as Record<string, number>)}</td>
+                      <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{p.category || '—'}</td>
+                      <td className="px-4 py-3 text-gray-900 dark:text-white font-medium">₹{parseFloat(String(p.price)).toFixed(2)}</td>
+                      <td className="px-4 py-3 text-gray-700 dark:text-gray-200">{getTotalStock(p.sizeStock as Record<string, number>)}</td>
                       <td className="px-4 py-3">
                         <StatusBadge status={getTotalStock(p.sizeStock as Record<string, number>) > 0 ? 'active' : 'inactive'} customLabel={getTotalStock(p.sizeStock as Record<string, number>) > 0 ? 'In Stock' : 'Out of Stock'} />
                       </td>
@@ -353,7 +353,7 @@ const AdminShopInventory: React.FC = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => openEdit(p)}
-                            className="text-gray-400 hover:text-gray-700 transition-colors p-1 rounded hover:bg-gray-100"
+                            className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
                           </button>
@@ -379,7 +379,7 @@ const AdminShopInventory: React.FC = () => {
             <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm text-gray-600">Page {page} of {totalPages}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">Page {page} of {totalPages}</span>
             <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>

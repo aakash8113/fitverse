@@ -471,7 +471,7 @@ export default function ProductDetails() {
             <Separator />
 
             {/* Color Selection */}
-            <div>
+            {/* <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold">
                   Color: <span className="text-muted-foreground font-normal">{colors[selectedColor].name}</span>
@@ -493,7 +493,7 @@ export default function ProductDetails() {
                   />
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Size Selection */}
             <div>
@@ -506,16 +506,20 @@ export default function ProductDetails() {
                   <span className="text-sm text-muted-foreground">No sizes available</span>
                 ) : (
                   (ALL_SIZES[product.wearType] || availableSizes).map((size) => {
-                    const isAvailable = availableSizes.includes(size);
+                    const sizeStockMap = (product.sizeStock as Record<string, number>) || {};
+                    const isListed = availableSizes.includes(size);
+                    const stockQty = sizeStockMap[size] ?? 0;
+                    const isSoldOut = isListed && stockQty === 0;
+                    const isDisabled = !isListed || isSoldOut;
                     return (
                       <button
                         key={size}
-                        onClick={() => isAvailable && setSelectedSize(size)}
-                        disabled={!isAvailable}
-                        title={!isAvailable ? "Not available" : undefined}
+                        onClick={() => !isDisabled && setSelectedSize(size)}
+                        disabled={isDisabled}
+                        title={isSoldOut ? "Sold out" : !isListed ? "Not available" : undefined}
                         className={cn(
                           "w-12 h-12 rounded-lg border-2 transition-all font-medium relative",
-                          isAvailable
+                          !isDisabled
                             ? selectedSize === size
                               ? "border-foreground bg-foreground text-background"
                               : "border-border hover:border-muted-foreground"
@@ -523,7 +527,7 @@ export default function ProductDetails() {
                         )}
                       >
                         {size}
-                        {!isAvailable && (
+                        {isDisabled && (
                           <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <span className="w-[120%] h-px bg-muted-foreground/40 rotate-45 absolute" />
                           </span>

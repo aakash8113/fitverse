@@ -77,10 +77,10 @@ const AdminOrders: React.FC = () => {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900">Orders</h1>
-            <p className="text-sm text-gray-500 mt-0.5">All customer orders</p>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Orders</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">All customer orders</p>
           </div>
-          <span className="text-sm text-gray-500">{orders.length} total</span>
+          <span className="text-sm text-gray-500 dark:text-gray-400">{orders.length} total</span>
         </div>
 
         {/* Status Tabs */}
@@ -95,13 +95,13 @@ const AdminOrders: React.FC = () => {
                   'px-3 py-1.5 rounded-md text-xs font-medium transition-colors',
                   statusFilter === tab.key
                     ? 'bg-gray-900 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
                 )}
               >
                 {tab.label}
                 {count > 0 && (
                   <span className={cn('ml-1.5 px-1.5 py-0.5 rounded-full text-[10px]',
-                    statusFilter === tab.key ? 'bg-white/20 text-white' : 'bg-gray-300 text-gray-700'
+                    statusFilter === tab.key ? 'bg-white/20 text-white' : 'bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200'
                   )}>{count}</span>
                 )}
               </button>
@@ -121,7 +121,7 @@ const AdminOrders: React.FC = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
           {isLoading ? (
             <div className="flex items-center justify-center py-16 text-gray-400">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading orders...
@@ -132,7 +132,7 @@ const AdminOrders: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-xs text-gray-500 border-b border-gray-100 bg-gray-50">
+                  <tr className="text-xs text-gray-500 dark:text-gray-400 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                     <th className="text-left px-5 py-3 font-medium">Order #</th>
                     <th className="text-left px-5 py-3 font-medium">Customer</th>
                     <th className="text-left px-5 py-3 font-medium">Items</th>
@@ -147,23 +147,23 @@ const AdminOrders: React.FC = () => {
                 <tbody>
                   {filtered.map((order: any, idx: number) => (
                     <React.Fragment key={order.id}>
-                    <tr className={cn('border-b border-gray-100 last:border-0', idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50')}>
-                      <td className="px-5 py-3 font-mono text-xs text-gray-500">{order.orderNumber || `#${order.id.slice(-6).toUpperCase()}`}</td>
+                    <tr className={cn('border-b border-gray-100 dark:border-gray-800 last:border-0', idx % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50/50 dark:bg-gray-800/30')}>
+                      <td className="px-5 py-3 font-mono text-xs text-gray-500 dark:text-gray-400">{order.orderNumber || `#${order.id.slice(-6).toUpperCase()}`}</td>
                       <td className="px-5 py-3">
                         <div>
-                          <p className="text-gray-800 font-medium">{order.user?.name || '—'}</p>
-                          <p className="text-xs text-gray-500">{order.user?.email || ''}</p>
+                          <p className="text-gray-800 dark:text-gray-200 font-medium">{order.user?.name || '—'}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{order.user?.email || ''}</p>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-gray-600">{(order.orderItems || order.items || []).length} item(s)</td>
-                      <td className="px-5 py-3 text-gray-900 font-medium">₹{parseFloat(order.total || '0').toFixed(2)}</td>
-                      <td className="px-5 py-3 text-gray-600 text-xs">
+                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300">{(order.orderItems || order.items || []).length} item(s)</td>
+                      <td className="px-5 py-3 text-gray-900 dark:text-white font-medium">₹{parseFloat(order.total || '0').toFixed(2)}</td>
+                      <td className="px-5 py-3 text-gray-600 dark:text-gray-300 text-xs">
                         {PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod || '—'}
                       </td>
                       <td className="px-5 py-3">
                         <StatusBadge status={order.status?.toLowerCase() || 'pending'} />
                       </td>
-                      <td className="px-5 py-3 text-gray-500 text-xs">
+                      <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">
                         {order.createdAt
                           ? new Date(order.createdAt).toLocaleDateString('en-IN', {
                               day: '2-digit', month: 'short', year: 'numeric',
@@ -190,7 +190,7 @@ const AdminOrders: React.FC = () => {
                       <td className="px-3 py-3">
                         <button
                           onClick={() => setExpandedId((prev) => prev === order.id ? null : order.id)}
-                          className="text-gray-400 hover:text-gray-700 p-1 rounded hover:bg-gray-100 transition-colors"
+                          className="text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                           {expandedId === order.id
                             ? <ChevronUp className="h-4 w-4" />
@@ -199,8 +199,8 @@ const AdminOrders: React.FC = () => {
                       </td>
                     </tr>
                     {expandedId === order.id && (
-                      <tr className="bg-gray-50">
-                        <td colSpan={9} className="px-5 py-4 border-b border-gray-100">
+                      <tr className="bg-gray-50 dark:bg-gray-800/30">
+                        <td colSpan={9} className="px-5 py-4 border-b border-gray-100 dark:border-gray-700">
                           <div className="space-y-3">
                             {/* Delivery address */}
                             {order.address ? (
@@ -223,19 +223,19 @@ const AdminOrders: React.FC = () => {
                                 const img = item.productImage || item.product?.images?.[0];
                                 const imgUrl = img?.startsWith('http') ? img : img ? `http://localhost:5000/${img}` : null;
                                 return (
-                                  <div key={item.id} className="flex items-center gap-3 bg-white border border-gray-100 rounded-lg p-3">
+                                  <div key={item.id} className="flex items-center gap-3 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg p-3">
                                     {imgUrl ? (
-                                      <img src={imgUrl} alt={item.productName || item.product?.name} className="h-12 w-12 rounded-lg object-cover border border-gray-200 shrink-0" />
+                                      <img src={imgUrl} alt={item.productName || item.product?.name} className="h-12 w-12 rounded-lg object-cover border border-gray-200 dark:border-gray-600 shrink-0" />
                                     ) : (
-                                      <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
-                                        <Package className="h-5 w-5 text-gray-300" />
+                                      <div className="h-12 w-12 rounded-lg bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                                        <Package className="h-5 w-5 text-gray-300 dark:text-gray-500" />
                                       </div>
                                     )}
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium truncate">{item.productName || item.product?.name || '—'}</p>
-                                      <p className="text-xs text-gray-500">Qty: {item.quantity} &middot; ₹{parseFloat(item.price || '0').toFixed(2)} each</p>
+                                      <p className="text-sm font-medium truncate dark:text-gray-200">{item.productName || item.product?.name || '—'}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">Qty: {item.quantity} &middot; ₹{parseFloat(item.price || '0').toFixed(2)} each</p>
                                     </div>
-                                    <p className="text-sm font-semibold text-gray-800 shrink-0">₹{(parseFloat(item.price || '0') * item.quantity).toFixed(2)}</p>
+                                    <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 shrink-0">₹{(parseFloat(item.price || '0') * item.quantity).toFixed(2)}</p>
                                   </div>
                                 );
                               })}
