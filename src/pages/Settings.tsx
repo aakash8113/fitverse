@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { User, Mail, Phone, Lock, Bell, Ruler, CreditCard, Loader2 } from "lucide-react";
+import { User, Mail, Phone, Lock, Bell, CreditCard, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -9,13 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/services/api";
@@ -71,15 +64,14 @@ export default function Settings() {
           <div className="mb-8">
             <h1 className="text-3xl lg:text-4xl font-bold mb-2">Settings</h1>
             <p className="text-muted-foreground">
-              Manage your account preferences and settings
+              Manage your account settings
             </p>
           </div>
 
           <Tabs defaultValue="account" className="space-y-6">
-            <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="account">Account</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="preferences">Preferences</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
 
@@ -182,38 +174,6 @@ export default function Settings() {
                       checked={marketingEmails}
                       onCheckedChange={setMarketingEmails}
                     />
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Preferences */}
-            <TabsContent value="preferences" className="space-y-6">
-              <div className="glass rounded-2xl border border-border/50 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <Ruler className="h-5 w-5 text-accent" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Shopping Preferences</h2>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="size">Default Size System</Label>
-                    <Select defaultValue="us">
-                      <SelectTrigger id="size">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="us">US</SelectItem>
-                        <SelectItem value="eu">EU</SelectItem>
-                        <SelectItem value="uk">UK</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="pt-4">
-                    <Button>Save Preferences</Button>
                   </div>
                 </div>
               </div>

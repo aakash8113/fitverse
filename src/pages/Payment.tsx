@@ -1,6 +1,6 @@
 ﻿import { useState } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
-import { ArrowLeft, ArrowRight, CreditCard, Loader2, CircleDollarSign, Tag, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, CreditCard, Loader2, Tag, X } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { cartApi, ordersApi, paymentApi, CouponValidationResult } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { FitverseCoinIcon } from "@/components/shared/FitverseCoinIcon";
 
 export default function Payment() {
   const navigate = useNavigate();
@@ -219,7 +220,7 @@ export default function Payment() {
 
               {fullyPaidByCoins ? (
                 <div className="border-2 border-yellow-400 bg-yellow-50 dark:bg-yellow-900/10 rounded-xl p-5 flex items-center gap-3">
-                  <CircleDollarSign className="h-7 w-7 text-yellow-600 flex-shrink-0" />
+                  <FitverseCoinIcon className="h-7 w-7 flex-shrink-0" />
                   <div>
                     <p className="font-semibold text-yellow-800 dark:text-yellow-300">Paying with Fitverse Coins</p>
                     <p className="text-sm text-yellow-600 dark:text-yellow-400">Your coins cover the full order total — no additional payment needed.</p>
@@ -384,7 +385,7 @@ export default function Payment() {
                     <div className="rounded-xl border border-yellow-200 bg-yellow-50 dark:bg-yellow-900/10 dark:border-yellow-800 p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <CircleDollarSign className="h-4 w-4 text-yellow-600" />
+                          <FitverseCoinIcon className="h-4 w-4" />
                           <div>
                             <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
                               Fitverse Coins
@@ -438,7 +439,7 @@ export default function Payment() {
                     <>
                       {fullyPaidByCoins ? (
                         <>
-                          <CircleDollarSign className="w-4 h-4" />
+                          <FitverseCoinIcon className="w-4 h-4" />
                           Pay with Fitverse Coins
                         </>
                       ) : paymentMethod === "COD" ? "Place Order" : "Proceed to PhonePe"}

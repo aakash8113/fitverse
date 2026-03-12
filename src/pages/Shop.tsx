@@ -212,6 +212,7 @@ export default function Shop() {
           <aside className="hidden lg:block w-56 flex-shrink-0 border-r border-border">
             <div className="sticky top-24 pr-4">
               <FilterSidebar
+                currentFilters={filters}
                 onFilterChange={handleFilterChange}
                 onPriceRangeChange={handlePriceChange}
               />
@@ -232,6 +233,7 @@ export default function Shop() {
                   </SheetTrigger>
                   <SheetContent side="left" className="w-80 p-6">
                     <FilterSidebar
+                      currentFilters={filters}
                       onClose={() => setIsFilterOpen(false)}
                       onFilterChange={handleFilterChange}
                       onPriceRangeChange={handlePriceChange}

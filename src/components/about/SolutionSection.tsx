@@ -1,7 +1,7 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { Eye, Sparkles, Recycle, Users, ShieldCheck } from "lucide-react";
-import { motion } from "framer-motion";
-import { useState, useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
+import { useRef } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import logoWhite from "@/assets/logo_white.png";
 import logoImage from "@/assets/logo_black.png";
@@ -30,20 +30,27 @@ const approaches = [
 ];
 
 export function SolutionSection() {
-  const [rotationCount, setRotationCount] = useState(0);
-  const [rotationDirection, setRotationDirection] = useState(1);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const lastX = useRef<number | null>(null);
+  const accRotation = useRef(0);
   const { theme } = useTheme();
   const logo = theme === "dark" ? logoWhite : logoImage;
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
-    if (imgRef.current) {
-      const rect = imgRef.current.getBoundingClientRect();
-      const imgCenterX = rect.left + rect.width / 2;
-      const direction = e.clientX > imgCenterX ? 1 : -1;
-      setRotationDirection(direction);
-      setRotationCount(prev => prev + 1);
+  const rotateY = useMotionValue(0);
+  const smoothRotateY = useSpring(rotateY, { stiffness: 200, damping: 30, mass: 0.3 });
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (lastX.current !== null) {
+      const dx = e.clientX - lastX.current;
+      accRotation.current += dx;
+      rotateY.set(accRotation.current);
     }
+    lastX.current = e.clientX;
+  };
+
+  const handleMouseLeave = () => {
+    lastX.current = null;
+    accRotation.current = 0;
+    rotateY.set(0);
   };
 
   return (
@@ -66,24 +73,17 @@ export function SolutionSection() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <ScrollReveal direction="left">
-            <div className="aspect-square rounded-2xl overflow-hidden flex items-center justify-center">
+            <div
+              className="aspect-square rounded-2xl overflow-hidden flex items-center justify-center"
+              style={{ perspective: "800px" }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+            >
               <motion.img
-                ref={imgRef}
                 src={logo}
                 alt="Fitverse Logo"
                 className="w-3/4 h-3/4 object-contain cursor-pointer drop-shadow-md"
-                key={rotationCount}
-                initial={{ rotateY: 0, scale: 1 }}
-                animate={{ 
-                  rotateY: rotationDirection * 2520,
-                  scale: [1, 1.3, 1]
-                }}
-                transition={{ 
-                  duration: 1, 
-                  ease: "easeInOut"
-                }}
-                onMouseEnter={handleMouseEnter}
-                style={{ perspective: "1000px" }}
+                style={{ rotateY: smoothRotateY }}
               />
             </div>
           </ScrollReveal>

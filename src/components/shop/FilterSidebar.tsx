@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, X } from "lucide-react";
@@ -86,6 +86,7 @@ interface FilterSidebarProps {
   onClose?: () => void;
   onFilterChange?: (filters: ShopFilters) => void;
   onPriceRangeChange?: (min: number, max: number) => void;
+  currentFilters?: ShopFilters;
   /** @deprecated use onFilterChange */
   onCategoryChange?: (category: string | undefined) => void;
   /** @deprecated use onFilterChange */
@@ -118,6 +119,7 @@ export function FilterSidebar({
   onClose,
   onFilterChange,
   onPriceRangeChange,
+  currentFilters,
   defaultCategory,
 }: FilterSidebarProps) {
   const [minInput, setMinInput] = useState("");
@@ -129,6 +131,20 @@ export function FilterSidebar({
   const [category,    setCategory]    = useState<string | undefined>();
   const [subCategory, setSubCategory] = useState<string | undefined>();
   const [size,        setSize]        = useState<string | undefined>();
+
+  useEffect(() => {
+    setGender(currentFilters?.gender);
+    setWearType(currentFilters?.wearType);
+    setCategory(currentFilters?.category);
+    setSubCategory(currentFilters?.subCategory);
+    setSize(currentFilters?.size);
+  }, [
+    currentFilters?.gender,
+    currentFilters?.wearType,
+    currentFilters?.category,
+    currentFilters?.subCategory,
+    currentFilters?.size,
+  ]);
 
   const emit = (patch: Partial<ShopFilters>) => {
     const next: ShopFilters = {

@@ -49,7 +49,6 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminThriftRequests from "./pages/admin/AdminThriftRequests";
 import AdminRefurbishment from "./pages/admin/AdminRefurbishment";
 import AdminThriftInventory from "./pages/admin/AdminThriftInventory";
-import AdminAIMonitoring from "./pages/admin/AdminAIMonitoring";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import ReturnRequestPage from "./pages/ReturnRequest";
@@ -142,7 +141,6 @@ const App = () => (
           <Route path="/admin/thrift-requests" element={<AdminGuard><AdminThriftRequests /></AdminGuard>} />
           <Route path="/admin/refurbishment" element={<AdminGuard><AdminRefurbishment /></AdminGuard>} />
           <Route path="/admin/thrift-inventory" element={<AdminGuard><AdminThriftInventory /></AdminGuard>} />
-          <Route path="/admin/ai-monitoring" element={<AdminGuard><AdminAIMonitoring /></AdminGuard>} />
           <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
           <Route path="/admin/returns" element={<AdminGuard><AdminReturns /></AdminGuard>} />
           <Route path="/admin/coupons" element={<AdminGuard><AdminCoupons /></AdminGuard>} />

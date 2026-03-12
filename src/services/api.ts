@@ -540,16 +540,7 @@ export interface ThriftInventoryItem {
   createdAt: string;
 }
 
-export interface AIStats {
-  totalRequests: number;
-  requestsToday: number;
-  avgProcessingTimeMs: number;
-  successRate: number;
-  errorCount: number;
-  isMaintenanceMode: boolean;
-  requestsByDay: { date: string; count: number }[];
-  recentErrors: { timestamp: string; message: string; userId?: string }[];
-}
+
 
 export const adminApi = {
   // Dashboard
@@ -622,16 +613,7 @@ export const adminApi = {
     return response.data;
   },
 
-  // AI Monitoring
-  getAIStats: async () => {
-    const response = await api.get<ApiResponse<AIStats>>('/admin/ai/stats');
-    return response.data;
-  },
 
-  toggleAIMaintenanceMode: async (enabled: boolean) => {
-    const response = await api.put<ApiResponse>('/admin/ai/maintenance', { enabled });
-    return response.data;
-  },
 };
 
 // ============================================

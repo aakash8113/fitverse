@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
+import { FitverseCoinIcon } from '@/components/shared/FitverseCoinIcon';
 import {
-  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert, CircleDollarSign,
+  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert,
 } from 'lucide-react';
 
 const MOCK_USERS: AdminUser[] = [
@@ -225,7 +226,7 @@ const AdminUsers: React.FC = () => {
                       <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{user._count?.orders ?? 0}</td>
                       <td className="px-4 py-3">
                         <span className="flex items-center gap-1 text-xs text-yellow-700 font-medium">
-                          <CircleDollarSign className="h-3 w-3" />
+                          <FitverseCoinIcon className="h-3 w-3" />
                           {user.coinBalance ?? 0}
                         </span>
                       </td>
@@ -253,7 +254,7 @@ const AdminUsers: React.FC = () => {
                             className="text-gray-400 hover:text-yellow-600 p-1 rounded hover:bg-yellow-50 transition-colors"
                             title="Adjust coins"
                           >
-                            <CircleDollarSign className="h-3.5 w-3.5" />
+                            <FitverseCoinIcon className="h-3.5 w-3.5" />
                           </button>
                           {user.role !== 'ADMIN' && (
                             <button
@@ -285,7 +286,7 @@ const AdminUsers: React.FC = () => {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <CircleDollarSign className="h-5 w-5 text-yellow-600" />
+              <FitverseCoinIcon className="h-5 w-5" />
               Adjust Fitverse Coins
             </DialogTitle>
           </DialogHeader>

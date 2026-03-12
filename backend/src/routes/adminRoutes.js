@@ -44,8 +44,4 @@ router.get('/refurbishment', adminController.getRefurbishmentItems);
 router.put('/refurbishment/:id', adminController.updateRefurbishmentItem);
 router.post('/refurbishment/:id/move-to-inventory', adminController.moveRefurbishmentItemToInventory);
 
-// AI routes — placeholder
-router.get('/ai/stats', (req, res) => res.json({ success: false, message: 'AI monitoring not yet implemented', data: null }));
-router.put('/ai/maintenance', (req, res) => res.json({ success: true, message: 'AI maintenance toggle acknowledged' }));
-
 module.exports = router;

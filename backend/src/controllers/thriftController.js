@@ -8,6 +8,14 @@ const imageService = require('../services/imageService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const logger = require('../config/logger');
 
+// Serviceable Vadodara pincodes for thrift pickup (must match frontend serviceability list).
+const SERVICEABLE_PICKUP_PINCODES = new Set([
+  '390001', '390002', '390003', '390004', '390005', '390006', '390007', '390008',
+  '390009', '390010', '390011', '390012', '390013', '390014', '390015', '390017',
+  '390018', '390019', '390020', '390021', '390022', '390023', '390024', '390025',
+  '391760', '391101', '391410', '391310', '391740', '391243', '391330',
+]);
+
 // Round a value to 2 decimal places — avoids floating point drift (e.g. 200 → 199.97)
 const toMoney = (val) => val != null && val !== '' ? Math.round(parseFloat(val) * 100) / 100 : null;
 
@@ -18,6 +26,29 @@ const toMoney = (val) => val != null && val !== '' ? Math.round(parseFloat(val) 
 const createListing = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { pickupAddressId } = req.body;
+
+  let verifiedPickupAddressId = null;
+  if (pickupAddressId) {
+    const pickupAddress = await prisma.address.findUnique({
+      where: { id: pickupAddressId },
+      select: { id: true, userId: true, zipCode: true },
+    });
+
+    if (!pickupAddress) {
+      throw new NotFoundError('Pickup address not found');
+    }
+
+    if (pickupAddress.userId !== userId) {
+      throw new BadRequestError('Unauthorized access to pickup address');
+    }
+
+    const zipCode = (pickupAddress.zipCode || '').trim();
+    if (!SERVICEABLE_PICKUP_PINCODES.has(zipCode)) {
+      throw new BadRequestError('Pickup is currently available only in selected Vadodara pincodes');
+    }
+
+    verifiedPickupAddressId = pickupAddress.id;
+  }
 
   // Items come as a JSON string in the `items` field (FormData)
   let itemsData;
@@ -50,7 +81,7 @@ const createListing = asyncHandler(async (req, res) => {
   const listing = await prisma.thriftListing.create({
     data: {
       userId,
-      pickupAddressId: pickupAddressId || null,
+      pickupAddressId: verifiedPickupAddressId,
       items: {
         create: itemsData.map((item, idx) => ({
           userId,

@@ -204,7 +204,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
           <div className="h-6 w-6 rounded-full bg-green-600 text-white flex items-center justify-center text-xs font-bold">
             {index + 1}
           </div>
-          <span className="font-medium text-sm text-gray-700">
+          <span className="font-medium text-sm text-gray-700 dark:text-white">
             {item.name ? item.name : `Item ${index + 1}`}
           </span>
           {item.condition && (
@@ -373,7 +373,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
         {/* Original Price */}
         <div className="space-y-1.5">
           <Label className="text-xs font-medium flex items-center gap-1">
-            <DollarSign className="h-3 w-3" /> Original Purchase Price (₹) <span className="text-gray-400">optional</span>
+            Original Purchase Price (₹) <span className="text-gray-400">optional</span>
           </Label>
           <Input
             type="number"
@@ -589,7 +589,7 @@ export default function ThriftSell() {
           )}>
             {step === 2 ? <CheckCircle className="h-4 w-4" /> : '1'}
           </div>
-          <span className={cn('text-sm font-medium', step === 2 ? 'text-green-700' : 'text-gray-900')}>
+          <span className={cn('text-sm font-medium', step === 2 ? 'text-green-700' : 'text-gray-900 dark:text-white')}>
             Add Items
           </span>
         </div>
@@ -680,6 +680,7 @@ export default function ThriftSell() {
               selectedId={selectedAddressId}
               onSelect={setSelectedAddressId}
               variant="green"
+              enforceServiceability
             />
           </div>
 
@@ -712,6 +713,10 @@ export default function ThriftSell() {
           </div>
         </div>
       )}
+
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-6 text-xs text-muted-foreground">
+        <span className="text-black dark:text-white font-bold">*</span> indicates a required field
+      </div>
 
       <Footer />
     </div>

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard, RotateCcw, CircleDollarSign, Moon, Sun } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard, RotateCcw, Moon, Sun } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
+import { FitverseCoinIcon } from "@/components/shared/FitverseCoinIcon";
 import logoImage from "@/assets/logo_black.png";
 import logoWhite from "@/assets/logo_white.png";
 
@@ -186,7 +187,7 @@ export function Navbar() {
                       </span>
                       {(user?.coinBalance ?? 0) >= 0 && (
                         <span className="flex items-center gap-1 text-xs text-yellow-600 font-medium mt-1">
-                          <CircleDollarSign className="h-3 w-3" />
+                          <FitverseCoinIcon className="h-3 w-3" />
                           {user?.coinBalance ?? 0} Fitverse Coins
                         </span>
                       )}
@@ -230,7 +231,7 @@ export function Navbar() {
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>
                         <Link to="/coins" className="flex items-center cursor-pointer">
-                          <CircleDollarSign className="mr-2 h-4 w-4 text-yellow-600" />
+                          <FitverseCoinIcon className="mr-2 h-4 w-4" />
                           <span>Fitverse Coins</span>
                           {(user?.coinBalance ?? 0) > 0 && (
                             <span className="ml-auto text-xs font-semibold text-yellow-600">{user?.coinBalance}</span>

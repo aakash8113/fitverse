@@ -87,7 +87,21 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green', enfor
       toast({ title: 'Please fill all required fields', variant: 'destructive' });
       return;
     }
-    createMutation.mutate(form);
+    const normalizedZip = zipCode.trim();
+
+    if (enforceServiceability && !isServiceable(normalizedZip)) {
+      toast({
+        title: 'Pickup not available for this PIN code',
+        description: 'Please use one of our selected Vadodara serviceable pincodes.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    createMutation.mutate({
+      ...form,
+      zipCode: normalizedZip,
+    });
   };
 
   const update = (field: keyof AddressFormData, value: string | boolean) =>

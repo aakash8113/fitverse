@@ -2,10 +2,12 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { useQuery } from "@tanstack/react-query";
 import { coinsApi, CoinTransaction } from "@/services/api";
-import { CircleDollarSign, Loader2, TrendingUp, TrendingDown, Settings2 } from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Settings2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { FitverseCoinIcon } from "@/components/shared/FitverseCoinIcon";
+import coinWhite from "@/assets/about/coin_white.png";
 
 const TYPE_CONFIG: Record<CoinTransaction["type"], { label: string; icon: JSX.Element; color: string }> = {
   THRIFT_REWARD: {
@@ -42,7 +44,7 @@ export default function MyCoins() {
         {/* Balance Card */}
         <div className="rounded-2xl bg-gradient-to-br from-yellow-400 to-yellow-600 text-white p-8 mb-8 shadow-lg">
           <div className="flex items-center gap-3 mb-2">
-            <CircleDollarSign className="h-8 w-8" />
+            <img src={coinWhite} alt="" aria-hidden="true" className="h-10 w-10 object-contain" />
             <h1 className="text-2xl font-bold">Fitverse Coins</h1>
           </div>
           <p className="text-yellow-100 text-sm mb-4">1 Fitverse Coin = ₹1 off your order</p>
@@ -77,7 +79,7 @@ export default function MyCoins() {
             </div>
           ) : transactions.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <CircleDollarSign className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <FitverseCoinIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p>No transactions yet.</p>
               <p className="text-sm mt-1">Sell clothes via Thrift to earn your first coins!</p>
             </div>
@@ -86,7 +88,7 @@ export default function MyCoins() {
               {transactions.map((tx, idx) => {
                 const config = TYPE_CONFIG[tx.type] ?? {
                   label: tx.type,
-                  icon: <CircleDollarSign className="h-4 w-4" />,
+                  icon: <FitverseCoinIcon className="h-4 w-4" />,
                   color: "text-muted-foreground",
                 };
                 const isCredit = tx.amount > 0;

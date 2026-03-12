@@ -46,9 +46,9 @@ export function Footer() {
           <div className="space-y-4">
             <h4 className="font-semibold">Shop</h4>
             <ul className="space-y-3 text-sm text-white/70">
-              <li><Link to="/shop?category=WOMEN" className="hover:text-white transition-colors">Women</Link></li>
-              <li><Link to="/shop?category=MEN" className="hover:text-white transition-colors">Men</Link></li>
-              <li><Link to="/collections" className="hover:text-white transition-colors">Collections</Link></li>
+              <li><Link to="/shop?gender=WOMENS" className="hover:text-white transition-colors">Women</Link></li>
+              <li><Link to="/shop?gender=MENS" className="hover:text-white transition-colors">Men</Link></li>
+              {/* <li><Link to="/collections" className="hover:text-white transition-colors">Collections</Link></li> */}
             </ul>
           </div>
 
