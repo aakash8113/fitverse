@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { addressesApi, Address } from '@/services/api';
+import { isServiceable } from '@/lib/pincodes';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -37,9 +38,11 @@ interface AddressSelectorProps {
   onSelect: (id: string) => void;
   /** 'green' for thrift (default), 'dark' for checkout */
   variant?: 'green' | 'dark';
+  /** When true, unserviceable addresses are greyed-out and non-selectable */
+  enforceServiceability?: boolean;
 }
 
-export function AddressSelector({ selectedId, onSelect, variant = 'green' }: AddressSelectorProps) {
+export function AddressSelector({ selectedId, onSelect, variant = 'green', enforceServiceability = false }: AddressSelectorProps) {
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<AddressFormData>(emptyForm);
@@ -51,11 +54,14 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
 
   const addresses: Address[] = data?.data || [];
 
-  // Auto-select default address when first loaded and nothing is selected yet
+  // Auto-select on load: prefer default address; if enforcing serviceability, skip unserviceable ones
   useEffect(() => {
     if (addresses.length > 0 && !selectedId) {
-      const def = addresses.find((a) => a.isDefault) ?? addresses[0];
-      onSelect(def.id);
+      const candidates = enforceServiceability
+        ? addresses.filter((a) => isServiceable(a.zipCode))
+        : addresses;
+      const def = candidates.find((a) => a.isDefault) ?? candidates[0];
+      if (def) onSelect(def.id);
     }
   }, [addresses.length]);
 
@@ -89,7 +95,7 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
 
   const selectedCardClass =
     variant === 'green'
-      ? 'border-green-500 bg-green-50'
+      ? 'border-green-500 bg-green-50 dark:bg-[#1A211E]'
       : 'border-foreground bg-foreground/5';
 
   const accentInput = variant === 'green' ? 'accent-green-600' : '';
@@ -122,44 +128,55 @@ export function AddressSelector({ selectedId, onSelect, variant = 'green' }: Add
       )}
 
       {/* Address radio list — always shown so old addresses stay selectable */}
-      {addresses.map((addr) => (
-        <label
-          key={addr.id}
-          className={cn(
-            'flex items-start gap-4 p-4 rounded-lg border-2 cursor-pointer transition-all',
-            selectedId === addr.id
-              ? selectedCardClass
-              : 'border-border hover:border-border/70 bg-card',
-          )}
-        >
-          <input
-            type="radio"
-            name="addressSelect"
-            value={addr.id}
-            checked={selectedId === addr.id}
-            onChange={() => onSelect(addr.id)}
-            className={cn('mt-1', accentInput)}
-          />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-medium text-foreground">{addr.name}</span>
-              {addr.isDefault && (
-                <span className="text-[11px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                  Default
-                </span>
-              )}
+      {addresses.map((addr) => {
+        const serviceable = !enforceServiceability || isServiceable(addr.zipCode);
+        return (
+          <label
+            key={addr.id}
+            className={cn(
+              'flex items-start gap-4 p-4 rounded-lg border-2 transition-all',
+              serviceable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60',
+              selectedId === addr.id && serviceable
+                ? selectedCardClass
+                : 'border-border bg-card',
+              serviceable && selectedId !== addr.id && 'hover:border-border/70',
+            )}
+          >
+            <input
+              type="radio"
+              name="addressSelect"
+              value={addr.id}
+              checked={selectedId === addr.id}
+              onChange={() => serviceable && onSelect(addr.id)}
+              disabled={!serviceable}
+              className={cn('mt-1', accentInput)}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-medium text-foreground">{addr.name}</span>
+                {addr.isDefault && (
+                  <span className="text-[11px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                    Default
+                  </span>
+                )}
+                {!serviceable && (
+                  <span className="text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                    Outside delivery area
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-muted-foreground mt-0.5">{addr.phone}</p>
+              <p className="text-sm text-foreground mt-1">
+                {addr.addressLine1}
+                {addr.addressLine2 ? `, ${addr.addressLine2}` : ''}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {addr.city}, {addr.state} {addr.zipCode}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground mt-0.5">{addr.phone}</p>
-            <p className="text-sm text-foreground mt-1">
-              {addr.addressLine1}
-              {addr.addressLine2 ? `, ${addr.addressLine2}` : ''}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {addr.city}, {addr.state} {addr.zipCode}
-            </p>
-          </div>
-        </label>
-      ))}
+          </label>
+        );
+      })}
 
       {/* Toggle add-form button */}
       <button

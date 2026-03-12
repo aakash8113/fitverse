@@ -6,7 +6,41 @@ const toMoney = (val) => val != null && val !== '' ? Math.round(parseFloat(val) 
 
 const asyncHandler = require('../utils/asyncHandler');
 const prisma = require('../config/database');
+const imageService = require('../services/imageService');
+const productService = require('../services/productService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
+
+const syncThriftListingStatus = async (tx, listingId) => {
+  const remainingItems = await tx.thriftItem.findMany({
+    where: { listingId },
+    select: { status: true },
+  });
+
+  if (remainingItems.length === 0) {
+    await tx.thriftListing.delete({ where: { id: listingId } });
+    return;
+  }
+
+  const activeStatuses = remainingItems
+    .map((item) => item.status)
+    .filter((status) => status !== 'REJECTED');
+
+  let nextStatus = 'PENDING';
+  if (activeStatuses.length === 0) {
+    nextStatus = 'REJECTED';
+  } else if (activeStatuses.every((status) => ['LISTED', 'SOLD'].includes(status))) {
+    nextStatus = 'COMPLETED';
+  } else if (activeStatuses.some((status) => ['PICKED_UP', 'UNDER_REFURBISHMENT', 'REFURBISHMENT_COMPLETE', 'LISTED', 'SOLD'].includes(status))) {
+    nextStatus = 'PICKED_UP';
+  } else if (activeStatuses.some((status) => status === 'APPROVED')) {
+    nextStatus = 'APPROVED';
+  }
+
+  await tx.thriftListing.update({
+    where: { id: listingId },
+    data: { status: nextStatus },
+  });
+};
 
 // ============================================
 // DASHBOARD STATS
@@ -483,7 +517,7 @@ const updateThriftItemStatus = asyncHandler(async (req, res) => {
  */
 const listThriftItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { listedPrice, description, stock = 1 } = req.body;
+  const { listedPrice, description, stock = 1, condition } = req.body;
 
   const item = await prisma.thriftItem.findUnique({ where: { id } });
   if (!item) throw new NotFoundError('Item not found');
@@ -518,6 +552,7 @@ const listThriftItem = asyncHandler(async (req, res) => {
       category: item.category,
       subCategory: item.subCategory || null,
       isThrift: true,
+      thriftCondition: condition || item.condition || null,
       images: item.images,
     },
   });
@@ -577,6 +612,40 @@ const getThriftInventory = asyncHandler(async (req, res) => {
     data: items,
     pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) },
   });
+});
+
+/**
+ * DELETE /api/admin/thrift/inventory/:id
+ * Delete a thrift inventory item and any live product linked to it.
+ */
+const deleteThriftInventoryItem = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const item = await prisma.thriftItem.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      listingId: true,
+      listedProductId: true,
+      images: true,
+    },
+  });
+
+  if (!item) throw new NotFoundError('Item not found');
+
+  if (item.listedProductId) {
+    await productService.deleteProduct(item.listedProductId);
+    return res.json({ success: true, message: 'Thrift inventory item deleted successfully' });
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.thriftItem.delete({ where: { id } });
+    await syncThriftListingStatus(tx, item.listingId);
+  });
+
+  await imageService.deleteMultiple(item.images || []);
+
+  res.json({ success: true, message: 'Thrift inventory item deleted successfully' });
 });
 
 /**
@@ -794,6 +863,7 @@ module.exports = {
   updateThriftItemStatus,
   listThriftItem,
   getThriftInventory,
+  deleteThriftInventoryItem,
   // Refurbishment
   getRefurbishmentItems,
   updateRefurbishmentItem,

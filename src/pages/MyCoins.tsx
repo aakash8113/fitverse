@@ -58,7 +58,7 @@ export default function MyCoins() {
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-start gap-2">
               <span className="text-yellow-500 font-bold mt-0.5">•</span>
-              Sell clothes through our <span className="font-medium text-foreground">Thrift Store</span>. When your items are picked up, you earn coins equal to their offer price.
+              <span>Sell clothes through our <span className="font-medium text-foreground">Thrift Store</span>. When your items are picked up, you earn coins equal to their offer price.</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-yellow-500 font-bold mt-0.5">•</span>

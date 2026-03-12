@@ -50,6 +50,7 @@ class ProductService {
         subCategory: productData.subCategory || null,
         availableSizes,
         isThrift: productData.isThrift === 'true' || productData.isThrift === true || false,
+        thriftCondition: productData.thriftCondition || null,
         images: imagePaths,
       },
     });
@@ -229,6 +230,11 @@ class ProductService {
       updateData.isThrift = updateData.isThrift === 'true' || updateData.isThrift === true;
     }
 
+    // Null out empty thriftCondition
+    if (updateData.thriftCondition === '') {
+      updateData.thriftCondition = null;
+    }
+
     // Upload new images if provided
     if (newImages && newImages.length > 0) {
       const newImagePaths = await imageService.uploadMultiple(newImages, 'products');
@@ -246,7 +252,7 @@ class ProductService {
 
   /**
    * Delete product (ADMIN only)
-   * Soft delete by setting isActive to false
+   * Hard delete with dependent cleanup
    * @param {String} productId - Product ID
    * @returns {Promise<Object>} Success message
    */
@@ -259,16 +265,57 @@ class ProductService {
       throw new NotFoundError('Product not found');
     }
 
-    // Soft delete
-    await prisma.product.update({
-      where: { id: productId },
-      data: { isActive: false },
+    const linkedThriftItem = await prisma.thriftItem.findFirst({
+      where: { listedProductId: productId },
+      select: {
+        id: true,
+        listingId: true,
+        images: true,
+      },
     });
 
-    // Could also delete images here, but keeping them for potential recovery
-    // await imageService.deleteMultiple(product.images);
+    const imagesToDelete = [...new Set([...(product.images || []), ...(linkedThriftItem?.images || [])])];
 
-    logger.info(`Product soft deleted: ${productId}`);
+    await prisma.$transaction(async (tx) => {
+      if (linkedThriftItem) {
+        await tx.thriftItem.delete({ where: { id: linkedThriftItem.id } });
+
+        const remainingItems = await tx.thriftItem.findMany({
+          where: { listingId: linkedThriftItem.listingId },
+          select: { status: true },
+        });
+
+        if (remainingItems.length === 0) {
+          await tx.thriftListing.delete({ where: { id: linkedThriftItem.listingId } });
+        } else {
+          const activeStatuses = remainingItems
+            .map((item) => item.status)
+            .filter((status) => status !== 'REJECTED');
+
+          let nextListingStatus = 'PENDING';
+          if (activeStatuses.length === 0) {
+            nextListingStatus = 'REJECTED';
+          } else if (activeStatuses.every((status) => ['LISTED', 'SOLD'].includes(status))) {
+            nextListingStatus = 'COMPLETED';
+          } else if (activeStatuses.some((status) => ['PICKED_UP', 'UNDER_REFURBISHMENT', 'REFURBISHMENT_COMPLETE', 'LISTED', 'SOLD'].includes(status))) {
+            nextListingStatus = 'PICKED_UP';
+          } else if (activeStatuses.some((status) => status === 'APPROVED')) {
+            nextListingStatus = 'APPROVED';
+          }
+
+          await tx.thriftListing.update({
+            where: { id: linkedThriftItem.listingId },
+            data: { status: nextListingStatus },
+          });
+        }
+      }
+
+      await tx.product.delete({ where: { id: productId } });
+    });
+
+    await imageService.deleteMultiple(imagesToDelete);
+
+    logger.info(`Product hard deleted: ${productId}`);
     return { message: 'Product deleted successfully' };
   }
 
@@ -297,6 +344,11 @@ class ProductService {
     // Update product
     const updatedProduct = await prisma.product.update({
       where: { id: productId },
+      data: { images: updatedImages },
+    });
+
+    await prisma.thriftItem.updateMany({
+      where: { listedProductId: productId },
       data: { images: updatedImages },
     });
 

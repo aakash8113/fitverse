@@ -1,8 +1,8 @@
 // Search Results Page — fetches live products from backend API
 
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, keepPreviousData } from "@tanstack/react-query";
-import { Search, Loader2, SlidersHorizontal } from "lucide-react";
+import { Search, Loader2, SlidersHorizontal, ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/shop/ProductCard";
@@ -10,6 +10,15 @@ import { FilterSidebar } from "@/components/shop/FilterSidebar";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { productsApi, Product as ApiProduct, PaginatedResponse, getTotalStock } from "@/services/api";
+
+// Condition labels for displaying thrift product conditions
+const CONDITION_LABELS: Record<string, string> = {
+  LIKE_NEW: 'Like New',
+  VERY_GOOD: 'Very Good',
+  GOOD: 'Good',
+  FAIR: 'Fair',
+  POOR: 'Poor',
+};
 
 // Same converter as Shop.tsx
 const convertProduct = (apiProduct: ApiProduct) => {
@@ -31,6 +40,8 @@ const convertProduct = (apiProduct: ApiProduct) => {
     sizes: ["XS", "S", "M", "L", "XL"],
     category: apiProduct.category.toLowerCase(),
     isNew: false,
+    isThrift: apiProduct.isThrift,
+    condition: apiProduct.thriftCondition ? (CONDITION_LABELS[apiProduct.thriftCondition] || apiProduct.thriftCondition) : undefined,
     description: apiProduct.description,
     stock: getTotalStock(apiProduct.sizeStock),
   };
@@ -50,6 +61,7 @@ const POPULAR_SEARCHES = [
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
+  const navigate = useNavigate();
 
   const { data, isLoading, isError } = useQuery<PaginatedResponse<ApiProduct>>({
     queryKey: ["search", query],
@@ -72,6 +84,13 @@ export default function SearchResults() {
       <div className="section-container py-8">
         {/* Page header */}
         <div className="mb-8">
+          {/* Navigation back buttons */}
+          <div className="flex gap-3 mb-4">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+          </div>
           {query ? (
             <div>
               <h1 className="text-2xl lg:text-3xl font-bold mb-1">

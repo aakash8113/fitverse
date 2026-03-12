@@ -12,8 +12,6 @@ import { ordersApi, returnsApi, Order, ApiResponse, ReturnRequest } from "@/serv
 import { useToast } from "@/hooks/use-toast";
 
 const statusStyles = {
-  PENDING: "bg-yellow-500/10 text-yellow-700 border-yellow-200",
-  PAID: "bg-blue-500/10 text-blue-700 border-blue-200",
   PROCESSING: "bg-purple-500/10 text-purple-700 border-purple-200",
   SHIPPED: "bg-blue-500/10 text-blue-700 border-blue-200",
   DELIVERED: "bg-green-500/10 text-green-700 border-green-200",
@@ -67,8 +65,16 @@ export default function Orders() {
     const matchesSearch = order.orderNumber
       ?.toLowerCase()
       .includes(searchQuery.toLowerCase());
-    const matchesTab =
-      activeTab === "all" || order.status === activeTab.toUpperCase();
+    let matchesTab: boolean;
+    if (activeTab === "all") {
+      matchesTab = true;
+    } else if (activeTab === "returned") {
+      matchesTab = allReturns.some(
+        (r) => r.orderId === order.id && !['CANCELLED', 'REJECTED'].includes(r.status)
+      );
+    } else {
+      matchesTab = order.status === activeTab.toUpperCase();
+    }
     return matchesSearch && matchesTab;
   });
 
@@ -145,14 +151,13 @@ export default function Orders() {
           {/* Filter Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
             <div className="overflow-x-auto pb-1">
-              <TabsList className="flex lg:grid lg:grid-cols-7 w-max lg:w-full min-w-full">
+              <TabsList className="flex lg:grid lg:grid-cols-6 w-max lg:w-full min-w-full">
                 <TabsTrigger value="all" className="whitespace-nowrap px-4">All</TabsTrigger>
-                <TabsTrigger value="pending" className="whitespace-nowrap px-4">Pending</TabsTrigger>
-                <TabsTrigger value="paid" className="whitespace-nowrap px-4">Paid</TabsTrigger>
                 <TabsTrigger value="processing" className="whitespace-nowrap px-4">Processing</TabsTrigger>
                 <TabsTrigger value="shipped" className="whitespace-nowrap px-4">Shipped</TabsTrigger>
                 <TabsTrigger value="delivered" className="whitespace-nowrap px-4">Delivered</TabsTrigger>
                 <TabsTrigger value="cancelled" className="whitespace-nowrap px-4">Cancelled</TabsTrigger>
+                <TabsTrigger value="returned" className="whitespace-nowrap px-4">Returned</TabsTrigger>
               </TabsList>
             </div>
           </Tabs>
@@ -263,7 +268,7 @@ export default function Orders() {
                   )}
 
                   {/* Cancel button for eligible orders */}
-                  {(order.status === "PENDING" || order.status === "PAID") && (
+                  {order.status === "PROCESSING" && (
                     <div className="mt-4 pt-4 border-t border-border">
                       <Button
                         variant="outline"

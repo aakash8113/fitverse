@@ -323,10 +323,14 @@ export default function Cart() {
                             {/* Quantity Controls */}
                             <div className="flex items-center border-2 border-border rounded-lg">
                               <button
-                                onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                                disabled={
-                                  updateQuantityMutation.isPending || item.quantity <= 1
-                                }
+                                onClick={() => {
+                                  if (item.quantity <= 1) {
+                                    removeItem(item.id);
+                                  } else {
+                                    updateQuantity(item.id, item.quantity - 1);
+                                  }
+                                }}
+                                disabled={updateQuantityMutation.isPending || removeItemMutation.isPending}
                                 className="p-2 hover:bg-secondary transition-colors disabled:opacity-50"
                                 aria-label="Decrease quantity"
                               >

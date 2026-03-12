@@ -1,12 +1,12 @@
 ﻿import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { 
-  Heart, 
-  Star, 
-  ChevronRight, 
-  Minus, 
-  Plus, 
+import {
+  Heart,
+  Star,
+  ChevronRight,
+  Minus,
+  Plus,
   ThumbsUp,
   ChevronLeft,
   Loader2,
@@ -16,6 +16,9 @@ import {
   Trash2,
   ImagePlus,
   X,
+  Truck,
+  RotateCcw,
+  Check,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -27,7 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { cn } from "@/lib/utils";
-import { productsApi, cartApi, Product as ApiProduct, getTotalStock, getSizeStock, reviewsApi, Review } from "@/services/api";
+import { productsApi, cartApi, addressesApi, Product as ApiProduct, getTotalStock, getSizeStock, reviewsApi, Review } from "@/services/api";
+import { getPincodeArea, isServiceable } from "@/lib/pincodes";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlistContext } from "@/contexts/WishlistContext";
@@ -57,6 +61,14 @@ const ALL_SIZES: Record<string, string[]> = {
   BOTTOMWEAR: ["26", "28", "30", "32", "34", "36", "38", "40", "42"],
 };
 
+const CONDITION_LABELS: Record<string, string> = {
+  LIKE_NEW: 'Like New',
+  VERY_GOOD: 'Very Good',
+  GOOD: 'Good',
+  FAIR: 'Fair',
+  POOR: 'Poor',
+};
+
 const colors = [
   { name: "Midnight Black", value: "#1a1a1a", available: true },
   { name: "Slate Gray", value: "#708090", available: true },
@@ -80,6 +92,11 @@ export default function ProductDetails() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
 
+  // Pincode checker state
+  const [pincodeInput, setPincodeInput] = useState('');
+  const [pincodeResult, setPincodeResult] = useState<'valid' | 'invalid' | null>(null);
+  const [pincodeAreaName, setPincodeAreaName] = useState('');
+
   // Review state
   const [reviewPage, setReviewPage] = useState(1);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -97,6 +114,39 @@ export default function ProductDetails() {
     queryFn: () => productsApi.getProduct(id!),
     enabled: !!id,
   });
+
+  // Fetch addresses to pre-fill the pincode checker with user's default address
+  const { data: addressesData } = useQuery({
+    queryKey: ['addresses'],
+    queryFn: addressesApi.getAddresses,
+    enabled: isAuthenticated,
+  });
+
+  // Initialize pincode from localStorage (guest) or default address (logged-in)
+  useEffect(() => {
+    const saved = localStorage.getItem('fitverse_checked_pincode');
+    if (saved) setPincodeInput(saved);
+  }, []);
+
+  useEffect(() => {
+    const addresses = addressesData?.data || [];
+    const defaultAddr = addresses.find((a: any) => a.isDefault) ?? addresses[0];
+    if (defaultAddr?.zipCode) setPincodeInput(defaultAddr.zipCode);
+  }, [addressesData]);
+
+  const handlePincodeCheck = () => {
+    const pin = pincodeInput.trim();
+    if (pin.length !== 6) return;
+    localStorage.setItem('fitverse_checked_pincode', pin);
+    const area = getPincodeArea(pin);
+    if (area) {
+      setPincodeResult('valid');
+      setPincodeAreaName(area);
+    } else {
+      setPincodeResult('invalid');
+      setPincodeAreaName('');
+    }
+  };
 
   // Fetch related products (same category)
   const { data: relatedData } = useQuery({
@@ -213,12 +263,16 @@ export default function ProductDetails() {
       : getTotalStock(product.sizeStock as Record<string, number>)
     : 0;
 
-  // Auto-select first size when product loads
+  // Auto-select first in-stock size when product loads
   useEffect(() => {
-    if (availableSizes.length > 0 && !selectedSize) {
-      setSelectedSize(availableSizes[0]);
+    if (availableSizes.length > 0 && !selectedSize && product) {
+      const sizeStockMap = product.sizeStock as Record<string, number> | undefined;
+      const firstInStock = availableSizes.find(
+        (s) => !sizeStockMap || (sizeStockMap[s] ?? 0) > 0
+      );
+      setSelectedSize(firstInStock ?? availableSizes[0]);
     }
-  }, [availableSizes, selectedSize]);
+  }, [availableSizes, selectedSize, product]);
 
   const relatedProducts = (relatedData?.data || [])
     .filter((p) => p.id !== id)
@@ -383,8 +437,8 @@ export default function ProductDetails() {
                     toast({
                       title: isWishlisted(product.id) ? "Removed from wishlist" : "Added to wishlist",
                       description: isWishlisted(product.id)
-                        ? `?${product.name} removed.`
-                        : `?${product.name} saved to wishlist.`,
+                        ? `${product.name} removed.`
+                        : `${product.name} saved to wishlist.`,
                     });
                   }}
                   className={cn(
@@ -422,7 +476,7 @@ export default function ProductDetails() {
             <div>
               <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">FITVERSE</p>
               <h1 className="text-3xl lg:text-4xl font-bold mb-3">{product.name}</h1>
-              
+
               {/* Price and Rating */}
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-baseline gap-3">
@@ -453,7 +507,17 @@ export default function ProductDetails() {
               </div>
             </div>
 
-            {/* Description */}
+            {/* Condition (for thrift items) */}
+            {product.isThrift && product.thriftCondition && (
+              <div>
+                <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">Condition</p>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    {CONDITION_LABELS[product.thriftCondition] || product.thriftCondition}
+                  </span>
+                </div>
+              </div>
+            )}
             <div>
               <h3 className="font-semibold mb-2">Description:</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -466,6 +530,15 @@ export default function ProductDetails() {
                   {showFullDescription ? "See Less..." : "See More..."}
                 </button>
               )}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <RotateCcw className="h-4 w-4 shrink-0 text-foreground" />
+              <span>
+                <span className="font-medium text-foreground">7-days returnable</span> &mdash;{" "}
+                <Link to="/return-policy" className="underline underline-offset-2 hover:text-foreground transition-colors">
+                  Read policy
+                </Link>
+              </span>
             </div>
 
             <Separator />
@@ -594,9 +667,60 @@ export default function ProductDetails() {
                 </Button>
               </div>
 
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Delivery:</span> TBC
-              </p>
+              {/* Delivery & Returns */}
+              <div className="space-y-2 pt-1">
+
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Truck className="h-4 w-4 shrink-0 text-foreground" />
+                  <span>
+                    <span className="font-medium text-foreground">Estimated delivery:</span>{" "}
+                    {(() => {
+                      const d = new Date();
+                      d.setDate(d.getDate() + 3);
+                      return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "long", year: "numeric" });
+                    })()}
+                  </span>
+                </div>
+
+                {/* Pincode checker */}
+                <div className="pt-0.5">
+                  <p className="text-xs text-muted-foreground mb-1.5">Check delivery availability</p>
+                  <div className="flex gap-2">
+                    <Input
+                      value={pincodeInput}
+                      onChange={(e) => {
+                        setPincodeInput(e.target.value.replace(/\D/g, '').slice(0, 6));
+                        setPincodeResult(null);
+                      }}
+                      placeholder="Enter 6-digit pincode"
+                      className="h-9 text-sm max-w-[180px]"
+                      maxLength={6}
+                      onKeyDown={(e) => e.key === 'Enter' && handlePincodeCheck()}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 text-xs"
+                      onClick={handlePincodeCheck}
+                      disabled={pincodeInput.length !== 6}
+                    >
+                      Check
+                    </Button>
+                  </div>
+                  {pincodeResult === 'valid' && (
+                    <p className="text-xs text-green-600 dark:text-green-400 mt-1.5 flex items-center gap-1">
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span>Delivery available &mdash; <span className="font-semibold">{pincodeAreaName}</span></span>
+                    </p>
+                  )}
+                  {pincodeResult === 'invalid' && (
+                    <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                      <X className="h-3.5 w-3.5 shrink-0" />
+                      Sorry, we don&apos;t deliver to this location yet.
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -866,11 +990,11 @@ export default function ProductDetails() {
               </thead>
               <tbody>
                 {[
-                  { size: "XS",  chest: "32–34", waist: "24–26", hips: "34–36" },
-                  { size: "S",   chest: "34–36", waist: "26–28", hips: "36–38" },
-                  { size: "M",   chest: "36–38", waist: "28–30", hips: "38–40" },
-                  { size: "L",   chest: "38–40", waist: "30–32", hips: "40–42" },
-                  { size: "XL",  chest: "40–42", waist: "32–34", hips: "42–44" },
+                  { size: "XS", chest: "32–34", waist: "24–26", hips: "34–36" },
+                  { size: "S", chest: "34–36", waist: "26–28", hips: "36–38" },
+                  { size: "M", chest: "36–38", waist: "28–30", hips: "38–40" },
+                  { size: "L", chest: "38–40", waist: "30–32", hips: "40–42" },
+                  { size: "XL", chest: "40–42", waist: "32–34", hips: "42–44" },
                   { size: "XXL", chest: "42–44", waist: "34–36", hips: "44–46" },
                 ].map((row) => (
                   <tr key={row.size} className="odd:bg-background even:bg-secondary/20">

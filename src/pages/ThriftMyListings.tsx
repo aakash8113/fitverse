@@ -59,6 +59,16 @@ const LISTING_STATUS = {
   },
 };
 
+// Helper to get the display status for users (hide COMPLETED from normal view)
+function getDisplayStatus(status: string): string {
+  // Show PICKED_UP as the terminal status to users (even if backend has COMPLETED)
+  return status === 'COMPLETED' ? 'PICKED_UP' : status;
+}
+
+// Helper to check if coins have been earned (PICKED_UP or beyond)
+const hasEarnedCoins = (status: string) => status === 'PICKED_UP' || status === 'COMPLETED';
+
+
 const ITEM_STATUS = {
   PENDING: { label: 'Pending Review', color: 'bg-amber-50 text-amber-600', icon: Clock },
   APPROVED: { label: 'Approved', color: 'bg-blue-50 text-blue-600', icon: CheckCircle },
@@ -67,7 +77,11 @@ const ITEM_STATUS = {
   UNDER_REFURBISHMENT: { label: 'Refurbishment', color: 'bg-orange-50 text-orange-600', icon: Wrench },
   LISTED: { label: 'Listed in Store', color: 'bg-green-50 text-green-600', icon: Tag },
   SOLD: { label: 'Sold!', color: 'bg-emerald-50 text-emerald-700', icon: CheckCircle },
-};
+
+// Items with statuses beyond PICKED_UP are internal/admin-facing — don't show to users
+  };
+
+const USER_VISIBLE_ITEM_STATUSES = ['PENDING', 'APPROVED', 'REJECTED', 'PICKED_UP'];
 
 const CONDITION_LABELS: Record<string, string> = {
   POOR: 'Poor', FAIR: 'Fair', GOOD: 'Good', VERY_GOOD: 'Very Good', LIKE_NEW: 'Like New',
@@ -272,6 +286,11 @@ function ItemProgressBar({ status }: { status: string }) {
 // ─── Item Tile ────────────────────────────────────────────────────────────────
 
 function ItemTile({ item }: { item: ThriftItem }) {
+  // Don't show items with internal statuses to users
+  if (!USER_VISIBLE_ITEM_STATUSES.includes(item.status)) {
+    return null;
+  }
+
   const statusCfg = ITEM_STATUS[item.status as keyof typeof ITEM_STATUS];
   const StatusIcon = statusCfg?.icon || Package;
 
@@ -352,7 +371,8 @@ interface ListingCardProps {
 }
 
 function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isResponding, respondingAction }: ListingCardProps) {
-  const cfg = LISTING_STATUS[listing.status];
+  const displayStatus = getDisplayStatus(listing.status);
+  const cfg = LISTING_STATUS[displayStatus];
   const Icon = cfg?.icon || Clock;
   const approvedItems = listing.items.filter((i) => i.status !== 'REJECTED');
   const rejectedItems = listing.items.filter((i) => i.status === 'REJECTED');
@@ -411,8 +431,8 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
           <div className="flex items-center gap-2 text-sm text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg px-3 py-2">
             <CircleDollarSign className="h-4 w-4 shrink-0" />
             <span>
-              {listing.status === 'PICKED_UP' ? (
-                <>You have earned <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong></>
+              {hasEarnedCoins(listing.status) ? (
+                <>You have earned <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong> ✓</>
               ) : (
                 <>You'll earn <strong>{Math.round(totalOffer).toLocaleString()} Fitverse Coins</strong> when picked up</>
               )}
@@ -439,12 +459,15 @@ function ListingCard({ listing, onView, onCancel, isCancelling, onRespond, isRes
 
         {/* Items preview */}
         <div className="space-y-2">
-          {listing.items.slice(0, 3).map((item) => (
+          {listing.items
+            .filter((item) => USER_VISIBLE_ITEM_STATUSES.includes(item.status))
+            .slice(0, 3)
+            .map((item) => (
             <ItemTile key={item.id} item={item} />
           ))}
           {listing.items.length > 3 && (
             <button onClick={onView} className="text-xs text-gray-500 hover:text-gray-700 underline">
-              +{listing.items.length - 3} more items
+            +{listing.items.filter((item) => USER_VISIBLE_ITEM_STATUSES.includes(item.status)).length - 3} more items
             </button>
           )}
         </div>
@@ -484,7 +507,8 @@ function ListingDetailDialog({
   respondingAction: string | null;
 }) {
   if (!listing) return null;
-  const cfg = LISTING_STATUS[listing.status];
+  const displayStatus = getDisplayStatus(listing.status);
+  const cfg = LISTING_STATUS[displayStatus];
   const Icon = cfg?.icon || Clock;
 
   return (
@@ -537,7 +561,9 @@ function ListingDetailDialog({
           <div>
             <h3 className="text-sm font-semibold mb-2 text-gray-700">All Items</h3>
             <div className="space-y-3">
-              {listing.items.map((item) => (
+              {listing.items
+                .filter((item) => USER_VISIBLE_ITEM_STATUSES.includes(item.status))
+                .map((item) => (
                 <ItemTile key={item.id} item={item} />
               ))}
             </div>

@@ -25,7 +25,6 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
-  Legend,
 } from 'recharts';
 
 const mockRevenueData = [
@@ -243,7 +242,7 @@ const AdminDashboard: React.FC = () => {
                         {order.paymentMethod === 'COD' ? 'Cash on Delivery' : order.paymentMethod === 'CARD' ? 'Card' : order.paymentMethod === 'WALLET' ? 'Wallet' : '—'}
                       </td>
                       <td className="px-5 py-3">
-                        <StatusBadge status={order.status?.toLowerCase() || 'pending'} />
+                        <StatusBadge status={order.status?.toLowerCase() || 'processing'} />
                       </td>
                       <td className="px-5 py-3 text-gray-500 dark:text-gray-400">
                         {order.createdAt ? new Date(order.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}

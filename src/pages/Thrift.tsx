@@ -28,7 +28,15 @@ export default function Thrift() {
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
-  const THRIFT_LIMIT = 20; // 4 cols x 5 rows
+  const CONDITION_LABELS: Record<string, string> = {
+  LIKE_NEW: 'Like New',
+  VERY_GOOD: 'Very Good',
+  GOOD: 'Good',
+  FAIR: 'Fair',
+  POOR: 'Poor',
+};
+
+const THRIFT_LIMIT = 20; // 4 cols x 5 rows
 
   const handleFilterChange = (f: ShopFilters) => {
     setFilters(f);
@@ -56,7 +64,7 @@ export default function Thrift() {
     sizes: p.availableSizes || ["XS", "S", "M", "L", "XL"],
     category: "thrift",
     isThrift: true,
-    condition: "Pre-Loved",
+    condition: p.thriftCondition ? (CONDITION_LABELS[p.thriftCondition] || p.thriftCondition) : undefined,
     seller: { name: "Fitverse", rating: 4.9 },
   }));
 
@@ -113,12 +121,12 @@ export default function Thrift() {
                 ))}
               </div>
 
-              <div className="flex gap-3 flex-wrap">
-                <Button onClick={() => navigate('/thrift/sell')} className="bg-thrift-green hover:bg-thrift-green/90 text-white h-12 px-8">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button onClick={() => navigate('/thrift/sell')} className="bg-thrift-green hover:bg-thrift-green/90 text-white h-12 px-8 w-full sm:w-auto">
                   <Plus className="w-5 h-5 mr-2" />
                   Sell Your Items
                 </Button>
-                <Button onClick={() => navigate('/thrift/my-listings')} variant="outline" className="h-12 px-6 border-thrift-green text-thrift-green hover:bg-thrift-green/5 dark:hover:text-white">
+                <Button onClick={() => navigate('/thrift/my-listings')} variant="outline" className="h-12 px-6 w-full sm:w-auto border-thrift-green text-thrift-green hover:bg-thrift-green/5 dark:hover:text-white">
                   <List className="w-4 h-4 mr-2" />
                   My Listings
                 </Button>
@@ -237,12 +245,12 @@ export default function Thrift() {
       </section>
 
       {/* Sustainability Banner */}
-      <section className="py-16 bg-thrift-green/5">
+      <section className="py-16 bg-thrift-green/5 dark:bg-[#1A1A1A]">
         <div className="section-container">
           <div
             ref={bannerRef}
-            className={`bg-thrift-green rounded-3xl p-8 lg:p-12 text-white text-center transition-all duration-1000 ease-out ${
-              bannerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+            className={`bg-thrift-green dark:bg-[#467A4B] rounded-3xl p-8 lg:p-12 text-white text-center transition-all duration-1000 ease-out ${
+              bannerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12 "
             }`}
           >
             <Recycle className="w-12 h-12 mx-auto mb-6 animate-float" />

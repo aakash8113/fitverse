@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChevronDown, X } from "lucide-react";
@@ -124,8 +124,8 @@ export function FilterSidebar({
   const [maxInput, setMaxInput] = useState("");
   const [priceApplied, setPriceApplied] = useState(false);
 
-  const [gender,      setGender]      = useState<string | undefined>("MENS");
-  const [wearType,    setWearType]    = useState<string | undefined>("TOPWEAR");
+  const [gender,      setGender]      = useState<string | undefined>();
+  const [wearType,    setWearType]    = useState<string | undefined>();
   const [category,    setCategory]    = useState<string | undefined>();
   const [subCategory, setSubCategory] = useState<string | undefined>();
   const [size,        setSize]        = useState<string | undefined>();
@@ -136,12 +136,6 @@ export function FilterSidebar({
     };
     onFilterChange?.(next);
   };
-
-  // Emit default filters on mount so parent query reflects them immediately
-  useEffect(() => {
-    onFilterChange?.({ gender: "MENS", wearType: "TOPWEAR" });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const toggleGender = (g: string) => {
     const next = gender === g ? undefined : g;
@@ -232,16 +226,14 @@ export function FilterSidebar({
         </div>
       </FilterSection>
 
-      {/* ── Wear Type ── (only after gender selected) */}
-      {gender && (
-        <FilterSection title="Wear Type">
+      {/* ── Wear Type ── (always visible) */}
+      <FilterSection title="Wear Type">
           <div className="grid grid-cols-2 gap-2">
             {[{ value: 'TOPWEAR', label: 'Topwear' }, { value: 'BOTTOMWEAR', label: 'Bottomwear' }].map((wt) => (
               <Pill key={wt.value} label={wt.label} active={wearType === wt.value} onClick={() => toggleWearType(wt.value)} />
             ))}
           </div>
         </FilterSection>
-      )}
 
       {/* ── Category ── (only after wearType selected) */}
       {wearType && categoryList.length > 0 && (

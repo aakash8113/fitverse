@@ -419,7 +419,10 @@ function ItemPipelineDialog({ item, open, onClose }: { item: ThriftItem | null; 
   const [notes, setNotes] = useState('');
   const [listedPrice, setListedPrice] = useState('');
   const [description, setDescription] = useState('');
+  const [condition, setCondition] = useState('');
   if (!item) return null;
+
+  const effectiveCondition = condition || item.condition;
 
   const statusMutation = useMutation({
     mutationFn: (status: string) => adminThriftApi.updateItemStatus(item.id, status as any, notes || undefined),
@@ -428,7 +431,7 @@ function ItemPipelineDialog({ item, open, onClose }: { item: ThriftItem | null; 
   });
 
   const listMutation = useMutation({
-    mutationFn: () => adminThriftApi.listItem(item.id, { listedPrice: parseFloat(listedPrice), description: description || undefined }),
+    mutationFn: () => adminThriftApi.listItem(item.id, { listedPrice: parseFloat(listedPrice), description: description || undefined, condition: effectiveCondition || undefined }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'thrift', 'requests'] }); toast({ title: 'Item listed in store!' }); onClose(); },
     onError: (e: any) => toast({ title: 'Error', description: e?.response?.data?.message || 'Failed', variant: 'destructive' }),
   });
@@ -475,7 +478,20 @@ function ItemPipelineDialog({ item, open, onClose }: { item: ThriftItem | null; 
                   <Textarea placeholder="Leave blank to use original description" value={description}
                     onChange={(e) => setDescription(e.target.value)} rows={2} className="text-sm resize-none" />
                 </div>
-                <Button onClick={() => listMutation.mutate()} disabled={listMutation.isPending || !listedPrice}
+                <div className="space-y-1">
+                  <Label className="text-xs">Condition *</Label>
+                  <Select value={effectiveCondition} onValueChange={setCondition}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select condition" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="LIKE_NEW">Like New</SelectItem>
+                      <SelectItem value="VERY_GOOD">Very Good</SelectItem>
+                      <SelectItem value="GOOD">Good</SelectItem>
+                      <SelectItem value="FAIR">Fair</SelectItem>
+                      <SelectItem value="POOR">Poor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={() => listMutation.mutate()} disabled={listMutation.isPending || !listedPrice || !effectiveCondition}
                   className="w-full bg-green-600 hover:bg-green-700 text-white h-8 text-xs">
                   {listMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />}
                   Publish to Thrift Store

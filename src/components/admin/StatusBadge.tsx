@@ -5,7 +5,6 @@ type StatusVariant =
   | 'active'
   | 'inactive'
   | 'pending'
-  | 'paid'
   | 'in_progress'
   | 'approved'
   | 'rejected'
@@ -31,7 +30,6 @@ const variantStyles: Record<StatusVariant, string> = {
   in_inventory: 'bg-green-50 text-green-700 ring-green-600/20',
 
   pending: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
-  paid: 'bg-green-50 text-green-700 ring-green-600/20',
   in_progress: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   under_refurbishment: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   processing: 'bg-blue-50 text-blue-700 ring-blue-600/20',
@@ -58,7 +56,6 @@ const variantLabels: Record<StatusVariant, string> = {
   delivered: 'Delivered',
   in_inventory: 'In Inventory',
   pending: 'Pending',
-  paid: 'Confirmed',
   in_progress: 'In Progress',
   under_refurbishment: 'Under Refurbishment',
   processing: 'Processing',

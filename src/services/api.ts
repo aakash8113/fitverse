@@ -109,6 +109,7 @@ export interface Product {
   subCategory?: ClothingSubCategory;
   availableSizes: string[];
   isThrift: boolean;
+  thriftCondition?: string;
   images: string[];
   isActive: boolean;
   createdAt: string;
@@ -198,7 +199,7 @@ export interface Order {
   coinsUsed?: number;
   couponCode?: string;
   couponDiscount?: number;
-  status: 'PENDING' | 'PAID' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
+  status: 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | 'REFUNDED';
   deliveredAt?: string;
   items: OrderItem[];
   address?: Address;
@@ -813,7 +814,7 @@ export const adminThriftApi = {
   },
 
   // List item as a real product in the store
-  listItem: async (itemId: string, payload: { listedPrice: number; description?: string; stock?: number }) => {
+  listItem: async (itemId: string, payload: { listedPrice: number; description?: string; stock?: number; condition?: string }) => {
     const response = await api.post<ApiResponse<{ item: ThriftItem; product: Product }>>(
       `/admin/thrift/items/${itemId}/list`,
       payload

@@ -112,9 +112,7 @@ export default function Wishlist() {
                         <span className={cn("text-sm font-medium", item.stock > 0 ? "text-green-600" : "text-red-600")}>
                           {item.stock > 0 ? "In Stock" : "Out of Stock"}
                         </span>
-                      ) : (
-                        <span className="text-sm text-green-600 font-medium">In Stock</span>
-                      )}
+                      ) : null}
                     </div>
                     <div className="col-span-3 flex justify-center">
                       <Button onClick={() => handleAddToCart(item)} className="gap-2"><ShoppingCart className="w-4 h-4" /> Add to Cart</Button>

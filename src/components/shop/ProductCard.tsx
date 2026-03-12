@@ -102,12 +102,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
               -{discount}%
             </span>
           )} */}
-          {product.isThrift && (
-            <span className="badge-thrift">
-              Pre-Owned
-            </span>
-          )}
-          {product.condition && (
+          {product.isThrift && product.condition && (
             <span className="badge-condition">
               {product.condition}
             </span>

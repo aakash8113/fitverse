@@ -62,11 +62,13 @@ interface ThriftProductFormData {
   category: string;
   subCategory: string;
   availableSizes: string[];
+  thriftCondition: string;
 }
 
 const emptyForm: ThriftProductFormData = {
   name: '', description: '', price: '', sizeStock: {}, brand: '',
   gender: '', wearType: '', category: '', subCategory: '', availableSizes: [],
+  thriftCondition: '',
 };
 
 const AdminThriftInventory: React.FC = () => {
@@ -173,6 +175,7 @@ const AdminThriftInventory: React.FC = () => {
       category: p.category || '',
       subCategory: p.subCategory || '',
       availableSizes: p.availableSizes || [],
+      thriftCondition: p.thriftCondition || '',
     });
     setExistingImages(p.images || []);
     setNewImageFiles([]);
@@ -253,6 +256,7 @@ const AdminThriftInventory: React.FC = () => {
     if (form.subCategory) fd.append('subCategory', form.subCategory);
     fd.append('availableSizes', JSON.stringify(form.availableSizes));
     fd.append('isThrift', 'true');
+    if (form.thriftCondition) fd.append('thriftCondition', form.thriftCondition);
     newImageFiles.forEach((file) => fd.append('images', file));
 
     if (editingProduct) {
@@ -522,6 +526,21 @@ const AdminThriftInventory: React.FC = () => {
                   <SelectTrigger className="h-9 text-sm"><SelectValue placeholder={subCatsForCategory.length ? 'Select style' : 'N/A'} /></SelectTrigger>
                   <SelectContent>
                     {subCatsForCategory.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Condition */}
+              <div className="col-span-2 space-y-1">
+                <Label className="text-xs">Condition <span className="text-gray-400">(required for thrift)</span></Label>
+                <Select value={form.thriftCondition} onValueChange={(v) => setFormField('thriftCondition', v)}>
+                  <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select condition" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LIKE_NEW">Like New</SelectItem>
+                    <SelectItem value="VERY_GOOD">Very Good</SelectItem>
+                    <SelectItem value="GOOD">Good</SelectItem>
+                    <SelectItem value="FAIR">Fair</SelectItem>
+                    <SelectItem value="POOR">Poor</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

@@ -37,6 +37,7 @@ router.post('/thrift/items/:id/list', adminController.listThriftItem);
 
 // Thrift inventory (LISTED / SOLD items)
 router.get('/thrift/inventory', adminController.getThriftInventory);
+router.delete('/thrift/inventory/:id', adminController.deleteThriftInventoryItem);
 
 // Refurbishment tracking
 router.get('/refurbishment', adminController.getRefurbishmentItems);

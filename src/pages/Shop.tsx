@@ -22,6 +22,14 @@ const SLIDES = [heroStore, heroRack, heroFashion];
 const INTERVAL = 5000;
 const TRANSITION_MS = 900;
 
+const CONDITION_LABELS: Record<string, string> = {
+  LIKE_NEW: 'Like New',
+  VERY_GOOD: 'Very Good',
+  GOOD: 'Good',
+  FAIR: 'Fair',
+  POOR: 'Poor',
+};
+
 // Convert API product to frontend product format
 const convertProduct = (apiProduct: ApiProduct) => {
   const getImageUrl = (imagePath: string | undefined) => {
@@ -40,6 +48,8 @@ const convertProduct = (apiProduct: ApiProduct) => {
     sizes: apiProduct.availableSizes || [],
     category: apiProduct.gender?.toLowerCase() || '',
     isNew: false,
+    isThrift: apiProduct.isThrift,
+    condition: apiProduct.thriftCondition ? (CONDITION_LABELS[apiProduct.thriftCondition] || apiProduct.thriftCondition) : undefined,
     description: apiProduct.description,
     stock: getTotalStock(apiProduct.sizeStock),
   };

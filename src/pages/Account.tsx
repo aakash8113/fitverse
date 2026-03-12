@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "@tanstack/react-query";
-import { ordersApi, addressesApi, ApiResponse, Order, Address } from "@/services/api";
+import { ordersApi, addressesApi, ApiResponse, Order } from "@/services/api";
 
 export default function Account() {
   const { user } = useAuth();
@@ -58,8 +58,6 @@ export default function Account() {
   };
 
   const statusStyles = {
-    PENDING: "bg-yellow-500/10 text-yellow-700",
-    PAID: "bg-blue-500/10 text-blue-700",
     PROCESSING: "bg-purple-500/10 text-purple-700",
     SHIPPED: "bg-blue-500/10 text-blue-700",
     DELIVERED: "bg-green-500/10 text-green-700",

@@ -267,7 +267,7 @@ export default function Payment() {
                         <div className="flex items-center gap-2">
                           <CreditCard className="w-4 h-4" />
                           <span className="font-semibold">Credit / Debit Card</span>
-                          <span className="ml-auto text-xs font-medium text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
+                          <span className="ml-auto text-xs font-medium text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           Pay securely with Visa, Mastercard, RuPay & more
@@ -291,7 +291,7 @@ export default function Payment() {
                       <Label htmlFor="wallet" className="flex-1 cursor-pointer">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">UPI / PhonePe Wallet</span>
-                          <span className="ml-auto text-xs font-medium text-violet-600 bg-violet-100 dark:bg-violet-900/30 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
+                          <span className="ml-auto text-xs font-medium text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full">via PhonePe</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
                           Pay with any UPI app, PhonePe or digital wallet

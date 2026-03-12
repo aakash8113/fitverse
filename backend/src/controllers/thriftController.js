@@ -4,6 +4,7 @@
 const path = require('path');
 const asyncHandler = require('../utils/asyncHandler');
 const prisma = require('../config/database');
+const imageService = require('../services/imageService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const logger = require('../config/logger');
 
@@ -153,6 +154,11 @@ const cancelListing = asyncHandler(async (req, res) => {
 
   const listing = await prisma.thriftListing.findFirst({
     where: { id, userId },
+    include: {
+      items: {
+        select: { images: true },
+      },
+    },
   });
 
   if (!listing) throw new NotFoundError('Listing not found');
@@ -160,7 +166,10 @@ const cancelListing = asyncHandler(async (req, res) => {
     throw new BadRequestError('Only pending listings can be cancelled');
   }
 
+  const imagesToDelete = listing.items.flatMap((item) => item.images || []);
+
   await prisma.thriftListing.delete({ where: { id } });
+  await imageService.deleteMultiple(imagesToDelete);
 
   logger.info(`ThriftListing ${id} cancelled by user ${userId}`);
   res.json({ success: true, message: 'Listing cancelled successfully' });

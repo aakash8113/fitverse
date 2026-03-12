@@ -3,8 +3,6 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AITryOn } from "@/components/ai/AITryOn";
 
-import heroAI from "@/assets/hero-ai.jpg";
-
 const benefits = [
   {
     icon: Zap,

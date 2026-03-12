@@ -4,9 +4,10 @@ import { useParallax } from "@/hooks/use-scroll-animation";
 import heroStore from "@/assets/about/hero-store.jpg";
 import heroRack from "@/assets/about/hero-rack.jpg";
 import heroFashion from "@/assets/about/hero-fashion.jpg";
+import carousel1 from "@/assets/about/carousel_1.png";
 import { ChevronDown } from "lucide-react";
 
-const SLIDES = [heroStore, heroRack, heroFashion];
+const SLIDES = [heroStore, heroRack, heroFashion, carousel1];
 const INTERVAL = 5000;
 const TRANSITION_MS = 900;
 
@@ -120,12 +121,12 @@ export function HeroSection() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}
       >
-        <span className="text-xs uppercase tracking-[0.2em] text-background/60">Scroll</span>
+        <span className="text-xs uppercase tracking-[0.2em] text-background/60 dark:text-white">Scroll</span>
         <motion.div
           animate={{ y: [0, 8, 0] }}
           transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
         >
-          <ChevronDown className="w-5 h-5 text-background/60" />
+          <ChevronDown className="w-5 h-5 text-background/60 dark:text-white" />
         </motion.div>
       </motion.div>
     </section>

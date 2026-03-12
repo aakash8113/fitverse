@@ -111,12 +111,12 @@ export function Navbar() {
             ))}
           </div>
 
-          {/* Inline expanding search bar */}
+          {/* Inline expanding search bar — shown at all sizes when open */}
           <form
             onSubmit={handleSearch}
             className={cn(
-              "hidden lg:flex items-center gap-2 transition-all duration-300 overflow-hidden",
-              isSearchOpen ? "flex-1 mx-8 opacity-100" : "w-0 opacity-0 pointer-events-none mx-0"
+              "items-center gap-2 transition-all duration-300 overflow-hidden",
+              isSearchOpen ? "flex flex-1 mx-4 lg:mx-8 opacity-100" : "hidden opacity-0 pointer-events-none mx-0"
             )}
           >
             <div className="relative flex-1">
@@ -163,7 +163,7 @@ export function Navbar() {
               <Button variant="ghost" size="icon" className="relative hover:bg-secondary hover:text-foreground">
                 <ShoppingBag className="translate-y-[1px] h-5 w-5 sm:h-6 sm:w-6" />
                 {isAuthenticated && cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-white flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-white flex items-center justify-center dark:bg-white dark:text-black">
                     {cartCount > 99 ? "99+" : cartCount}
                   </span>
                 )}
@@ -292,6 +292,29 @@ export function Navbar() {
         {isMenuOpen && (
           <div className="lg:hidden border-t border-border/50 py-4 animate-fade-in">
             <div className="flex flex-col gap-4">
+              {/* Search form inside dropdown */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (searchQuery.trim()) {
+                    navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                    setIsMenuOpen(false);
+                    setSearchQuery("");
+                  }
+                }}
+                className="flex items-center"
+              >
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search products..."
+                    className="pl-9 pr-4 h-9 w-full rounded-full border border-border bg-muted/50 text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+              </form>
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
@@ -314,13 +337,10 @@ export function Navbar() {
                   variant="ghost" 
                   size="sm" 
                   className="flex-1"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    openSearch();
-                  }}
+                  onClick={toggleTheme}
                 >
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
+                  {theme === "light" ? <Moon className="h-4 w-4 mr-2" /> : <Sun className="h-4 w-4 mr-2" />}
+                  {theme === "light" ? "Dark" : "Light"}
                 </Button>
                 <Link to="/wishlist" className="flex-1" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full">

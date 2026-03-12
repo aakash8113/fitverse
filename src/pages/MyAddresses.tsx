@@ -15,6 +15,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { addressesApi } from "@/services/api";
+import { isServiceable } from "@/lib/pincodes";
 import { useToast } from "@/hooks/use-toast";
 
 interface AddressFormData {
@@ -37,7 +38,7 @@ const emptyForm: AddressFormData = {
   city: "",
   state: "",
   zipCode: "",
-  country: "United States",
+  country: "India",
   isDefault: false,
 };
 
@@ -216,7 +217,14 @@ export default function MyAddresses() {
                       <MapPin className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold mb-2">{address.name}</h3>
+                  <h3 className="font-semibold mb-2 flex items-center gap-2 flex-wrap">
+                      {address.name}
+                      {!isServiceable(address.zipCode) && (
+                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded-full border border-amber-200 dark:border-amber-800">
+                          Outside delivery area
+                        </span>
+                      )}
+                    </h3>
                       <p className="text-sm text-muted-foreground">
                         {address.addressLine1}
                         {address.addressLine2 && `, ${address.addressLine2}`}
@@ -355,12 +363,12 @@ export default function MyAddresses() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="zipCode">ZIP Code *</Label>
+                <Label htmlFor="zipCode">Pincode *</Label>
                 <Input
                   id="zipCode"
                   value={formData.zipCode}
                   onChange={(e) => setFormData({ ...formData, zipCode: e.target.value })}
-                  placeholder="10001"
+                  placeholder="390007"
                   required
                 />
               </div>

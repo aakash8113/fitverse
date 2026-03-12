@@ -162,6 +162,7 @@ export default function Checkout() {
                 selectedId={selectedAddressId}
                 onSelect={setSelectedAddressId}
                 variant="dark"
+                enforceServiceability
               />
             </div>
           </div>

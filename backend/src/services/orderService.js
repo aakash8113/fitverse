@@ -158,7 +158,7 @@ class OrderService {
           couponId: validatedCoupon?.id || null,
           couponCode: validatedCoupon?.code || null,
           couponDiscount,
-          status: effectivePaymentMethod === 'COD' ? 'PENDING' : 'PAID',
+          status: 'PROCESSING',
         },
       });
 
@@ -250,8 +250,12 @@ class OrderService {
     };
 
     // Filter by status
+    const VALID_ORDER_STATUSES = ['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
     if (query.status) {
-      where.status = query.status.toUpperCase();
+      const s = query.status.toUpperCase();
+      if (VALID_ORDER_STATUSES.includes(s)) {
+        where.status = s;
+      }
     }
 
     const orders = await prisma.order.findMany({
@@ -341,8 +345,8 @@ class OrderService {
       throw new BadRequestError('Unauthorized access to order');
     }
 
-    // Can only cancel pending or paid orders (not shipped/delivered)
-    if (!['PENDING', 'PAID'].includes(order.status)) {
+    // Can only cancel processing orders (not shipped/delivered)
+    if (!['PROCESSING'].includes(order.status)) {
       throw new BadRequestError('Cannot cancel order at this stage');
     }
 
@@ -359,6 +363,7 @@ class OrderService {
 
       // Restore per-size stock
       for (const item of order.orderItems) {
+        if (!item.productId) continue;
         const curP = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
         if (!curP) continue;
         const restoreStock = { ...(curP.sizeStock || {}) };
@@ -429,8 +434,12 @@ class OrderService {
   async getAllOrders(query = {}) {
     const where = {};
 
+    const VALID_ORDER_STATUSES = ['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
     if (query.status) {
-      where.status = query.status.toUpperCase();
+      const s = query.status.toUpperCase();
+      if (VALID_ORDER_STATUSES.includes(s)) {
+        where.status = s;
+      }
     }
 
     const orders = await prisma.order.findMany({
@@ -570,7 +579,7 @@ class OrderService {
           couponId: validatedCoupon?.id || null,
           couponCode: validatedCoupon?.code || null,
           couponDiscount,
-          status: total === 0 ? 'PAID' : 'PENDING',
+          status: 'PROCESSING',
         },
       });
 
@@ -641,7 +650,7 @@ class OrderService {
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        status: 'PAID',
+        status: 'PROCESSING',
         paymentStatus: 'COMPLETED',
         paymentId: phonePeOrderId || null,
       },
@@ -664,6 +673,7 @@ class OrderService {
     await prisma.$transaction(async (tx) => {
       // Restore per-size stock
       for (const item of order.orderItems) {
+        if (!item.productId) continue;
         const failedProd = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
         if (!failedProd) continue;
         const failStock = { ...(failedProd.sizeStock || {}) };

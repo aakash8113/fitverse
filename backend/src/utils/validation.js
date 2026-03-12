@@ -108,6 +108,7 @@ const createProductSchema = Joi.object({
     )
     .optional(),
   isThrift: Joi.boolean().optional(),
+  thriftCondition: Joi.string().valid('POOR', 'FAIR', 'GOOD', 'VERY_GOOD', 'LIKE_NEW').optional().allow('', null),
 });
 
 const updateProductSchema = Joi.object({
@@ -133,6 +134,7 @@ const updateProductSchema = Joi.object({
     .optional(),
   isActive: Joi.boolean().optional(),
   isThrift: Joi.boolean().optional(),
+  thriftCondition: Joi.string().valid('POOR', 'FAIR', 'GOOD', 'VERY_GOOD', 'LIKE_NEW').optional().allow('', null),
 });
 
 // ============================================

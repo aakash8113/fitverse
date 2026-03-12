@@ -343,7 +343,7 @@ function ItemCard({ item, index, total, onChange, onRemove }: ItemCardProps) {
                 className={cn(
                   'border rounded-lg p-2 text-xs text-left transition-all',
                   item.condition === c.value
-                    ? 'border-green-600 bg-green-50 text-green-700 ring-1 ring-green-400'
+                    ? 'border-green-600 bg-green-50 dark:bg-[#1A211E] text-green-700 dark:text-green-400 ring-1 ring-green-400'
                     : 'border-gray-200 hover:border-gray-400 text-gray-600 dark:text-white' 
                 )}
               >
@@ -640,7 +640,7 @@ export default function ThriftSell() {
             <button
               type="button"
               onClick={addItem}
-              className="w-full border-2 border-dashed border-gray-300 rounded-xl py-4 flex items-center justify-center gap-2 text-gray-500 hover:border-green-500 hover:text-green-600 hover:bg-green-50 transition-all"
+              className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl py-4 flex items-center justify-center gap-2 text-gray-500 dark:text-gray-400 hover:border-green-500 hover:text-green-600 hover:bg-green-50 dark:hover:bg-[#1A211E] transition-all"
             >
               <Plus className="h-5 w-5" />
               <span className="font-medium">Add Another Item</span>

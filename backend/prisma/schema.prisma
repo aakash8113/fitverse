@@ -151,7 +151,10 @@ model Product {
   availableSizes String[]          @default([])
 
   // true = this product was a thrift item (listed by admin)
-  isThrift    Boolean              @default(false)
+  isThrift       Boolean              @default(false)
+
+  // Admin-assessed condition for thrift products (POOR/FAIR/GOOD/VERY_GOOD/LIKE_NEW)
+  thriftCondition String?
 
   // Images
   images      String[]             @default([])
@@ -167,6 +170,7 @@ model Product {
   orderItems     OrderItem[]
   reviews        Review[]
   couponProducts CouponProduct[]
+  thriftSourceItem ThriftItem? @relation("ListedThriftProduct")
 
   createdAt   DateTime             @default(now())
   updatedAt   DateTime             @updatedAt
@@ -222,8 +226,6 @@ model CartItem {
 // ============================================
 
 enum OrderStatus {
-  PENDING
-  PAID
   PROCESSING
   SHIPPED
   DELIVERED
@@ -257,7 +259,7 @@ model Order {
   coinsUsed     Int           @default(0)
   
   // Status
-  status        OrderStatus   @default(PENDING)
+  status        OrderStatus   @default(PROCESSING)
   
   // Coupon
   couponId       String?
@@ -286,7 +288,7 @@ model Order {
 model OrderItem {
   id        String  @id @default(uuid())
   orderId   String
-  productId String
+  productId String?
   
   // Snapshot of product at order time
   productName  String
@@ -297,7 +299,7 @@ model OrderItem {
   
   // Relations
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
   returnItems ReturnRequestItem[]
   
   createdAt DateTime @default(now())
@@ -465,6 +467,7 @@ model ThriftItem {
   // Relations
   listing ThriftListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
   user    User          @relation(fields: [userId], references: [id])
+  listedProduct Product? @relation("ListedThriftProduct", fields: [listedProductId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -161,7 +161,7 @@ const AdminOrders: React.FC = () => {
                         {PAYMENT_METHOD_LABELS[order.paymentMethod] || order.paymentMethod || '—'}
                       </td>
                       <td className="px-5 py-3">
-                        <StatusBadge status={order.status?.toLowerCase() || 'pending'} />
+                        <StatusBadge status={order.status?.toLowerCase() || 'processing'} />
                       </td>
                       <td className="px-5 py-3 text-gray-500 dark:text-gray-400 text-xs">
                         {order.createdAt

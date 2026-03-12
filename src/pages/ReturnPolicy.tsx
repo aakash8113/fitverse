@@ -28,7 +28,7 @@ export default function ReturnPolicy() {
               <div className="space-y-4 text-muted-foreground">
                 <p>
                   At Fitverse, we want you to be completely satisfied with your purchase.
-                  If you're not happy with your order, we offer a hassle-free 30-day return
+                  If you're not happy with your order, we offer a hassle-free 7-day return
                   policy. Returns are free for most items within the United States.
                 </p>
                 <p>
@@ -48,7 +48,7 @@ export default function ReturnPolicy() {
               </div>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  You have <strong>30 days</strong> from the date you receive your order to
+                  You have <strong>7 days</strong> from the date you receive your order to
                   initiate a return. Items must be returned in their original condition with
                   all tags attached.
                 </p>
@@ -222,7 +222,7 @@ export default function ReturnPolicy() {
               <h2 className="text-2xl font-semibold mb-4">International Returns</h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  International returns are accepted within 30 days. However, customers are
+                  International returns are accepted within 7 days. However, customers are
                   responsible for return shipping costs. We recommend using a tracked
                   shipping method as we cannot guarantee receipt of untracked returns.
                 </p>
