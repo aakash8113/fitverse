@@ -1,6 +1,10 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { Eye, Sparkles, Recycle, Users, ShieldCheck } from "lucide-react";
-import solutionImg from "@/assets/about/solution-tech.jpg";
+import { motion } from "framer-motion";
+import { useState, useRef } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
+import logoWhite from "@/assets/logo_white.png";
+import logoImage from "@/assets/logo_black.png";
 
 const approaches = [
   {
@@ -26,6 +30,22 @@ const approaches = [
 ];
 
 export function SolutionSection() {
+  const [rotationCount, setRotationCount] = useState(0);
+  const [rotationDirection, setRotationDirection] = useState(1);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const { theme } = useTheme();
+  const logo = theme === "dark" ? logoWhite : logoImage;
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (imgRef.current) {
+      const rect = imgRef.current.getBoundingClientRect();
+      const imgCenterX = rect.left + rect.width / 2;
+      const direction = e.clientX > imgCenterX ? 1 : -1;
+      setRotationDirection(direction);
+      setRotationCount(prev => prev + 1);
+    }
+  };
+
   return (
     <section className="py-24 sm:py-32 bg-background">
       <div className="section-container">
@@ -46,11 +66,24 @@ export function SolutionSection() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-20">
           <ScrollReveal direction="left">
-            <div className="aspect-square rounded-2xl overflow-hidden">
-              <img
-                src={solutionImg}
-                alt="Fashion technology interface on tablet"
-                className="w-full h-full object-cover"
+            <div className="aspect-square rounded-2xl overflow-hidden flex items-center justify-center">
+              <motion.img
+                ref={imgRef}
+                src={logo}
+                alt="Fitverse Logo"
+                className="w-3/4 h-3/4 object-contain cursor-pointer drop-shadow-md"
+                key={rotationCount}
+                initial={{ rotateY: 0, scale: 1 }}
+                animate={{ 
+                  rotateY: rotationDirection * 2520,
+                  scale: [1, 1.3, 1]
+                }}
+                transition={{ 
+                  duration: 1, 
+                  ease: "easeInOut"
+                }}
+                onMouseEnter={handleMouseEnter}
+                style={{ perspective: "1000px" }}
               />
             </div>
           </ScrollReveal>
