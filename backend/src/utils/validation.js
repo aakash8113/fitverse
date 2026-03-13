@@ -52,6 +52,39 @@ const resendOTPSchema = Joi.object({
   }),
 });
 
+const forgotPasswordSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please provide a valid email address',
+  }),
+});
+
+const resetPasswordSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please provide a valid email address',
+  }),
+  otp: Joi.string().length(6).pattern(/^\d+$/).required().messages({
+    'string.empty': 'OTP is required',
+    'string.length': 'OTP must be 6 digits',
+    'string.pattern.base': 'OTP must contain only numbers',
+  }),
+  newPassword: Joi.string().min(8).required().messages({
+    'string.empty': 'New password is required',
+    'string.min': 'Password must be at least 8 characters',
+  }),
+});
+
+const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required().messages({
+    'string.empty': 'Current password is required',
+  }),
+  newPassword: Joi.string().min(8).required().messages({
+    'string.empty': 'New password is required',
+    'string.min': 'Password must be at least 8 characters',
+  }),
+});
+
 // ============================================
 // PRODUCT VALIDATION
 // ============================================
@@ -247,6 +280,9 @@ module.exports = {
   loginSchema,
   verifyOTPSchema,
   resendOTPSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
   
   // Product
   createProductSchema,

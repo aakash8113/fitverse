@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { FitverseCoinIcon } from '@/components/shared/FitverseCoinIcon';
 import {
-  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert,
+  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert, Trash2,
 } from 'lucide-react';
 
 const MOCK_USERS: AdminUser[] = [
@@ -52,6 +52,8 @@ const AdminUsers: React.FC = () => {
   const [coinDialogOpen, setCoinDialogOpen] = useState(false);
   const [coinAmount, setCoinAmount] = useState('');
   const [coinDescription, setCoinDescription] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteUserTarget, setDeleteUserTarget] = useState<AdminUser | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'users'],
@@ -85,6 +87,22 @@ const AdminUsers: React.FC = () => {
       toast({ title: 'Error', description: err.response?.data?.message || 'Failed to adjust coins', variant: 'destructive' }),
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteUser(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      toast({ title: 'User deleted' });
+      setDeleteDialogOpen(false);
+      setDeleteUserTarget(null);
+      if (selectedUser?.id === deleteUserTarget?.id) {
+        setDetailOpen(false);
+        setSelectedUser(null);
+      }
+    },
+    onError: (err: any) =>
+      toast({ title: 'Error', description: err.response?.data?.message || 'Failed to delete user', variant: 'destructive' }),
+  });
+
   const filtered = users.filter((u) => {
     const matchSearch =
       !search ||
@@ -104,6 +122,11 @@ const AdminUsers: React.FC = () => {
     setCoinAmount('');
     setCoinDescription('');
     setCoinDialogOpen(true);
+  };
+
+  const openDeleteDialog = (u: AdminUser) => {
+    setDeleteUserTarget(u);
+    setDeleteDialogOpen(true);
   };
 
   const exportCSV = () => {
@@ -270,6 +293,15 @@ const AdminUsers: React.FC = () => {
                               {user.isBlocked ? <UserCheck className="h-3.5 w-3.5" /> : <UserX className="h-3.5 w-3.5" />}
                             </button>
                           )}
+                          {user.role !== 'ADMIN' && (
+                            <button
+                              onClick={() => openDeleteDialog(user)}
+                              className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -415,26 +447,63 @@ const AdminUsers: React.FC = () => {
 
               {selectedUser.role !== 'ADMIN' && (
                 <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <Button
-                    variant={selectedUser.isBlocked ? 'outline' : 'destructive'}
-                    size="sm"
-                    onClick={() => {
-                      blockMutation.mutate({ id: selectedUser.id, block: !selectedUser.isBlocked });
-                      setDetailOpen(false);
-                    }}
-                    disabled={blockMutation.isPending}
-                    className="w-full gap-2"
-                  >
-                    {selectedUser.isBlocked ? (
-                      <><UserCheck className="h-3.5 w-3.5" /> Unblock User</>
-                    ) : (
-                      <><UserX className="h-3.5 w-3.5" /> Block User</>
-                    )}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={selectedUser.isBlocked ? 'outline' : 'destructive'}
+                      size="sm"
+                      onClick={() => {
+                        blockMutation.mutate({ id: selectedUser.id, block: !selectedUser.isBlocked });
+                        setDetailOpen(false);
+                      }}
+                      disabled={blockMutation.isPending}
+                      className="flex-1 gap-2"
+                    >
+                      {selectedUser.isBlocked ? (
+                        <><UserCheck className="h-3.5 w-3.5" /> Unblock User</>
+                      ) : (
+                        <><UserX className="h-3.5 w-3.5" /> Block User</>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openDeleteDialog(selectedUser)}
+                      className="text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <Trash2 className="h-3.5 w-3.5 mr-1" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete user dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete User?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-500">
+            This will permanently delete <strong>{deleteUserTarget?.name}</strong> and all related data (orders, addresses, thrift listings/items, reviews, coins, and uploaded images). This cannot be undone.
+          </p>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleteUserMutation.isPending || !deleteUserTarget}
+              onClick={() => deleteUserTarget && deleteUserMutation.mutate(deleteUserTarget.id)}
+            >
+              {deleteUserMutation.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+              Delete Permanently
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>

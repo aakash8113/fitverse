@@ -4,6 +4,8 @@
 
 const { cloudinary } = require('../config/cloudinary');
 const logger = require('../config/logger');
+const fs = require('fs');
+const path = require('path');
 
 class ImageService {
   /**
@@ -49,13 +51,32 @@ class ImageService {
     try {
       if (!urlOrPublicId) return false;
 
+      // Local file path cleanup fallback (for non-Cloudinary storage)
+      if (!String(urlOrPublicId).startsWith('http')) {
+        const normalized = String(urlOrPublicId).replace(/\\/g, '/').replace(/^\/+/, '');
+        if (normalized.startsWith('uploads/')) {
+          const localPath = path.resolve(__dirname, '../../', normalized);
+          if (fs.existsSync(localPath)) {
+            fs.unlinkSync(localPath);
+            logger.info(`Local image deleted: ${localPath}`);
+            return true;
+          }
+          return false;
+        }
+      }
+
+      if (!cloudinary) {
+        return false;
+      }
+
       let publicId = urlOrPublicId;
 
       // Extract public_id from a Cloudinary URL
       // e.g. https://res.cloudinary.com/dw1mjqbbj/image/upload/v123/fitverse/products/abc.webp
       //   -> fitverse/products/abc
       if (urlOrPublicId.startsWith('http')) {
-        const match = urlOrPublicId.match(/\/upload\/(?:v\d+\/)?(.*?)(?:\.[a-z]+)?$/);
+        const cleanUrl = String(urlOrPublicId).split('?')[0];
+        const match = cleanUrl.match(/\/upload\/(?:v\d+\/)?(.*?)(?:\.[a-zA-Z0-9]+)?$/);
         publicId = match ? match[1] : urlOrPublicId;
       }
 

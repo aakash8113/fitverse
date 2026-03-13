@@ -2,9 +2,12 @@ import { Link } from "react-router-dom";
 import { Sparkles, Instagram, Twitter, Facebook, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import logoImage from "@/assets/logo_white.png";
+import { useTheme } from "@/contexts/ThemeContext";
+import logoBlack from "@/assets/logo_black.png";
+import logoWhite from "@/assets/logo_white.png";
 
 export function Footer() {
+  const { theme } = useTheme();
   return (
     <footer className="bg-[#0a0a0a] text-white">
       <div className="section-container py-16">
@@ -13,7 +16,7 @@ export function Footer() {
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-2">
               <img 
-              src={logoImage} 
+              src={theme === "dark" ? logoWhite : logoBlack} 
               alt="Fitverse Logo" 
               className=" h-10 w-10 object-contain translate-y-[-5px]"
             />

@@ -30,6 +30,24 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// OTP request endpoints: signup verification resend and forgot password
+const otpRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 3,
+  message: 'Too many OTP requests, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// OTP verify endpoints: verify-email and reset-password
+const otpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: 'Too many OTP verification attempts, please try again later',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 /**
  * Helmet Configuration
  * Sets various HTTP headers for security
@@ -76,6 +94,8 @@ const corsOptions = {
 module.exports = {
   limiter,
   authLimiter,
+  otpRequestLimiter,
+  otpVerifyLimiter,
   helmetConfig,
   corsOptions,
 };

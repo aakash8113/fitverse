@@ -90,6 +90,7 @@ const AdminShopInventory: React.FC = () => {
       productsApi.getProducts({
         search: search || undefined,
         gender: genderFilter !== 'all' ? genderFilter : undefined,
+        isThrift: false,
         page,
         limit: PAGE_SIZE,
       }),

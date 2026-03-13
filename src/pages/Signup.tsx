@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, User, Eye, EyeOff, Phone, Loader2 } from "lucide-react";
-import logoImage from "@/assets/logo.jpg";
+import logoBlack from "@/assets/logo_black.png";
+import logoWhite from "@/assets/logo_white.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Signup() {
   const navigate = useNavigate();
   const { signup } = useAuth();
+  const { theme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +29,11 @@ export default function Signup() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.password.length < 8) {
+      alert("Password must be at least 8 characters long");
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords don't match!");
@@ -61,7 +69,7 @@ export default function Signup() {
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
           <img
-            src={logoImage}
+            src={theme === "dark" ? logoWhite : logoBlack}
             alt="Fitverse Logo"
             className="h-10 w-10 object-contain translate-y-[-5px]"
           />
@@ -161,6 +169,7 @@ export default function Signup() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
+                  minLength={8}
                   className="pl-10 pr-10"
                   value={formData.password}
                   onChange={(e) =>
@@ -191,6 +200,7 @@ export default function Signup() {
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
                   placeholder="••••••••"
+                  minLength={8}
                   className="pl-10 pr-10"
                   value={formData.confirmPassword}
                   onChange={(e) =>
@@ -244,7 +254,7 @@ export default function Signup() {
             {/* Submit Button */}
             <Button 
               type="submit" 
-              className="w-full h-11 gradient-ai text-white hover:opacity-90" 
+              className="w-full h-11 gradient-ai text-white dark:text-black hover:opacity-90 bg-foreground" 
               size="lg"
               disabled={isLoading}
             >

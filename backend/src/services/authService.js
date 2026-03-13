@@ -11,6 +11,64 @@ const { ConflictError, UnauthorizedError, BadRequestError, NotFoundError } = req
 const { sanitizeUser, isOTPExpired } = require('../utils/helpers');
 const logger = require('../config/logger');
 
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_ATTEMPT_WINDOW_MS = 5 * 60 * 1000;
+const OTP_RESEND_COOLDOWN_MS = 60 * 1000;
+const otpAttempts = new Map();
+
+const attemptKey = (purpose, email) => `${purpose}:${String(email || '').toLowerCase()}`;
+
+const clearOtpAttempts = (purpose, email) => {
+  otpAttempts.delete(attemptKey(purpose, email));
+};
+
+const ensureOtpAttemptsAllowed = (purpose, email) => {
+  const key = attemptKey(purpose, email);
+  const now = Date.now();
+  const state = otpAttempts.get(key);
+  if (!state) return;
+
+  if (state.windowEndsAt <= now) {
+    otpAttempts.delete(key);
+    return;
+  }
+
+  if (state.count >= OTP_MAX_ATTEMPTS) {
+    throw new BadRequestError('Too many invalid OTP attempts. Please request a new OTP.');
+  }
+};
+
+const registerOtpFailure = (purpose, email) => {
+  const key = attemptKey(purpose, email);
+  const now = Date.now();
+  const state = otpAttempts.get(key);
+
+  if (!state || state.windowEndsAt <= now) {
+    otpAttempts.set(key, {
+      count: 1,
+      windowEndsAt: now + OTP_ATTEMPT_WINDOW_MS,
+    });
+    return 1;
+  }
+
+  state.count += 1;
+  otpAttempts.set(key, state);
+  return state.count;
+};
+
+const ensureOtpSendCooldown = (user) => {
+  if (!user?.emailOTP || !user?.otpExpiresAt) return;
+  if (isOTPExpired(user.otpExpiresAt)) return;
+
+  const otpIssuedAt = new Date(user.otpExpiresAt).getTime() - OTP_ATTEMPT_WINDOW_MS;
+  const elapsed = Date.now() - otpIssuedAt;
+
+  if (elapsed < OTP_RESEND_COOLDOWN_MS) {
+    const waitSeconds = Math.ceil((OTP_RESEND_COOLDOWN_MS - elapsed) / 1000);
+    throw new BadRequestError(`Please wait ${waitSeconds}s before requesting another OTP`);
+  }
+};
+
 class AuthService {
   /**
    * Register new user
@@ -47,7 +105,7 @@ class AuthService {
 
     // DEV: log OTP to console so it's visible without email setup
     if (process.env.NODE_ENV === 'development') {
-      console.log(`\n[DEV] OTP for ${email}: ${otp}  (or use bypass OTP: 123456)\n`);
+      console.log(`\n[DEV] OTP for ${email}: ${otp}\n`);
     }
 
     // Create user
@@ -80,6 +138,8 @@ class AuthService {
    * @returns {Promise<Object>} Success message
    */
   async verifyEmail(email, otp) {
+    ensureOtpAttemptsAllowed('verify', email);
+
     const user = await prisma.user.findUnique({
       where: { email },
     });
@@ -97,10 +157,20 @@ class AuthService {
     }
 
     if (isOTPExpired(user.otpExpiresAt)) {
+      clearOtpAttempts('verify', email);
       throw new BadRequestError('OTP expired. Please request a new one.');
     }
 
     if (user.emailOTP !== otp) {
+      const failures = registerOtpFailure('verify', email);
+      if (failures >= OTP_MAX_ATTEMPTS) {
+        await prisma.user.update({
+          where: { email },
+          data: { emailOTP: null, phoneOTP: null, otpExpiresAt: null },
+        });
+        clearOtpAttempts('verify', email);
+        throw new BadRequestError('Too many invalid OTP attempts. Please request a new OTP.');
+      }
       throw new BadRequestError('Invalid OTP');
     }
 
@@ -114,6 +184,8 @@ class AuthService {
         otpExpiresAt: null,
       },
     });
+
+    clearOtpAttempts('verify', email);
 
     logger.info(`Email verified: ${email}`);
 
@@ -188,6 +260,8 @@ class AuthService {
       throw new BadRequestError('Email already verified');
     }
 
+    ensureOtpSendCooldown(user);
+
     // Generate new OTP
     const { otp, expiresAt } = otpService.generateOTPWithExpiry();
 
@@ -203,11 +277,118 @@ class AuthService {
     // Send new OTP via email (uses "New verification code" template)
     await otpService.resendEmailOTP(email, otp, user.name);
 
+    clearOtpAttempts('verify', email);
+
     logger.info(`OTP resent to: ${email}`);
 
     return {
       message: 'OTP sent to your email',
     };
+  }
+
+  /**
+   * Request password reset OTP
+   * @param {String} email - User email
+   * @returns {Promise<Object>} Success message
+   */
+  async forgotPassword(email) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    const genericMessage = 'If an account exists, an OTP has been sent to the registered email';
+
+    if (!user) {
+      logger.warn(`Password reset requested for non-existent email: ${email}`);
+      return { message: genericMessage };
+    }
+
+    if (!user.isEmailVerified) {
+      return { message: genericMessage };
+    }
+
+    ensureOtpSendCooldown(user);
+
+    const { otp, expiresAt } = otpService.generateOTPWithExpiry();
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        emailOTP: otp,
+        otpExpiresAt: expiresAt,
+      },
+    });
+
+    await otpService.resendEmailOTP(email, otp, user.name);
+
+    clearOtpAttempts('reset', email);
+
+    logger.info(`Password reset OTP sent: ${email}`);
+
+    return { message: genericMessage };
+  }
+
+  /**
+   * Reset password using OTP
+   * @param {String} email - User email
+   * @param {String} otp - 6 digit OTP
+   * @param {String} newPassword - New password
+   * @returns {Promise<Object>} Success message
+   */
+  async resetPassword(email, otp, newPassword) {
+    ensureOtpAttemptsAllowed('reset', email);
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      throw new BadRequestError('Invalid email or OTP');
+    }
+
+    if (!user.emailOTP || !user.otpExpiresAt) {
+      throw new BadRequestError('No reset OTP found. Please request a new OTP.');
+    }
+
+    if (isOTPExpired(user.otpExpiresAt)) {
+      clearOtpAttempts('reset', email);
+      throw new BadRequestError('OTP expired. Please request a new one.');
+    }
+
+    if (user.emailOTP !== otp) {
+      const failures = registerOtpFailure('reset', email);
+      if (failures >= OTP_MAX_ATTEMPTS) {
+        await prisma.user.update({
+          where: { email },
+          data: { emailOTP: null, phoneOTP: null, otpExpiresAt: null },
+        });
+        clearOtpAttempts('reset', email);
+        throw new BadRequestError('Too many invalid OTP attempts. Please request a new OTP.');
+      }
+      throw new BadRequestError('Invalid email or OTP');
+    }
+
+    if (newPassword.length < 8) {
+      throw new BadRequestError('Password must be at least 8 characters');
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashed,
+        emailOTP: null,
+        phoneOTP: null,
+        otpExpiresAt: null,
+      },
+    });
+
+    clearOtpAttempts('reset', email);
+
+    logger.info(`Password reset successful: ${email}`);
+
+    return { message: 'Password reset successful. Please login with your new password.' };
   }
 
   /**
@@ -252,6 +433,10 @@ class AuthService {
 
     const isMatch = await bcrypt.compare(currentPassword, user.password);
     if (!isMatch) throw new BadRequestError('Current password is incorrect');
+
+    if (newPassword.length < 8) {
+      throw new BadRequestError('Password must be at least 8 characters');
+    }
 
     const hashed = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({ where: { id: userId }, data: { password: hashed } });

@@ -38,7 +38,7 @@ curl -X POST http://localhost:5000/api/auth/signup \
 # Use the OTP from server console
 curl -X POST http://localhost:5000/api/auth/verify-email \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"test@example.com\",\"otp\":\"123456\"}"
+  -d "{\"email\":\"test@example.com\",\"otp\":\"<USE_CURRENT_OTP>\"}"
 ```
 
 **Expected Response**:

@@ -69,6 +69,7 @@ export default function Shop() {
 
   // Carousel state
   const slides = [...SLIDES, SLIDES[0]]; // Clone first slide for seamless loop
+  const lastLoopIndex = slides.length - 1;
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(true);
   const carouselTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -80,9 +81,10 @@ export default function Shop() {
 
   // Carousel auto-play
   const startCarouselTimer = () => {
+    if (carouselTimerRef.current) clearInterval(carouselTimerRef.current);
     carouselTimerRef.current = setInterval(() => {
       setTransitioning(true);
-      setCarouselIndex((i) => i + 1);
+      setCarouselIndex((i) => (i >= lastLoopIndex ? i : i + 1));
     }, INTERVAL);
   };
 
@@ -91,18 +93,16 @@ export default function Shop() {
     return () => { 
       if (carouselTimerRef.current) clearInterval(carouselTimerRef.current); 
     };
-  }, []);
+  }, [lastLoopIndex]);
 
-  // Reset to first slide after reaching cloned slide
-  useEffect(() => {
-    if (carouselIndex === slides.length - 1) {
-      const t = setTimeout(() => {
-        setTransitioning(false);
-        setCarouselIndex(0);
-      }, TRANSITION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [carouselIndex, slides.length]);
+  const handleCarouselTransitionEnd = () => {
+    if (carouselIndex !== lastLoopIndex) return;
+    setTransitioning(false);
+    setCarouselIndex(0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setTransitioning(true));
+    });
+  };
 
   const limit = 16;
 
@@ -166,6 +166,7 @@ export default function Shop() {
         <div className="absolute inset-0 z-0">
           <div
             className="flex h-full"
+            onTransitionEnd={handleCarouselTransitionEnd}
             style={{
               width: `${slides.length * 100}%`,
               transform: `translateX(-${(carouselIndex / slides.length) * 100}%)`,
@@ -266,7 +267,7 @@ export default function Shop() {
                     className={cn("h-8 w-8 hover:bg-secondary hover:text-primary", gridView === "3" && "bg-secondary")}
                     onClick={() => setGridView("3")}
                   >
-                    <Grid3X3 className="w-4 h-4" />
+                    <LayoutGrid className="w-4 h-4" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -274,7 +275,7 @@ export default function Shop() {
                     className={cn("h-8 w-8 hover:bg-secondary hover:text-primary", gridView === "4" && "bg-secondary")}
                     onClick={() => setGridView("4")}
                   >
-                    <LayoutGrid className="w-4 h-4" />
+                    <Grid3X3 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>

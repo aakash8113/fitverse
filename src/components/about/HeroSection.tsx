@@ -16,32 +16,45 @@ export function HeroSection() {
   const scrollY = useParallax();
   // Append a clone of the first slide for seamless looping
   const slides = [...SLIDES, SLIDES[0]];
+  const lastLoopIndex = slides.length - 1;
   const [index, setIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(true);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const resetToFirstSlide = () => {
+    setTransitioning(false);
+    setIndex(0);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => setTransitioning(true));
+    });
+  };
+
   const startTimer = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
       setTransitioning(true);
-      setIndex((i) => i + 1);
+      setIndex((i) => (i >= lastLoopIndex ? i : i + 1));
     }, INTERVAL);
   };
 
   useEffect(() => {
     startTimer();
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, []);
+  }, [lastLoopIndex]);
 
-  // When we land on the cloned first slide, silently jump back to real first
+  // Fallback reset in case transitionend is dropped by the browser.
   useEffect(() => {
-    if (index === slides.length - 1) {
-      const t = setTimeout(() => {
-        setTransitioning(false);
-        setIndex(0);
-      }, TRANSITION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [index]);
+    if (index !== lastLoopIndex) return;
+    const t = setTimeout(() => {
+      resetToFirstSlide();
+    }, TRANSITION_MS + 120);
+    return () => clearTimeout(t);
+  }, [index, lastLoopIndex]);
+
+  const handleTrackTransitionEnd = () => {
+    if (index !== lastLoopIndex) return;
+    resetToFirstSlide();
+  };
 
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
@@ -52,6 +65,7 @@ export function HeroSection() {
       >
         <div
           className="flex h-full"
+          onTransitionEnd={handleTrackTransitionEnd}
           style={{
             width: `${slides.length * 100}%`,
             transform: `translateX(-${(index / slides.length) * 100}%)`,
@@ -107,7 +121,11 @@ export function HeroSection() {
         {SLIDES.map((_, i) => (
           <button
             key={i}
-            onClick={() => { setTransitioning(true); setIndex(i); }}
+            onClick={() => {
+              setTransitioning(true);
+              setIndex(i);
+              startTimer();
+            }}
             className={`h-1.5 rounded-full transition-all duration-300 ${
               (index % SLIDES.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
             }`}

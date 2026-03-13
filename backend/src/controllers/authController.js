@@ -73,6 +73,40 @@ const resendOTP = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Send OTP for password reset
+ * @access  Public
+ */
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  const result = await authService.forgotPassword(email);
+
+  return ApiResponse.success(
+    res,
+    200,
+    null,
+    result.message
+  );
+});
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Reset password using email OTP
+ * @access  Public
+ */
+const resetPassword = asyncHandler(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  const result = await authService.resetPassword(email, otp, newPassword);
+
+  return ApiResponse.success(
+    res,
+    200,
+    null,
+    result.message
+  );
+});
+
+/**
  * @route   GET /api/auth/me
  * @desc    Get current user profile
  * @access  Private
@@ -103,6 +137,8 @@ module.exports = {
   verifyEmail,
   login,
   resendOTP,
+  forgotPassword,
+  resetPassword,
   getMe,
   changePassword,
 };

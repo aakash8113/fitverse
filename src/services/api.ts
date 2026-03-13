@@ -241,6 +241,18 @@ export const authApi = {
     return response.data;
   },
 
+  // Request password reset OTP
+  forgotPassword: async (data: { email: string }) => {
+    const response = await api.post<ApiResponse>('/auth/forgot-password', data);
+    return response.data;
+  },
+
+  // Reset password with email OTP
+  resetPassword: async (data: { email: string; otp: string; newPassword: string }) => {
+    const response = await api.post<ApiResponse>('/auth/reset-password', data);
+    return response.data;
+  },
+
   // Get current user
   getMe: async () => {
     const response = await api.get<ApiResponse<User>>('/auth/me');
@@ -495,6 +507,7 @@ export interface DashboardStats {
   thriftRequestCount: number;
   aiTryOnCount: number;
   revenueByMonth: { month: string; revenue: number }[];
+  inventoryByCategory: { category: string; count: number }[];
   recentOrders: Order[];
 }
 
@@ -567,6 +580,11 @@ export const adminApi = {
 
   getUserOrders: async (userId: string) => {
     const response = await api.get<ApiResponse<Order[]>>(`/admin/users/${userId}/orders`);
+    return response.data;
+  },
+
+  deleteUser: async (id: string) => {
+    const response = await api.delete<ApiResponse>(`/admin/users/${id}`);
     return response.data;
   },
 

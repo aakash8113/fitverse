@@ -4,20 +4,21 @@ import { Mail, Lock, Eye, EyeOff, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/contexts/AuthContext";
-import logoImage from "@/assets/logo.jpg";
+import { useTheme } from "@/contexts/ThemeContext";
+import logoBlack from "@/assets/logo_black.png";
+import logoWhite from "@/assets/logo_white.png";
 
 export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { theme } = useTheme();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    rememberMe: false,
   });
 
   const from = (location.state as any)?.from?.pathname || "/";
@@ -45,7 +46,7 @@ export default function Login() {
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
           <img 
-              src={logoImage} 
+              src={theme === "dark" ? logoWhite : logoBlack} 
               alt="Fitverse Logo" 
               className=" h-10 w-10 object-contain translate-y-[-5px]"
             />
@@ -122,23 +123,6 @@ export default function Login() {
                   )}
                 </button>
               </div>
-            </div>
-
-            {/* Remember Me */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="remember"
-                checked={formData.rememberMe}
-                onCheckedChange={(checked) =>
-                  setFormData({ ...formData, rememberMe: checked as boolean })
-                }
-              />
-              <label
-                htmlFor="remember"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Remember me
-              </label>
             </div>
 
             {/* Submit Button */}

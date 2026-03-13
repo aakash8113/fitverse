@@ -3,16 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Loader2 } from 'lucide-react';
-import logoImage from '@/assets/logo.jpg';
+import logoBlack from '@/assets/logo_black.png';
+import logoWhite from '@/assets/logo_white.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { verifyEmail, resendOtp } = useAuth();
+  const { theme } = useTheme();
   
   const [email, setEmail] = useState(location.state?.email || '');
   const [otp, setOtp] = useState('');
@@ -61,7 +64,7 @@ export default function VerifyEmail() {
         {/* Logo */}
         <Link to="/" className="flex items-center justify-center gap-2 mb-8">
           <img
-            src={logoImage}
+            src={theme === 'dark' ? logoWhite : logoBlack}
             alt="Fitverse Logo"
             className="h-10 w-10 object-contain translate-y-[-5px]"
           />
@@ -121,7 +124,7 @@ export default function VerifyEmail() {
             {/* Verify Button */}
             <Button
               type="submit"
-              className="w-full gradient-ai text-white hover:opacity-90"
+              className="w-full gradient-ai text-white hover:opacity-90 bg-foreground text-black"
               size="lg"
               disabled={isLoading || otp.length !== 6}
             >

@@ -51,28 +51,45 @@ const syncThriftListingStatus = async (tx, listingId) => {
  * Returns aggregated dashboard statistics
  */
 const getDashboardStats = asyncHandler(async (req, res) => {
-  const [totalUsers, totalProducts, totalOrders, totalThriftListings, orders] = await Promise.all([
+  const [
+    totalUsers,
+    totalProducts,
+    totalOrders,
+    totalThriftListings,
+    ordersByMonth,
+    recentOrders,
+    shopCategoryGroups,
+    thriftProductCount,
+  ] = await Promise.all([
     prisma.user.count({ where: { role: 'USER' } }),
     prisma.product.count(),
     prisma.order.count(),
     prisma.thriftListing.count(),
     prisma.order.findMany({
-      select: { total: true, status: true, createdAt: true },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
+      where: {
+        createdAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
+        status: { notIn: ['CANCELLED'] },
+      },
+      select: { total: true, createdAt: true },
     }),
+    prisma.order.findMany({
+      take: 8,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { name: true, email: true } },
+        orderItems: { select: { id: true } },
+      },
+    }),
+    prisma.product.groupBy({
+      by: ['category'],
+      where: { isThrift: false },
+      _count: { _all: true },
+    }),
+    prisma.product.count({ where: { isThrift: true } }),
   ]);
 
   // Monthly revenue for current year
   const now = new Date();
-  const startOfYear = new Date(now.getFullYear(), 0, 1);
-  const ordersByMonth = await prisma.order.findMany({
-    where: {
-      createdAt: { gte: startOfYear },
-      status: { notIn: ['CANCELLED'] },
-    },
-    select: { total: true, createdAt: true },
-  });
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const revenueByMonth = monthNames.map((month, i) => ({
@@ -84,15 +101,24 @@ const getDashboardStats = asyncHandler(async (req, res) => {
 
   const monthlyRevenue = revenueByMonth[now.getMonth()].revenue;
 
-  // Recent orders
-  const recentOrders = await prisma.order.findMany({
-    take: 8,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { name: true, email: true } },
-      orderItems: { take: 1 },
-    },
-  });
+  const formatCategoryLabel = (value) => {
+    if (!value) return 'Other';
+    return value
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
+  };
+
+  const inventoryByCategory = [
+    ...shopCategoryGroups.map((g) => ({
+      category: formatCategoryLabel(g.category),
+      count: g._count._all,
+    })),
+    ...(thriftProductCount > 0 ? [{ category: 'Thrift', count: thriftProductCount }] : []),
+  ]
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
 
   res.json({
     success: true,
@@ -104,6 +130,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
       thriftRequestCount: totalThriftListings,
       aiTryOnCount: 0,       // Pending AI feature
       revenueByMonth,
+      inventoryByCategory,
       recentOrders,
     },
   });
@@ -844,6 +871,94 @@ const adjustUserCoins = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * DELETE /api/admin/users/:id
+ * Permanently delete a user and all related records + uploaded images.
+ */
+const deleteUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, name: true, email: true, role: true },
+  });
+
+  if (!user) throw new NotFoundError('User not found');
+  if (user.role === 'ADMIN') {
+    throw new BadRequestError('Admin accounts cannot be deleted from this endpoint');
+  }
+
+  const [userThriftItems, userReturnRequests, userReviews] = await Promise.all([
+    prisma.thriftItem.findMany({
+      where: { userId: id },
+      select: { images: true, listedProductId: true },
+    }),
+    prisma.returnRequest.findMany({
+      where: { userId: id },
+      select: { images: true },
+    }),
+    prisma.review.findMany({
+      where: { userId: id },
+      select: { images: true },
+    }),
+  ]);
+
+  const linkedProductIds = [...new Set(
+    userThriftItems.map((item) => item.listedProductId).filter(Boolean)
+  )];
+
+  const linkedProducts = linkedProductIds.length
+    ? await prisma.product.findMany({
+        where: { id: { in: linkedProductIds } },
+        select: { id: true, images: true },
+      })
+    : [];
+
+  const imagesToDelete = [
+    ...userThriftItems.flatMap((item) => item.images || []),
+    ...linkedProducts.flatMap((product) => product.images || []),
+    ...userReturnRequests.flatMap((request) => request.images || []),
+    ...userReviews.flatMap((review) => review.images || []),
+  ];
+
+  await prisma.$transaction(async (tx) => {
+    if (linkedProductIds.length) {
+      await tx.couponProduct.deleteMany({ where: { productId: { in: linkedProductIds } } });
+      await tx.cartItem.deleteMany({ where: { productId: { in: linkedProductIds } } });
+      await tx.review.deleteMany({ where: { productId: { in: linkedProductIds } } });
+      await tx.product.deleteMany({ where: { id: { in: linkedProductIds } } });
+    }
+
+    await tx.couponUsage.deleteMany({ where: { userId: id } });
+    await tx.couponBlockedUser.deleteMany({ where: { userId: id } });
+    await tx.coinTransaction.deleteMany({ where: { userId: id } });
+    await tx.reviewHelpful.deleteMany({ where: { userId: id } });
+    await tx.review.deleteMany({ where: { userId: id } });
+
+    await tx.returnRequestItem.deleteMany({ where: { returnRequest: { userId: id } } });
+    await tx.returnRequest.deleteMany({ where: { userId: id } });
+
+    await tx.orderItem.deleteMany({ where: { order: { userId: id } } });
+    await tx.order.deleteMany({ where: { userId: id } });
+
+    await tx.cartItem.deleteMany({ where: { cart: { userId: id } } });
+    await tx.cart.deleteMany({ where: { userId: id } });
+
+    await tx.thriftItem.deleteMany({ where: { userId: id } });
+    await tx.thriftListing.deleteMany({ where: { userId: id } });
+
+    await tx.address.deleteMany({ where: { userId: id } });
+    await tx.user.delete({ where: { id } });
+  });
+
+  await imageService.deleteMultiple([...new Set(imagesToDelete)]);
+
+  res.json({
+    success: true,
+    message: 'User and all related data deleted successfully',
+  });
+});
+
 module.exports = {
   getDashboardStats,
   getUsers,
@@ -854,6 +969,7 @@ module.exports = {
   getAllOrders,
   // Coins
   adjustUserCoins,
+  deleteUser,
   // Thrift
   getAllThriftListings,
   getThriftListingById,
