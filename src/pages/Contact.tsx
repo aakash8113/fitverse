@@ -110,7 +110,7 @@ export default function Contact() {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number (Optional)</Label>
-                  <Input id="phone" type="tel" placeholder="(555) 123-4567" />
+                  <Input id="phone" type="tel" placeholder="+91 97243 92829" />
                 </div>
 
                 <div className="space-y-2">

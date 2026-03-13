@@ -421,6 +421,89 @@ class AuthService {
   }
 
   /**
+   * Update current user profile
+   * @param {String} userId - User ID
+   * @param {Object} data - {name, email, phone}
+   * @returns {Promise<Object>} Updated user data
+   */
+  async updateProfile(userId, data) {
+    const name = String(data.name || '').trim();
+    const email = String(data.email || '').trim().toLowerCase();
+    const phone = data.phone ? String(data.phone).trim() : null;
+
+    const existing = await prisma.user.findUnique({ where: { id: userId } });
+    if (!existing) throw new NotFoundError('User not found');
+
+    if (email !== existing.email) {
+      const emailOwner = await prisma.user.findUnique({ where: { email } });
+      if (emailOwner && emailOwner.id !== userId) {
+        throw new ConflictError('Email already registered');
+      }
+    }
+
+    if (phone && phone !== existing.phone) {
+      const phoneOwner = await prisma.user.findFirst({ where: { phone } });
+      if (phoneOwner && phoneOwner.id !== userId) {
+        throw new ConflictError('Phone number already registered');
+      }
+    }
+
+    const emailChanged = email !== existing.email;
+    let verificationOtp = null;
+    let verificationExpiresAt = null;
+
+    if (emailChanged) {
+      const generated = otpService.generateOTPWithExpiry();
+      verificationOtp = generated.otp;
+      verificationExpiresAt = generated.expiresAt;
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        ...(emailChanged ? {
+          isEmailVerified: false,
+          emailOTP: verificationOtp,
+          otpExpiresAt: verificationExpiresAt,
+        } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        coinBalance: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (emailChanged && verificationOtp) {
+      try {
+        await otpService.resendEmailOTP(email, verificationOtp, name);
+      } catch (err) {
+        logger.error(`Failed to send verification OTP after email update for ${userId}: ${err.message}`);
+      }
+      clearOtpAttempts('verify', existing.email);
+      clearOtpAttempts('verify', email);
+    }
+
+    logger.info(`Profile updated for user: ${userId}`);
+    return {
+      user: updated,
+      message: emailChanged
+        ? 'Profile updated. Please verify your new email address with OTP.'
+        : 'Profile updated successfully',
+    };
+  }
+
+  /**
    * Change user password
    * @param {String} userId - User ID
    * @param {Object} data - {currentPassword, newPassword}

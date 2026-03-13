@@ -311,7 +311,7 @@ export default function MyAddresses() {
                   id="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="(555) 123-4567"
+                  placeholder="+91 97243 92829"
                   required
                 />
               </div>

@@ -267,6 +267,15 @@ export const authApi = {
     return response.data;
   },
 
+  // Update current user profile
+  updateProfile: async (data: { name: string; email: string; phone?: string | null }) => {
+    const response = await api.put<ApiResponse<User>>('/auth/profile', data);
+    if (response.data.success && response.data.data) {
+      localStorage.setItem('user', JSON.stringify(response.data.data));
+    }
+    return response.data;
+  },
+
   // Change password
   changePassword: async (data: { currentPassword: string; newPassword: string }) => {
     const response = await api.put<ApiResponse>('/auth/change-password', data);

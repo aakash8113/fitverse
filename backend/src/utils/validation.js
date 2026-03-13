@@ -85,6 +85,21 @@ const changePasswordSchema = Joi.object({
   }),
 });
 
+const updateProfileSchema = Joi.object({
+  name: Joi.string().min(2).max(100).required().messages({
+    'string.empty': 'Name is required',
+    'string.min': 'Name must be at least 2 characters',
+    'string.max': 'Name cannot exceed 100 characters',
+  }),
+  email: Joi.string().email().required().messages({
+    'string.empty': 'Email is required',
+    'string.email': 'Please provide a valid email address',
+  }),
+  phone: Joi.string().pattern(/^\+?[1-9]\d{1,14}$/).optional().allow('', null).messages({
+    'string.pattern.base': 'Please provide a valid phone number',
+  }),
+});
+
 // ============================================
 // PRODUCT VALIDATION
 // ============================================
@@ -283,6 +298,7 @@ module.exports = {
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  updateProfileSchema,
   
   // Product
   createProductSchema,

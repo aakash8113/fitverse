@@ -15,6 +15,7 @@ const {
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
+  updateProfileSchema,
 } = require('../utils/validation');
 
 // Public routes (with rate limiting)
@@ -27,6 +28,7 @@ router.post('/reset-password', otpVerifyLimiter, validate(resetPasswordSchema), 
 
 // Protected routes
 router.get('/me', protect, authController.getMe);
+router.put('/profile', protect, validate(updateProfileSchema), authController.updateProfile);
 router.put('/change-password', protect, validate(changePasswordSchema), authController.changePassword);
 
 module.exports = router;

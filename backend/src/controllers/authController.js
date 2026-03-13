@@ -123,6 +123,22 @@ const getMe = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @route   PUT /api/auth/profile
+ * @desc    Update current user profile
+ * @access  Private
+ */
+const updateProfile = asyncHandler(async (req, res) => {
+  const result = await authService.updateProfile(req.user.id, req.body);
+
+  return ApiResponse.success(
+    res,
+    200,
+    result.user,
+    result.message
+  );
+});
+
+/**
  * @route   PUT /api/auth/change-password
  * @desc    Change current user password
  * @access  Private
@@ -140,5 +156,6 @@ module.exports = {
   forgotPassword,
   resetPassword,
   getMe,
+  updateProfile,
   changePassword,
 };

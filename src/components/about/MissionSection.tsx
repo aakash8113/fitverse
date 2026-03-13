@@ -50,7 +50,7 @@ export function MissionSection() {
 
             <ScrollReveal direction="left" delay={0.6}>
               <div className="mt-12 pt-8 border-t border-border">
-                <p className="text-sm font-semibold tracking-[0.2em] uppercase text-foreground mb-6">
+                <p className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground mb-6">
                   Our Goals
                 </p>
                 <div className="flex gap-12">

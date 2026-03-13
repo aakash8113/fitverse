@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { User, Mail, Phone, Lock, Bell, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
@@ -11,17 +11,54 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { authApi } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Settings() {
   const { toast } = useToast();
+  const { user, refreshUser } = useAuth();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [marketingEmails, setMarketingEmails] = useState(true);
+
+  // Profile edit state
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
+  const [showEmailOtpInput, setShowEmailOtpInput] = useState(false);
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    const parts = (user.name || "").trim().split(/\s+/).filter(Boolean);
+    setFirstName(parts[0] || "");
+    setLastName(parts.slice(1).join(" "));
+    setEmail(user.email || "");
+    setPhone(user.phone || "");
+  }, [user]);
+
+  const updateProfileMutation = useMutation({
+    mutationFn: authApi.updateProfile,
+    onSuccess: async (res) => {
+      await refreshUser();
+      toast({
+        title: "Profile updated",
+        description: res.message || "Your account information has been saved.",
+      });
+      if (res.data && !res.data.isEmailVerified) {
+        setShowEmailOtpInput(true);
+      }
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || "Failed to update profile.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
 
   const changePasswordMutation = useMutation({
     mutationFn: authApi.changePassword,
@@ -33,6 +70,32 @@ export default function Settings() {
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || "Failed to update password.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const resendEmailOtpMutation = useMutation({
+    mutationFn: (targetEmail: string) => authApi.resendOtp({ email: targetEmail }),
+    onSuccess: (res) => {
+      toast({ title: "Verification OTP sent", description: res.message || "Please check your email inbox." });
+      setShowEmailOtpInput(true);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || "Failed to send verification OTP.";
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    },
+  });
+
+  const verifyEmailMutation = useMutation({
+    mutationFn: (payload: { email: string; otp: string }) => authApi.verifyEmail(payload),
+    onSuccess: async (res) => {
+      await refreshUser();
+      toast({ title: "Email verified", description: res.message || "Your email is now verified." });
+      setEmailOtp("");
+      setShowEmailOtpInput(false);
+    },
+    onError: (err: any) => {
+      const msg = err?.response?.data?.message || "Failed to verify email.";
       toast({ title: "Error", description: msg, variant: "destructive" });
     },
   });
@@ -52,6 +115,83 @@ export default function Settings() {
       return;
     }
     changePasswordMutation.mutate({ currentPassword, newPassword });
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const f = firstName.trim();
+    const l = lastName.trim();
+    const fullName = [f, l].filter(Boolean).join(" ");
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
+
+    if (!f) {
+      toast({ title: "Error", description: "First name is required.", variant: "destructive" });
+      return;
+    }
+
+    if (!trimmedEmail) {
+      toast({ title: "Error", description: "Email is required.", variant: "destructive" });
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast({ title: "Error", description: "Please provide a valid email address.", variant: "destructive" });
+      return;
+    }
+
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (trimmedPhone && !phoneRegex.test(trimmedPhone)) {
+      toast({ title: "Error", description: "Please provide a valid phone number.", variant: "destructive" });
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to save these profile changes?")) {
+      return;
+    }
+
+    updateProfileMutation.mutate({
+      name: fullName,
+      email: trimmedEmail,
+      phone: trimmedPhone || null,
+    });
+  };
+
+  const handleResendVerification = () => {
+    const draftEmail = email.trim().toLowerCase();
+    const currentUserEmail = user?.email?.toLowerCase() || "";
+
+    if (!user) return;
+
+    if (draftEmail !== currentUserEmail) {
+      toast({
+        title: "Save changes first",
+        description: "Please save your updated email before requesting OTP verification.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    resendEmailOtpMutation.mutate(currentUserEmail);
+  };
+
+  const handleVerifyEmail = () => {
+    if (!user?.email) return;
+    const otp = emailOtp.trim();
+
+    if (!otp) {
+      toast({ title: "Error", description: "Please enter the OTP sent to your email.", variant: "destructive" });
+      return;
+    }
+
+    if (!/^\d{6}$/.test(otp)) {
+      toast({ title: "Error", description: "OTP must be exactly 6 digits.", variant: "destructive" });
+      return;
+    }
+
+    verifyEmailMutation.mutate({ email: user.email, otp });
   };
 
   return (
@@ -84,40 +224,82 @@ export default function Settings() {
                   <h2 className="text-xl font-semibold">Personal Information</h2>
                 </div>
 
-                <div className="space-y-4">
+                <form className="space-y-4" onSubmit={handleSaveProfile}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" defaultValue="John" />
+                      <Input id="firstName" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" defaultValue="Doe" />
+                      <Input id="lastName" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="email">Email Address</Label>
+                      {user?.isEmailVerified ? (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 border border-green-500/20">Verified</span>
+                      ) : (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 border border-amber-500/20">Not Verified</span>
+                      )}
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2">
                       <Input
                         id="email"
                         type="email"
-                        defaultValue="john.doe@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
                         className="flex-1"
                       />
-                      <Button variant="outline">Change</Button>
+                      {!user?.isEmailVerified && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleResendVerification}
+                          disabled={resendEmailOtpMutation.isPending}
+                        >
+                          {resendEmailOtpMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Verify
+                        </Button>
+                      )}
                     </div>
+                    {!user?.isEmailVerified && showEmailOtpInput && (
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="Enter 6-digit OTP"
+                          value={emailOtp}
+                          onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="sm:max-w-xs"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleVerifyEmail}
+                          disabled={verifyEmailMutation.isPending}
+                        >
+                          {verifyEmailMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                          Confirm OTP
+                        </Button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" defaultValue="(555) 123-4567" />
+                    <Input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
                   </div>
 
                   <div className="pt-4">
-                    <Button>Save Changes</Button>
+                    <Button type="submit" disabled={updateProfileMutation.isPending}>
+                      {updateProfileMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Save Changes
+                    </Button>
                   </div>
-                </div>
+                </form>
               </div>
             </TabsContent>
 

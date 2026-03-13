@@ -150,7 +150,7 @@ export default function Signup() {
                 <Input
                   id="phone"
                   type="tel"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="+91 97243 92829"
                   className="pl-10"
                   value={formData.phone}
                   onChange={(e) =>
