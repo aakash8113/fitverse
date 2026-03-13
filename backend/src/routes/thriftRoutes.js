@@ -7,6 +7,9 @@ const thriftController = require('../controllers/thriftController');
 const { protect } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
+// Public stats for thrift landing page hero
+router.get('/stats', thriftController.getPublicThriftStats);
+
 router.use(protect);
 
 // Listings

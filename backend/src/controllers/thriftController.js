@@ -265,7 +265,32 @@ const respondToOffer = asyncHandler(async (req, res) => {
   res.json({ success: true, data: updatedListing, message: `Offer response: ${action}` });
 });
 
+// ============================================
+// PUBLIC THRIFT STATS
+// GET /api/thrift/listings/stats
+// ============================================
+const getPublicThriftStats = asyncHandler(async (_req, res) => {
+  const [itemsRehomed, sellerGroups] = await Promise.all([
+    prisma.thriftItem.count(),
+    prisma.thriftListing.groupBy({ by: ['userId'] }),
+  ]);
+
+  const sellersCount = sellerGroups.length;
+  const co2SavedKg = itemsRehomed * 2.5;
+
+  res.json({
+    success: true,
+    data: {
+      itemsRehomed,
+      sellersCount,
+      co2SavedKg,
+      co2PerItemKg: 2.5,
+    },
+  });
+});
+
 module.exports = {
+  getPublicThriftStats,
   createListing,
   uploadItemImages,
   getMyListings,

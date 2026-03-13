@@ -8,17 +8,19 @@ import { ProductCard, Product } from "@/components/shop/ProductCard";
 import { FilterSidebar, ShopFilters } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useInfiniteQuery } from "@tanstack/react-query";
-import { productsApi } from "@/services/api";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { productsApi, thriftApi } from "@/services/api";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 import thriftHero from "@/assets/thrift-hero.jpg";
 
-const stats = [
-  { value: "12.5k", label: "kg CO₂ Saved", icon: Leaf },
-  { value: "8.2k", label: "Items Rehomed", icon: Heart },
-  { value: "5.4k", label: "Happy Sellers", icon: TrendingUp },
-];
+const formatCompact = (value: number) =>
+  new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+
+const formatKg = (value: number) => {
+  if (value < 1000) return `${value.toLocaleString('en-IN')} kg`;
+  return `${formatCompact(value)} kg`;
+};
 
 export default function Thrift() {
   const navigate = useNavigate();
@@ -27,6 +29,33 @@ export default function Thrift() {
   const [filters, setFilters] = useState<ShopFilters>({});
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
+
+  const { data: statsResponse } = useQuery({
+    queryKey: ["thrift-stats"],
+    queryFn: thriftApi.getStats,
+    staleTime: 120000,
+  });
+
+  const thriftStats = statsResponse?.data;
+  const totalItems = thriftStats?.itemsRehomed ?? 0;
+  const totalCo2SavedKg = thriftStats ? Math.round(thriftStats.co2SavedKg) : 0;
+  const stats = [
+    {
+      value: thriftStats ? formatKg(totalCo2SavedKg) : "0 kg",
+      label: "CO₂ Saved",
+      icon: Leaf,
+    },
+    {
+      value: thriftStats ? formatCompact(thriftStats.itemsRehomed) : "0",
+      label: "Items Rehomed",
+      icon: Heart,
+    },
+    {
+      value: thriftStats ? formatCompact(thriftStats.sellersCount) : "0",
+      label: "Sellers",
+      icon: TrendingUp,
+    },
+  ];
 
   const CONDITION_LABELS: Record<string, string> = {
   LIKE_NEW: 'Like New',
@@ -257,7 +286,7 @@ const THRIFT_LIMIT = 20; // 4 cols x 5 rows
             <h2 className="text-3xl font-bold mb-4">Join the Circular Fashion Movement</h2>
             <p className="text-white/80 max-w-2xl mx-auto mb-6">
               Every pre-loved item you buy or sell contributes to a more sustainable fashion industry.
-              Together, we've prevented thousands of clothing items from ending up in landfills.
+              Together, we've prevented {formatCompact(totalItems)} clothing items from ending up in landfills and saved {formatKg(totalCo2SavedKg)} of CO₂.
             </p>
             <div className="flex justify-center gap-4">
               <Button className="bg-white text-thrift-green hover:bg-white/90" onClick={() => document.querySelector('#thrift-products')?.scrollIntoView({ behavior: 'smooth' })}>

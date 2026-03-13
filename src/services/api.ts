@@ -702,6 +702,13 @@ export interface ThriftListing {
   updatedAt: string;
 }
 
+export interface ThriftStats {
+  itemsRehomed: number;
+  sellersCount: number;
+  co2SavedKg: number;
+  co2PerItemKg: number;
+}
+
 export interface ThriftItemFormData {
   name: string;
   brand: string;
@@ -718,6 +725,12 @@ export interface ThriftItemFormData {
 }
 
 export const thriftApi = {
+  // Public stats for Thrift hero section
+  getStats: async () => {
+    const response = await api.get<ApiResponse<ThriftStats>>('/thrift/listings/stats');
+    return response.data;
+  },
+
   // Submit a new listing with multiple items (+ optional images)
   createListing: async (formData: FormData) => {
     const response = await api.post<ApiResponse<ThriftListing>>('/thrift/listings', formData, {
