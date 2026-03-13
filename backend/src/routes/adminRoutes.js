@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
+const carouselController = require('../controllers/carouselController');
 const { protect, authorize } = require('../middlewares/auth');
 
 // All admin routes require authentication + ADMIN role
@@ -24,6 +25,10 @@ router.put('/users/:id/block', adminController.blockUser);
 router.put('/users/:id/unblock', adminController.unblockUser);
 router.put('/users/:id/coins', adminController.adjustUserCoins);
 router.delete('/users/:id', adminController.deleteUser);
+
+// Carousel management
+router.get('/carousels/:placement', carouselController.getAdminSlides);
+router.put('/carousels/:placement', carouselController.replaceSlides);
 
 // Thrift requests (listing review workflow)
 router.get('/thrift/requests', adminController.getAllThriftListings);

@@ -20,6 +20,26 @@ enum UserRole {
   ADMIN
 }
 
+enum CarouselPlacement {
+  HOME
+  SHOP
+}
+
+model CarouselSlide {
+  id         String            @id @default(uuid())
+  placement  CarouselPlacement
+  imageUrl   String
+  altText    String?
+  sortOrder  Int
+  isActive   Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@unique([placement, sortOrder])
+  @@index([placement, isActive])
+  @@map("carousel_slides")
+}
+
 model User {
   id        String   @id @default(uuid())
   name      String

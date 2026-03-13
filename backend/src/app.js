@@ -24,6 +24,7 @@ const returnRoutes = require('./routes/returnRoutes');
 const coinRoutes = require('./routes/coinRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const couponRoutes = require('./routes/couponRoutes');
+const carouselRoutes = require('./routes/carouselRoutes');
 
 // Create Express app
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/returns', returnRoutes);
 app.use('/api/coins', coinRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/carousels', carouselRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

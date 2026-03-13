@@ -116,6 +116,14 @@ export interface Product {
   updatedAt: string;
 }
 
+export type CarouselPlacement = 'HOME' | 'SHOP';
+
+export interface CarouselSlide {
+  imageUrl: string;
+  altText?: string | null;
+  sortOrder: number;
+}
+
 /** Sum of stock across all sizes */
 export const getTotalStock = (sizeStock?: Record<string, number>): number =>
   Object.values(sizeStock || {}).reduce((s, v) => s + (v || 0), 0);
@@ -351,6 +359,13 @@ export const productsApi = {
     const response = await api.delete<ApiResponse>(`/products/${productId}/images`, {
       data: { imagePath },
     });
+    return response.data;
+  },
+};
+
+export const carouselApi = {
+  getSlides: async (placement: CarouselPlacement) => {
+    const response = await api.get<ApiResponse<CarouselSlide[]>>(`/carousels/${placement}`);
     return response.data;
   },
 };

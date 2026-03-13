@@ -1,22 +1,33 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParallax } from "@/hooks/use-scroll-animation";
+import { carouselApi } from "@/services/api";
 import heroStore from "@/assets/about/hero-store.jpg";
-import heroRack from "@/assets/about/hero-rack.jpg";
-import heroFashion from "@/assets/about/hero-fashion.jpg";
 import carousel1 from "@/assets/about/carousel_1.png";
 import carousel2 from "@/assets/about/carousel_2.jpeg";
 import carousel3 from "@/assets/about/carousel_3.jpeg";
 import { ChevronDown } from "lucide-react";
 
-const SLIDES = [heroStore, carousel1, carousel2, carousel3];
+const FALLBACK_SLIDES = [heroStore, carousel1, carousel2, carousel3];
 const INTERVAL = 5000;
 const TRANSITION_MS = 900;
 
 export function HeroSection() {
   const scrollY = useParallax();
+  const { data: carouselResponse } = useQuery({
+    queryKey: ["carousel", "HOME"],
+    queryFn: () => carouselApi.getSlides("HOME"),
+    staleTime: 300000,
+  });
+
+  const remoteSlides = (carouselResponse?.data || [])
+    .map((slide) => slide.imageUrl)
+    .filter(Boolean);
+  const baseSlides = remoteSlides.length ? remoteSlides : FALLBACK_SLIDES;
+
   // Append a clone of the first slide for seamless looping
-  const slides = [...SLIDES, SLIDES[0]];
+  const slides = [...baseSlides, baseSlides[0]];
   const lastLoopIndex = slides.length - 1;
   const [index, setIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(true);
@@ -119,7 +130,7 @@ export function HeroSection() {
 
       {/* Slide dots */}
       <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-        {SLIDES.map((_, i) => (
+        {baseSlides.map((_, i) => (
           <button
             key={i}
             onClick={() => {
@@ -128,7 +139,7 @@ export function HeroSection() {
               startTimer();
             }}
             className={`h-1.5 rounded-full transition-all duration-300 ${
-              (index % SLIDES.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
+              (index % baseSlides.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
             }`}
           />
         ))}

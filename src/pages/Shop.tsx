@@ -1,7 +1,7 @@
 ﻿// Shop Page - Fetches products from backend API with filtering and pagination
 
 import { useState, useEffect, useRef } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { SlidersHorizontal, Grid3X3, LayoutGrid, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,14 @@ import { FilterSidebar, ShopFilters } from "@/components/shop/FilterSidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { productsApi, Product as ApiProduct, getTotalStock } from "@/services/api";
+import { productsApi, Product as ApiProduct, getTotalStock, carouselApi } from "@/services/api";
 import heroStore from "@/assets/about/hero-store.jpg";
-import heroRack from "@/assets/about/hero-rack.jpg";
-import heroFashion from "@/assets/about/hero-fashion.jpg";
+import carousel1 from "@/assets/about/carousel_1.png";
+import carousel2 from "@/assets/about/carousel_2.jpeg";
+import carousel3 from "@/assets/about/carousel_3.jpeg";
 
 // Carousel configuration
-const SLIDES = [heroStore, heroRack, heroFashion];
+const FALLBACK_SLIDES = [heroStore, carousel1, carousel2, carousel3];
 const INTERVAL = 5000;
 const TRANSITION_MS = 900;
 
@@ -67,8 +68,19 @@ export default function Shop() {
   const [minPrice, setMinPrice] = useState<number | undefined>();
   const [maxPrice, setMaxPrice] = useState<number | undefined>();
 
+  const { data: carouselResponse } = useQuery({
+    queryKey: ["carousel", "SHOP"],
+    queryFn: () => carouselApi.getSlides("SHOP"),
+    staleTime: 300000,
+  });
+
+  const remoteSlides = (carouselResponse?.data || [])
+    .map((slide) => slide.imageUrl)
+    .filter(Boolean);
+  const baseSlides = remoteSlides.length ? remoteSlides : FALLBACK_SLIDES;
+
   // Carousel state
-  const slides = [...SLIDES, SLIDES[0]]; // Clone first slide for seamless loop
+  const slides = [...baseSlides, baseSlides[0]]; // Clone first slide for seamless loop
   const lastLoopIndex = slides.length - 1;
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [transitioning, setTransitioning] = useState(true);
@@ -188,7 +200,7 @@ export default function Shop() {
 
         {/* Slide dots */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-          {SLIDES.map((_, i) => (
+          {baseSlides.map((_, i) => (
             <button
               key={i}
               onClick={() => { 
@@ -199,7 +211,7 @@ export default function Shop() {
                 startCarouselTimer();
               }}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                (carouselIndex % SLIDES.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
+                (carouselIndex % baseSlides.length) === i ? "w-6 bg-white" : "w-1.5 bg-white/40"
               }`}
               aria-label={`Go to slide ${i + 1}`}
             />
