@@ -185,7 +185,7 @@ export default function FAQ() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href="/contact">
-                <button className="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors">
+                <button className="px-6 py-3 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors dark:text-black">
                   Contact Support
                 </button>
               </a>

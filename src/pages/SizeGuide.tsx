@@ -52,12 +52,10 @@ export default function SizeGuide() {
           </div>
 
           <Tabs defaultValue="tops" className="space-y-6">
-            <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="tops">Tops</TabsTrigger>
               <TabsTrigger value="bottoms">Bottoms</TabsTrigger>
               <TabsTrigger value="dresses">Dresses</TabsTrigger>
-              <TabsTrigger value="shoes">Shoes</TabsTrigger>
-              <TabsTrigger value="accessories">Accessories</TabsTrigger>
             </TabsList>
 
             {/* Tops */}
@@ -260,136 +258,6 @@ export default function SizeGuide() {
               </div>
             </TabsContent>
 
-            {/* Shoes */}
-            <TabsContent value="shoes">
-              <div className="glass rounded-2xl border border-border/50 overflow-hidden">
-                <div className="p-6 bg-accent/5 border-b border-border/50">
-                  <h3 className="text-xl font-semibold">Footwear</h3>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    International size conversion
-                  </p>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border/50">
-                        <th className="text-left p-4 font-semibold">US</th>
-                        <th className="text-left p-4 font-semibold">UK</th>
-                        <th className="text-left p-4 font-semibold">EU</th>
-                        <th className="text-left p-4 font-semibold">Length (cm)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr className="border-b border-border/50">
-                        <td className="p-4">6</td>
-                        <td className="p-4 text-muted-foreground">3.5</td>
-                        <td className="p-4 text-muted-foreground">36</td>
-                        <td className="p-4 text-muted-foreground">22.9</td>
-                      </tr>
-                      <tr className="border-b border-border/50">
-                        <td className="p-4">7</td>
-                        <td className="p-4 text-muted-foreground">4.5</td>
-                        <td className="p-4 text-muted-foreground">37</td>
-                        <td className="p-4 text-muted-foreground">23.5</td>
-                      </tr>
-                      <tr className="border-b border-border/50">
-                        <td className="p-4">8</td>
-                        <td className="p-4 text-muted-foreground">5.5</td>
-                        <td className="p-4 text-muted-foreground">38.5</td>
-                        <td className="p-4 text-muted-foreground">24.1</td>
-                      </tr>
-                      <tr className="border-b border-border/50">
-                        <td className="p-4">9</td>
-                        <td className="p-4 text-muted-foreground">6.5</td>
-                        <td className="p-4 text-muted-foreground">40</td>
-                        <td className="p-4 text-muted-foreground">25.1</td>
-                      </tr>
-                      <tr className="border-b border-border/50">
-                        <td className="p-4">10</td>
-                        <td className="p-4 text-muted-foreground">7.5</td>
-                        <td className="p-4 text-muted-foreground">41.5</td>
-                        <td className="p-4 text-muted-foreground">26.2</td>
-                      </tr>
-                      <tr>
-                        <td className="p-4">11</td>
-                        <td className="p-4 text-muted-foreground">8.5</td>
-                        <td className="p-4 text-muted-foreground">43</td>
-                        <td className="p-4 text-muted-foreground">27.3</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </TabsContent>
-
-            {/* Accessories */}
-            <TabsContent value="accessories">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="glass rounded-2xl border border-border/50 overflow-hidden">
-                  <div className="p-6 bg-accent/5 border-b border-border/50">
-                    <h3 className="text-xl font-semibold">Belts</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border/50">
-                          <th className="text-left p-4 font-semibold">Size</th>
-                          <th className="text-left p-4 font-semibold">Waist (in)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-border/50">
-                          <td className="p-4">S</td>
-                          <td className="p-4 text-muted-foreground">28-30</td>
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="p-4">M</td>
-                          <td className="p-4 text-muted-foreground">32-34</td>
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="p-4">L</td>
-                          <td className="p-4 text-muted-foreground">36-38</td>
-                        </tr>
-                        <tr>
-                          <td className="p-4">XL</td>
-                          <td className="p-4 text-muted-foreground">40-42</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="glass rounded-2xl border border-border/50 overflow-hidden">
-                  <div className="p-6 bg-accent/5 border-b border-border/50">
-                    <h3 className="text-xl font-semibold">Hats</h3>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-border/50">
-                          <th className="text-left p-4 font-semibold">Size</th>
-                          <th className="text-left p-4 font-semibold">Head (cm)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr className="border-b border-border/50">
-                          <td className="p-4">S/M</td>
-                          <td className="p-4 text-muted-foreground">54-57</td>
-                        </tr>
-                        <tr className="border-b border-border/50">
-                          <td className="p-4">M/L</td>
-                          <td className="p-4 text-muted-foreground">57-60</td>
-                        </tr>
-                        <tr>
-                          <td className="p-4">L/XL</td>
-                          <td className="p-4 text-muted-foreground">60-63</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </TabsContent>
           </Tabs>
 
           <div className="mt-8 glass rounded-2xl border border-border/50 p-8 bg-gradient-to-br from-accent/10 to-transparent">

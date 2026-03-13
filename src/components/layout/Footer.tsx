@@ -12,9 +12,30 @@ export function Footer() {
   const { theme } = useTheme();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i;
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      toast({
+        title: "Email is required",
+        description: "Please enter your email before submitting.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!emailRegex.test(trimmedEmail)) {
+      toast({
+        title: "Invalid email",
+        description: "Please enter a valid email address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "You're all set",
       description: "We'll keep you posted on new arrivals and exclusive offers.",
@@ -109,7 +130,7 @@ export function Footer() {
                 className="bg-white/10 border-white/20 placeholder:text-white/50"
               />
               <Button type="submit" variant="secondary" className="px-4">
-                <Mail className="h-4 w-1" />
+                <Mail className="h-4 w-4" />
               </Button>
             </form>
           </div>

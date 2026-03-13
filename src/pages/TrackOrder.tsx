@@ -119,7 +119,7 @@ export default function TrackOrder() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Found in your orders
+                    (Found in your orders/order confirmation email)
                   </p>
                 </div>
 
