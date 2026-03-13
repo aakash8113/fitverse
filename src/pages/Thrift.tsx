@@ -13,6 +13,8 @@ import { productsApi, thriftApi } from "@/services/api";
 import { useScrollAnimation } from "@/hooks/use-scroll-animation";
 
 import thriftHero from "@/assets/thrift-hero.jpg";
+import thriftClosingBg from "@/assets/thrift_closing_bg.png";
+import thriftClosingBgPhone from "@/assets/thrift_closing_bg_phone.png";
 
 const formatCompact = (value: number) =>
   new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
@@ -274,27 +276,42 @@ const THRIFT_LIMIT = 20; // 4 cols x 5 rows
       </section>
 
       {/* Sustainability Banner */}
-      <section className="py-16 bg-thrift-green/5 dark:bg-[#1A1A1A]">
+      <section className="py-16 bg-[hsl(var(--page-background))]">
         <div className="section-container">
           <div
             ref={bannerRef}
-            className={`bg-thrift-green dark:bg-[#467A4B] rounded-3xl p-8 lg:p-12 text-white text-center transition-all duration-1000 ease-out ${
+            className={`relative rounded-3xl p-8 lg:p-12 text-center overflow-hidden transition-all duration-1000 ease-out ${
               bannerVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12 "
             }`}
           >
-            <Recycle className="w-12 h-12 mx-auto mb-6 animate-float" />
-            <h2 className="text-3xl font-bold mb-4">Join the Circular Fashion Movement</h2>
-            <p className="text-white/80 max-w-2xl mx-auto mb-6">
+            <img
+              src={thriftClosingBgPhone}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover sm:hidden"
+            />
+            <img
+              src={thriftClosingBg}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 hidden h-full w-full object-cover sm:block"
+            />
+
+            <div className="relative z-10">
+              <Recycle className="w-12 h-12 mx-auto mb-6 animate-float text-[#2b6b4d]" />
+              <h2 className="text-3xl font-bold mb-4 text-[#1f5a43]">Join the Circular Fashion Movement</h2>
+              <p className="text-[#2f5f49] max-w-2xl mx-auto mb-6">
               Every pre-loved item you buy or sell contributes to a more sustainable fashion industry.
               Together, we've prevented {formatCompact(totalItems)} clothing items from ending up in landfills and saved {formatKg(totalCo2SavedKg)} of CO₂.
-            </p>
-            <div className="flex justify-center gap-4">
-              <Button className="bg-white text-thrift-green hover:bg-white/90" onClick={() => document.querySelector('#thrift-products')?.scrollIntoView({ behavior: 'smooth' })}>
-                Start Shopping
-              </Button>
-              <Button className="bg-white text-thrift-green hover:bg-white/90" onClick={() => navigate('/thrift/sell')}>
-                Sell Your Items
-              </Button>
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button className="bg-white text-[#2b6b4d] hover:bg-[#f4f8f5] border border-[#cfe0d5] rounded-xl px-8" onClick={() => document.querySelector('#thrift-products')?.scrollIntoView({ behavior: 'smooth' })}>
+                  Start Shopping
+                </Button>
+                <Button className="bg-white text-[#2b6b4d] hover:bg-[#f4f8f5] border border-[#cfe0d5] rounded-xl px-8" onClick={() => navigate('/thrift/sell')}>
+                  Sell Your Items
+                </Button>
+              </div>
             </div>
           </div>
         </div>

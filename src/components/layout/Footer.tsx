@@ -3,11 +3,25 @@ import { Sparkles, Instagram, Twitter, Facebook, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 import logoBlack from "@/assets/logo_black.png";
 import logoWhite from "@/assets/logo_white.png";
 
 export function Footer() {
   const { theme } = useTheme();
+  const { toast } = useToast();
+  const [email, setEmail] = useState("");
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast({
+      title: "You're all set",
+      description: "We'll keep you posted on new arrivals and exclusive offers.",
+    });
+    setEmail("");
+  };
+
   return (
     <footer className="bg-[#0a0a0a] text-white">
       <div className="section-container py-16">
@@ -36,11 +50,15 @@ export function Footer() {
                   <Instagram className="h-5 w-5" />
                 </a>
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-white/10">
-                <Twitter className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="hover:bg-white/10" asChild>
+                <a href="https://www.instagram.com/fitverse.fof" target="_blank" rel="noopener noreferrer" aria-label="Fitverse Instagram">
+                  <Twitter className="h-5 w-5" />
+                </a>
               </Button>
-              <Button variant="ghost" size="icon" className="hover:bg-white/10">
-                <Facebook className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="hover:bg-white/10" asChild>
+                <a href="https://www.instagram.com/fitverse.fof" target="_blank" rel="noopener noreferrer" aria-label="Fitverse Instagram">
+                  <Facebook className="h-5 w-5" />
+                </a>
               </Button>
             </div>
           </div>
@@ -82,16 +100,18 @@ export function Footer() {
             <p className="text-sm text-white/70">
               Get the latest on new arrivals and exclusive offers.
             </p>
-            <div className="flex gap-2">
-              <Input 
-                type="email" 
-                placeholder="Enter your email" 
+            <form onSubmit={handleNewsletterSubmit} className="flex gap-2">
+              <Input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="bg-white/10 border-white/20 placeholder:text-white/50"
               />
-              <Button variant="secondary" size="icon">
-                <Mail className="h-4 w-4" />
+              <Button type="submit" variant="secondary" className="px-4">
+                <Mail className="h-4 w-1" />
               </Button>
-            </div>
+            </form>
           </div>
         </div>
 

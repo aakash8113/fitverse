@@ -1,5 +1,9 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "framer-motion";
+import namanPhoto from "@/assets/naman.jpeg";
+import aakashPhoto from "@/assets/aakash.png";
+import poojanPhoto from "@/assets/poojan.jpeg";
+import devamPhoto from "@/assets/devam.jpeg";
 
 const team = [
   {
@@ -7,28 +11,28 @@ const team = [
     role: "CEO",
     focus: "Vision & Strategy",
     bio: "3rd year Mechanical Engineering student with a passion for innovation and sustainable business practices.",
-    image: "https://randomuser.me/api/portraits/men/1.jpg",
+    image: namanPhoto,
   },
   {
     name: "Aakash Patel",
     role: "CTO",
     focus: "AI Engineer & Software Developer",
     bio: "3rd year Computer Science student with a passion for AI and software development.",
-    image: "https://randomuser.me/api/portraits/women/2.jpg",
+    image: aakashPhoto,
   },
   {
     name: "Poojan Jani",
     role: "CFO",
     focus: "Financial Strategy & Web Development",
     bio: "2nd year Computer Science student with a passion for finance and web development.",
-    image: "https://randomuser.me/api/portraits/men/3.jpg",
+    image: poojanPhoto,
   },
   {
     name: "Devam Patil",
     role: "CMO",
     focus: "Marketing & Design",
     bio: "3rd year Mechanical Engineering student with a passion for marketing and design.",
-    image: "https://randomuser.me/api/portraits/women/4.jpg",
+    image: devamPhoto,
   },
 ];
 
