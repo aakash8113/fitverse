@@ -97,7 +97,7 @@ export function Footer() {
 
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-sm text-white/50">
-            © 2025 Fitverse. All rights reserved.
+          
           </p>
           <div className="flex gap-6 text-sm text-white/50">
             <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>

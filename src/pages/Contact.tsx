@@ -38,10 +38,10 @@ export default function Contact() {
                 Our team is here to help
               </p>
               <a
-                href="mailto:support@fitverse.com"
+                href="mailto:fitverse901@gmail.com"
                 className="text-accent hover:text-accent/80 transition-colors"
               >
-                support@fitverse.com
+                fitverse901@gmail.com
               </a>
             </div>
 
@@ -51,13 +51,13 @@ export default function Contact() {
               </div>
               <h3 className="font-semibold mb-2">Call Us</h3>
               <p className="text-sm text-muted-foreground mb-3">
-                Mon-Fri 9am-6pm EST
+                Mon-Fri 9am-6pm IST
               </p>
               <a
-                href="tel:+15551234567"
+                href="tel:+919724392829"
                 className="text-accent hover:text-accent/80 transition-colors"
               >
-                +1 (555) 123-4567
+                +91 97243 92829
               </a>
             </div>
 
@@ -70,9 +70,9 @@ export default function Contact() {
                 Come say hello at our office
               </p>
               <p className="text-sm">
-                123 Fashion Street
+                A101 Bholebhavan
                 <br />
-                New York, NY 10001
+                Vadodara ,390001
               </p>
             </div>
           </div>
@@ -157,11 +157,11 @@ export default function Contact() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Monday - Friday</span>
-                    <span className="font-medium">9:00 AM - 6:00 PM EST</span>
+                    <span className="font-medium">9:00 AM - 6:00 PM IST</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Saturday</span>
-                    <span className="font-medium">10:00 AM - 4:00 PM EST</span>
+                    <span className="font-medium">10:00 AM - 4:00 PM IST</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Sunday</span>

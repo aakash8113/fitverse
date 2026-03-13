@@ -275,7 +275,7 @@ export default function ReturnPolicy() {
                   <span className="font-semibold">Phone:</span> +1 (555) 123-4567
                 </p>
                 <p>
-                  <span className="font-semibold">Hours:</span> Monday-Friday, 9am-6pm EST
+                  <span className="font-semibold">Hours:</span> Monday-Friday, 9am-6pm IST
                 </p>
               </div>
             </div>

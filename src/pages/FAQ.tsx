@@ -42,7 +42,7 @@ const faqCategories = [
       {
         question: "How long does shipping take?",
         answer:
-          "Standard shipping takes 5-7 business days, Express shipping takes 2-3 business days, and Next Day delivery is available for orders placed before 2 PM EST. International shipping varies by destination (7-14 business days).",
+          "Standard shipping takes 5-7 business days, Express shipping takes 2-3 business days, and Next Day delivery is available for orders placed before 2 PM IST. International shipping varies by destination (7-14 business days).",
       },
       {
         question: "Do you ship internationally?",
@@ -201,7 +201,7 @@ export default function FAQ() {
                   Contact Support
                 </button>
               </a>
-              <a href="mailto:support@fitverse.com">
+              <a href="mailto:fitverse901@gmail.com">
                 <button className="px-6 py-3 border border-border rounded-lg hover:bg-accent/5 transition-colors">
                   Email Us
                 </button>

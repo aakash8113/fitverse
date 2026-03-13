@@ -615,7 +615,7 @@ export default function ThriftSell() {
           <div className="flex gap-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-lg p-3 text-sm text-amber-800 dark:text-amber-200">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <p>
-              Estimated values are set by our team during review. We aim to offer <strong>40–60% of resale value</strong> based on condition and demand.
+              Estimated values are set by our team during review. Providing accurate details and clear photos helps is give you the best offer for your items!
             </p>
           </div>
         </div>
