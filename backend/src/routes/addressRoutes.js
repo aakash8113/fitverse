@@ -4,15 +4,15 @@
 const express = require('express');
 const router = express.Router();
 const addressController = require('../controllers/addressController');
-const { protect, requireEmailVerification } = require('../middlewares/auth');
+const { protect } = require('../middlewares/auth');
 const validate = require('../middlewares/validate');
 const {
   createAddressSchema,
   updateAddressSchema,
 } = require('../utils/validation');
 
-// All address routes require authentication and email verification
-router.use(protect, requireEmailVerification);
+// Address management requires authentication only.
+router.use(protect);
 
 // Address routes
 router.get('/', addressController.getAddresses);

@@ -90,10 +90,10 @@ const App = () => (
           <Route path="/fitverse-ai" element={<FitverseAI />} />
           <Route path="/thrift" element={<Thrift />} />
           <Route path="/thrift/sell" element={<ProtectedRoute requireVerification><ThriftSell /></ProtectedRoute>} />
-          <Route path="/thrift/my-listings" element={<ProtectedRoute requireVerification><ThriftMyListings /></ProtectedRoute>} />
+          <Route path="/thrift/my-listings" element={<ProtectedRoute><ThriftMyListings /></ProtectedRoute>} />
           
           {/* Cart & Checkout */}
-          <Route path="/cart" element={<ProtectedRoute requireVerification><Cart /></ProtectedRoute>} />
+          <Route path="/cart" element={<ProtectedRoute><Cart /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute requireVerification><Checkout /></ProtectedRoute>} />
           <Route path="/payment" element={<ProtectedRoute requireVerification><Payment /></ProtectedRoute>} />
           <Route path="/payment-return" element={<ProtectedRoute requireVerification><PaymentReturn /></ProtectedRoute>} />
@@ -108,11 +108,11 @@ const App = () => (
           
           {/* Account */}
           <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute requireVerification><Orders /></ProtectedRoute>} />
-          <Route path="/orders/:id" element={<ProtectedRoute requireVerification><OrderDetail /></ProtectedRoute>} />
-          <Route path="/addresses" element={<ProtectedRoute requireVerification><MyAddresses /></ProtectedRoute>} />
+          <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+          <Route path="/orders/:id" element={<ProtectedRoute><OrderDetail /></ProtectedRoute>} />
+          <Route path="/addresses" element={<ProtectedRoute><MyAddresses /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-          <Route path="/coins" element={<ProtectedRoute requireVerification><MyCoins /></ProtectedRoute>} />
+          <Route path="/coins" element={<ProtectedRoute><MyCoins /></ProtectedRoute>} />
           
           {/* Information Pages */}
           <Route path="/contact" element={<Contact />} />

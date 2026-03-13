@@ -4,15 +4,15 @@
 const express = require('express');
 const router = express.Router();
 const cartController = require('../controllers/cartController');
-const { protect, requireEmailVerification } = require('../middlewares/auth');
+const { protect } = require('../middlewares/auth');
 const validate = require('../middlewares/validate');
 const {
   addToCartSchema,
   updateCartItemSchema,
 } = require('../utils/validation');
 
-// All cart routes require authentication and email verification
-router.use(protect, requireEmailVerification);
+// Cart requires authentication only. Checkout/order placement remains verification-gated.
+router.use(protect);
 
 // Cart routes
 router.get('/', cartController.getCart);

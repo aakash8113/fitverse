@@ -11,16 +11,16 @@ const { createOrderSchema } = require('../utils/validation');
 // All order routes require authentication and email verification
 router.get('/track', orderController.trackOrder); // Public - no auth needed
 
-router.use(protect, requireEmailVerification);
+router.use(protect);
 
 // Admin route - Get all orders
 router.get('/admin/all', authorize('ADMIN'), orderController.getAllOrders);
 
 // User routes
-router.post('/', validate(createOrderSchema), orderController.createOrder);
+router.post('/', requireEmailVerification, validate(createOrderSchema), orderController.createOrder);
 router.get('/', orderController.getMyOrders);
 router.get('/:id', orderController.getOrderById);
-router.put('/:id/cancel', orderController.cancelOrder);
+router.put('/:id/cancel', requireEmailVerification, orderController.cancelOrder);
 
 // Admin route - Update order status
 router.put('/:id/status', authorize('ADMIN'), orderController.updateOrderStatus);

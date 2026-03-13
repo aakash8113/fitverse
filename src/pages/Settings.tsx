@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { User, Mail, Phone, Lock, Bell, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ import { useAuth } from "@/contexts/AuthContext";
 export default function Settings() {
   const { toast } = useToast();
   const { user, refreshUser } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [emailNotifications, setEmailNotifications] = useState(true);
   const [smsNotifications, setSmsNotifications] = useState(false);
   const [marketingEmails, setMarketingEmails] = useState(true);
@@ -41,6 +44,18 @@ export default function Settings() {
     setEmail(user.email || "");
     setPhone(user.phone || "");
   }, [user]);
+
+  useEffect(() => {
+    if (!user || user.isEmailVerified) return;
+    const params = new URLSearchParams(location.search);
+    if (params.get("verify") === "email") {
+      setShowEmailOtpInput(true);
+      toast({
+        title: "Email verification required",
+        description: "Some account features are disabled until your email is verified.",
+      });
+    }
+  }, [location.search, user, toast]);
 
   const updateProfileMutation = useMutation({
     mutationFn: authApi.updateProfile,
@@ -93,6 +108,14 @@ export default function Settings() {
       toast({ title: "Email verified", description: res.message || "Your email is now verified." });
       setEmailOtp("");
       setShowEmailOtpInput(false);
+
+      const redirectPath = sessionStorage.getItem("fitverse_post_verify_redirect");
+      if (redirectPath) {
+        sessionStorage.removeItem("fitverse_post_verify_redirect");
+        if (redirectPath !== "/settings" && redirectPath !== "/settings?verify=email") {
+          navigate(redirectPath);
+        }
+      }
     },
     onError: (err: any) => {
       const msg = err?.response?.data?.message || "Failed to verify email.";
@@ -224,6 +247,15 @@ export default function Settings() {
                   <h2 className="text-xl font-semibold">Personal Information</h2>
                 </div>
 
+                {!!user && !user.isEmailVerified && (
+                  <div className="mb-5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Email verification is pending</p>
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                      Some features are disabled until verification is complete: checkout, payment, thrift submissions, and return creation.
+                    </p>
+                  </div>
+                )}
+
                 <form className="space-y-4" onSubmit={handleSaveProfile}>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -285,6 +317,11 @@ export default function Settings() {
                           Confirm OTP
                         </Button>
                       </div>
+                    )}
+                    {!user?.isEmailVerified && (
+                      <p className="text-xs text-muted-foreground">
+                        Verify this email to unlock restricted features.
+                      </p>
                     )}
                   </div>
 

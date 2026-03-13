@@ -30,8 +30,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   if (requireVerification && user && !user.isEmailVerified) {
-    // Redirect to verification page if email not verified
-    return <Navigate to="/verify-email" state={{ email: user.email }} replace />;
+    // Redirect to account settings verification flow for logged-in users
+    return <Navigate to="/settings?verify=email" replace />;
   }
 
   return <>{children}</>;

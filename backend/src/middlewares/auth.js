@@ -6,6 +6,7 @@ const config = require('../config/env');
 const { UnauthorizedError, ForbiddenError } = require('../utils/errors');
 const prisma = require('../config/database');
 const asyncHandler = require('../utils/asyncHandler');
+const ApiResponse = require('../utils/apiResponse');
 
 /**
  * Verify JWT Token and attach user to request
@@ -91,7 +92,13 @@ const requireEmailVerification = (req, res, next) => {
   }
 
   if (!req.user.isEmailVerified) {
-    throw new ForbiddenError('Please verify your email first');
+    return ApiResponse.error(
+      res,
+      403,
+      'Please verify your email first. Some features are disabled until verification is complete.',
+      null,
+      'EMAIL_NOT_VERIFIED'
+    );
   }
 
   next();

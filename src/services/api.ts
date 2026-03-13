@@ -13,6 +13,16 @@ export const api = axios.create({
   withCredentials: false,
 });
 
+const isEmailNotVerifiedResponse = (error: AxiosError<ApiErrorResponse>) => {
+  const status = error.response?.status;
+  const code = error.response?.data?.code;
+  const message = String(error.response?.data?.message || '').toLowerCase();
+
+  if (status !== 403) return false;
+  if (code === 'EMAIL_NOT_VERIFIED') return true;
+  return message.includes('verify your email');
+};
+
 // Request interceptor - Add JWT token to requests
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -31,6 +41,16 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorResponse>) => {
+    if (isEmailNotVerifiedResponse(error)) {
+      const currentPath = window.location.pathname;
+      const inVerificationFlow = currentPath === '/settings' || currentPath === '/verify-email';
+
+      if (!inVerificationFlow) {
+        sessionStorage.setItem('fitverse_post_verify_redirect', `${window.location.pathname}${window.location.search}`);
+        window.location.href = '/settings?verify=email';
+      }
+    }
+
     // Handle unauthorized errors
     if (error.response?.status === 401) {
       // Don't redirect if we're already on the login page (to preserve form state)
@@ -78,6 +98,7 @@ export interface ApiResponse<T = any> {
 export interface ApiErrorResponse {
   success: false;
   message: string;
+  code?: string;
   errors?: Array<{ field: string; message: string }>;
 }
 

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, LogIn, LayoutDashboard, RotateCcw, Moon, Sun } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, LogIn, LayoutDashboard, RotateCcw, Moon, Sun, AlertCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -283,6 +283,25 @@ export function Navbar() {
             </Button>
           </div>
         </nav>
+
+        {isAuthenticated && user && !user.isEmailVerified && (
+          <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-amber-700 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>
+                  Email not verified. Some actions like checkout and thrift submissions are disabled until you verify.
+                </span>
+              </div>
+              <Link
+                to="/settings?verify=email"
+                className="text-xs sm:text-sm font-semibold underline underline-offset-2 text-amber-800 hover:text-amber-900 dark:text-amber-200 dark:hover:text-amber-100"
+              >
+                Verify now
+              </Link>
+            </div>
+          </div>
+        )}
 
         {isMenuOpen && (
           <div className="lg:hidden border-t border-border/50 py-4 animate-fade-in">

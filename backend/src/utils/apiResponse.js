@@ -23,8 +23,9 @@ class ApiResponse {
    * @param {Number} statusCode - HTTP status code
    * @param {String} message - Error message
    * @param {Object} errors - Validation errors (optional)
+   * @param {String} code - Stable error code for frontend branching (optional)
    */
-  static error(res, statusCode = 500, message = 'Internal Server Error', errors = null) {
+  static error(res, statusCode = 500, message = 'Internal Server Error', errors = null, code = null) {
     const response = {
       success: false,
       message,
@@ -32,6 +33,10 @@ class ApiResponse {
 
     if (errors) {
       response.errors = errors;
+    }
+
+    if (code) {
+      response.code = code;
     }
 
     return res.status(statusCode).json(response);
