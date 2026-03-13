@@ -43,7 +43,7 @@ export default function Shipping() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Order by 2 PM EST for same-day processing</span>
+                      <span>Order by 2 PM IST for same-day processing</span>
                     </div>
                   </div>
                 </div>
@@ -73,7 +73,7 @@ export default function Shipping() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Order by 12 PM EST for same-day processing</span>
+                      <span>Order by 12 PM IST for same-day processing</span>
                     </div>
                   </div>
                 </div>
@@ -98,7 +98,7 @@ export default function Shipping() {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Order by 10 AM EST for next-day delivery</span>
+                      <span>Order by 10 AM IST for next-day delivery</span>
                     </div>
                   </div>
                 </div>

@@ -7,7 +7,7 @@ const benefits = [
   {
     icon: Zap,
     title: "Instant Results",
-    description: "Get your virtual try-on in under 5 seconds",
+    description: "Instantly visualize your look with virtual try-on",
   },
   {
     icon: Eye,

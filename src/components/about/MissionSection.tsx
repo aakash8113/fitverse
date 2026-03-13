@@ -8,7 +8,7 @@ const problems = [
   },
   {
     keyword: "Sustainability",
-    text: "Fast fashion drives massive waste — 92 million tonnes of textile waste annually.",
+    text: "The global fashion industry generates around 92 million tonnes of textile waste each year,with fast fashion being a major contributor.",
   },
   {
     keyword: "Innovation",
