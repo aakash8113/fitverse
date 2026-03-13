@@ -404,7 +404,7 @@ export default function SizeGuide() {
               <div>
                 <h4 className="font-semibold mb-2">Free Returns</h4>
                 <p className="text-sm text-muted-foreground">
-                  Enjoy hassle-free returns within 30 days if the fit isn't perfect
+                  Enjoy hassle-free returns within 7 days if the fit isn't perfect
                 </p>
               </div>
               <div>

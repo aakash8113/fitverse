@@ -23,11 +23,7 @@ const faqCategories = [
         answer:
           "You can modify or cancel your order within 1 hour of placement by contacting our customer service. After this window, your order enters processing and cannot be changed. However, you can always return items according to our return policy.",
       },
-      {
-        question: "Do you offer gift cards?",
-        answer:
-          "Yes! Gift cards are available in denominations of ₹25, ₹50, ₹100, and ₹200. They can be purchased on our website and delivered via email instantly.",
-      },
+    
       {
         question: "Why was my payment declined?",
         answer:
@@ -42,17 +38,13 @@ const faqCategories = [
       {
         question: "How long does shipping take?",
         answer:
-          "Standard shipping takes 5-7 business days, Express shipping takes 2-3 business days, and Next Day delivery is available for orders placed before 2 PM IST. International shipping varies by destination (7-14 business days).",
+          "Standard shipping takes 5-7 business days."
       },
-      {
-        question: "Do you ship internationally?",
-        answer:
-          "Yes! We ship to over 100 countries worldwide. International shipping costs and delivery times vary by destination. Customs duties and taxes are the responsibility of the recipient.",
-      },
+     
       {
         question: "How can I track my order?",
         answer:
-          "Once your order ships, you'll receive a tracking number via email. You can track your package on our Track Order page or directly through the carrier's website (FedEx, UPS, USPS).",
+          "Once your order ships, you'll receive a tracking number in your orders. You can track your package on our Track Order page or directly through the our website"
       },
       {
         question: "What if my package is lost or damaged?",
@@ -68,7 +60,7 @@ const faqCategories = [
       {
         question: "What is your return policy?",
         answer:
-          "We offer 30-day returns for unworn, unwashed items with original tags attached. Returns are free for most items. Sale and final sale items cannot be returned. Refunds are processed within 5-7 business days of receiving your return.",
+          "We offer 7-day returns for unworn, unwashed items with original tags attached. Returns are free for most items. Sale and final sale items cannot be returned. Refunds are processed within 5-7 business days of receiving your return.",
       },
       {
         question: "How do I initiate a return?",
@@ -101,11 +93,7 @@ const faqCategories = [
         answer:
           "Most of our products run true to size, but this can vary by brand and style. Each product page includes fit information (e.g., 'runs small,' 'relaxed fit') and customer reviews with sizing feedback.",
       },
-      {
-        question: "Do you offer plus sizes?",
-        answer:
-          "Yes! We're committed to inclusivity and offer extended sizing (XS-3XL) across most of our collections. Look for the 'Extended Sizes' filter when shopping.",
-      },
+   
       {
         question: "How do I care for my garments?",
         answer:
@@ -120,7 +108,7 @@ const faqCategories = [
       {
         question: "Do I need an account to place an order?",
         answer:
-          "No, you can checkout as a guest. However, creating an account allows you to track orders, save addresses, view order history, and receive exclusive member benefits and early access to sales.",
+          "Yes, creating an account allows you to track orders, save addresses, view order history, and receive exclusive member benefits and early access to sales.",
       },
       {
         question: "How do I reset my password?",
@@ -135,7 +123,7 @@ const faqCategories = [
       {
         question: "Do you have a loyalty program?",
         answer:
-          "Yes! Our Fitverse Rewards program offers points for every purchase, birthday bonuses, early access to sales, and exclusive member-only events. Sign up is free and automatic when you create an account.",
+          "Yes! Our Fitverse Rewards program offers points for every purchase, early access to sales, and exclusive member-only events. Sign up is free and automatic when you create an account.",
       },
     ],
   },

@@ -43,7 +43,7 @@ export default function TermsOfService() {
                 <p>
                   If you do not agree with (or cannot comply with) Agreements, then you may
                   not use the Service, but please let us know by emailing at
-                  support@fitverse.com so we can try to find a solution.
+                  fitverse901@gmail.com so we can try to find a solution.
                 </p>
               </div>
             </div>
@@ -58,8 +58,7 @@ export default function TermsOfService() {
               </div>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  When you create an account with us, you guarantee that you are above the
-                  age of 18, and that the information you provide us is accurate, complete,
+                  When you create an account with us, you guarantee that the information you provide us is accurate, complete,
                   and current at all times. Inaccurate, incomplete, or obsolete information
                   may result in the immediate termination of your account on Service.
                 </p>
@@ -124,7 +123,7 @@ export default function TermsOfService() {
               <div className="space-y-4 text-muted-foreground">
                 <p>
                   We accept various payment methods including credit cards, debit cards,
-                  PayPal, and other digital payment methods. By submitting your payment
+                  and other digital payment methods. By submitting your payment
                   information, you authorize us to charge the applicable fees to your
                   selected payment method.
                 </p>
@@ -136,7 +135,7 @@ export default function TermsOfService() {
                 <p>
                   In the event of payment processing errors, we reserve the right to
                   correct such errors and will notify you of the correction. If payment is
-                  not received within 30 days of the invoice date, we reserve the right to
+                  not received within 7 days of the invoice date, we reserve the right to
                   suspend or terminate your access to the Service.
                 </p>
               </div>
@@ -224,11 +223,10 @@ export default function TermsOfService() {
                   </a>
                 </p>
                 <p>
-                  <span className="font-semibold">Address:</span> 123 Fashion Street, New
-                  York, NY 10001
+                  <span className="font-semibold">Address:</span> A101, Bholebhavan, Vadodara, 390001
                 </p>
                 <p>
-                  <span className="font-semibold">Phone:</span> +1 (555) 123-4567
+                  <span className="font-semibold">Phone:</span> +91 9724392829
                 </p>
               </div>
             </div>

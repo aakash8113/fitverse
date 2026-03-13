@@ -32,7 +32,7 @@ export default function PrivacyPolicy() {
                 </p>
                 <p>
                   If you have additional questions or require more information about our
-                  Privacy Policy, do not hesitate to contact us at privacy@fitverse.com.
+                  Privacy Policy, do not hesitate to contact us at fitverse901@gmail.com.
                 </p>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function PrivacyPolicy() {
                 </ul>
                 <p>
                   To exercise any of these rights, please contact us at
-                  privacy@fitverse.com. We will respond to your request within 30 days.
+                  fitverse901@gmail.com. We will respond to your request within 7 days.
                 </p>
               </div>
             </div>
@@ -250,18 +250,17 @@ export default function PrivacyPolicy() {
                 <p>
                   <span className="font-semibold">Email:</span>{" "}
                   <a
-                    href="mailto:privacy@fitverse.com"
+                    href="mailto:fitverse901@gmail.com"
                     className="text-accent hover:text-accent/80"
                   >
-                    privacy@fitverse.com
+                    fitverse901@gmail.com
                   </a>
                 </p>
                 <p>
-                  <span className="font-semibold">Address:</span> 123 Fashion Street, New
-                  York, NY 10001
+                  <span className="font-semibold">Address:</span> A101 Bholebhavan, Vadodara, 390001
                 </p>
                 <p>
-                  <span className="font-semibold">Phone:</span> +1 (555) 123-4567
+                  <span className="font-semibold">Phone:</span> +91 9724392829
                 </p>
               </div>
             </div>

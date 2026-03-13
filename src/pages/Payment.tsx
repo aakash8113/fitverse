@@ -456,7 +456,7 @@ export default function Payment() {
                     </span>
                     Secure checkout — your data is safe
                   </p>
-                  <p>Free returns within 30 days</p>
+                  <p>Free returns within 7 days</p>
                 </div>
               </div>
             </div>
