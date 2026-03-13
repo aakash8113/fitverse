@@ -49,18 +49,23 @@ export function MissionSection() {
             </div>
 
             <ScrollReveal direction="left" delay={0.6}>
-              <div className="flex gap-12 mt-12 pt-8 border-t border-border">
-                <div>
-                  <p className="text-3xl sm:text-4xl font-bold">73%</p>
-                  <p className="text-sm text-muted-foreground mt-1">Less Returns</p>
-                </div>
-                <div>
-                  <p className="text-3xl sm:text-4xl font-bold">2M+</p>
-                  <p className="text-sm text-muted-foreground mt-1">Virtual Try-Ons</p>
-                </div>
-                <div>
-                  <p className="text-3xl sm:text-4xl font-bold">4.9</p>
-                  <p className="text-sm text-muted-foreground mt-1">User Rating</p>
+              <div className="mt-12 pt-8 border-t border-border">
+                <p className="text-sm font-semibold tracking-[0.2em] uppercase text-foreground mb-6">
+                  Our Goals
+                </p>
+                <div className="flex gap-12">
+                  <div>
+                    <p className="text-3xl sm:text-4xl font-bold text-foreground">73%</p>
+                    <p className="text-sm text-muted-foreground mt-1">Less Returns</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl sm:text-4xl font-bold text-foreground">200K+</p>
+                    <p className="text-sm text-muted-foreground mt-1">Virtual Try-Ons</p>
+                  </div>
+                  <div>
+                    <p className="text-3xl sm:text-4xl font-bold text-foreground">2500 kg</p>
+                    <p className="text-sm text-muted-foreground mt-1">CO₂ Saving</p>
+                  </div>
                 </div>
               </div>
             </ScrollReveal>

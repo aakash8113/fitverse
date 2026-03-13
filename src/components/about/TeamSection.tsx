@@ -1,5 +1,5 @@
 import { ScrollReveal } from "./ScrollReveal";
-import { motion } from "framer-motion";
+import { ExternalLink } from "lucide-react";
 import namanPhoto from "@/assets/naman.jpeg";
 import aakashPhoto from "@/assets/aakash.png";
 import poojanPhoto from "@/assets/poojan.jpeg";
@@ -12,6 +12,7 @@ const team = [
     focus: "Vision & Strategy",
     bio: "3rd year Mechanical Engineering student with a passion for innovation and sustainable business practices.",
     image: namanPhoto,
+    linkedin: "https://www.linkedin.com/in/naman-tiwari-26a5b8362/",
   },
   {
     name: "Aakash Patel",
@@ -19,6 +20,7 @@ const team = [
     focus: "AI Engineer & Software Developer",
     bio: "3rd year Computer Science student with a passion for AI and software development.",
     image: aakashPhoto,
+    linkedin: "https://www.linkedin.com/in/aakash-patel-097885b3/",
   },
   {
     name: "Poojan Jani",
@@ -26,6 +28,7 @@ const team = [
     focus: "Financial Strategy & Web Development",
     bio: "2nd year Computer Science student with a passion for finance and web development.",
     image: poojanPhoto,
+    linkedin: "https://www.linkedin.com/in/poojan-jani-42332a282/",
   },
   {
     name: "Devam Patil",
@@ -33,6 +36,7 @@ const team = [
     focus: "Marketing & Design",
     bio: "3rd year Mechanical Engineering student with a passion for marketing and design.",
     image: devamPhoto,
+    linkedin: "https://www.linkedin.com/in/devam-patil555/",
   },
 ];
 
@@ -71,7 +75,18 @@ export function TeamSection() {
                     </p>
                   </div>
                 </div>
-                <h3 className="font-semibold text-lg">{member.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg">{member.name}</h3>
+                  <a
+                    href={member.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`${member.name} LinkedIn`}
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </div>
                 <p className="text-sm text-muted-foreground">{member.role}</p>
                 <p className="text-xs text-muted-foreground/70 mt-1 uppercase tracking-wider">
                   {member.focus}

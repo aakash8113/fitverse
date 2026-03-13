@@ -25,7 +25,6 @@ import Account from "./pages/Account";
 import Orders from "./pages/Orders";
 import OrderDetail from "./pages/OrderDetail";
 import MyAddresses from "./pages/MyAddresses";
-import PaymentMethods from "./pages/PaymentMethods";
 import Settings from "./pages/Settings";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
@@ -112,7 +111,6 @@ const App = () => (
           <Route path="/orders" element={<ProtectedRoute requireVerification><Orders /></ProtectedRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute requireVerification><OrderDetail /></ProtectedRoute>} />
           <Route path="/addresses" element={<ProtectedRoute requireVerification><MyAddresses /></ProtectedRoute>} />
-          <Route path="/payment-methods" element={<ProtectedRoute><PaymentMethods /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/coins" element={<ProtectedRoute requireVerification><MyCoins /></ProtectedRoute>} />
           

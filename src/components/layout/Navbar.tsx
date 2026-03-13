@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, CreditCard, LogIn, LayoutDashboard, RotateCcw, Moon, Sun } from "lucide-react";
+import { Search, ShoppingBag, User, Menu, X, Sparkles, Heart, Package, Settings, LogOut, MapPin, LogIn, LayoutDashboard, RotateCcw, Moon, Sun } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -242,12 +242,6 @@ export function Navbar() {
                         <Link to="/addresses" className="flex items-center cursor-pointer">
                           <MapPin className="mr-2 h-4 w-4" />
                           <span>Addresses</span>
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/payment-methods" className="flex items-center cursor-pointer">
-                          <CreditCard className="mr-2 h-4 w-4" />
-                          <span>Payment Methods</span>
                         </Link>
                       </DropdownMenuItem>
                       <DropdownMenuItem asChild>

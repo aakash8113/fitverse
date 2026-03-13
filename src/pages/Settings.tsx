@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { User, Mail, Phone, Lock, Bell, CreditCard, Loader2 } from "lucide-react";
+import { User, Mail, Phone, Lock, Bell, Loader2 } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -230,23 +229,6 @@ export default function Settings() {
                     </Button>
                   </div>
                 </form>
-              </div>
-
-              <div className="glass rounded-2xl border border-border/50 p-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-accent/10 rounded-lg flex items-center justify-center">
-                    <CreditCard className="h-5 w-5 text-accent" />
-                  </div>
-                  <h2 className="text-xl font-semibold">Payment Methods</h2>
-                </div>
-
-                <p className="text-sm text-muted-foreground mb-4">
-                  Manage your saved payment methods for faster checkout
-                </p>
-
-                <Link to="/payment-methods">
-                  <Button variant="outline">Manage Payment Methods</Button>
-                </Link>
               </div>
             </TabsContent>
           </Tabs>

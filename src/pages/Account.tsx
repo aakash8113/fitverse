@@ -68,7 +68,6 @@ export default function Account() {
     totalOrders: orders.length,
     wishlistItems: 0, // We don't have wishlist API yet
     savedAddresses: addresses.length,
-    paymentMethods: 0, // Placeholder
   };
 
   if (!user) {
