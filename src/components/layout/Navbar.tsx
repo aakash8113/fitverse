@@ -126,7 +126,7 @@ export function Navbar() {
                 ref={searchInputRef}
                 type="text"
                 placeholder="Search products..."
-                className="pl-9 pr-4 h-9 w-full rounded-full border-2 border-black bg-muted/50 focus:bg-background text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="pl-9 pr-4 h-9 w-full rounded-full border-2 border-black dark:border-white bg-muted/50 focus:bg-background text-sm focus-visible:ring-0 focus-visible:ring-offset-0"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => e.key === "Escape" && closeSearch()}
