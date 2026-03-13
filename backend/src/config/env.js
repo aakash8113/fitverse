@@ -72,6 +72,7 @@ const config = {
   email: {
     resendApiKey: process.env.RESEND_API_KEY,
     from: process.env.EMAIL_FROM || 'Fitverse <noreply@contact.fitverse.co.in>',
+    logoUrl: process.env.EMAIL_LOGO_URL || `${process.env.FRONTEND_URL}/logo_white.png`,
   },
 
   cloudinary: {

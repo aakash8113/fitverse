@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 import { FitverseCoinIcon } from '@/components/shared/FitverseCoinIcon';
 import {
-  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert, Trash2,
+  Search, Loader2, Eye, UserX, UserCheck, Download, ShieldAlert, Trash2, Copy,
 } from 'lucide-react';
 
 const MOCK_USERS: AdminUser[] = [
@@ -129,10 +129,20 @@ const AdminUsers: React.FC = () => {
     setDeleteDialogOpen(true);
   };
 
+  const copyUserId = async (id: string) => {
+    try {
+      await navigator.clipboard.writeText(id);
+      toast({ title: 'UUID copied' });
+    } catch {
+      toast({ title: 'Failed to copy UUID', variant: 'destructive' });
+    }
+  };
+
   const exportCSV = () => {
     const csv = [
-      ['Name', 'Email', 'Role', 'Email Verified', 'Orders', 'Joined', 'Blocked'],
+      ['UUID', 'Name', 'Email', 'Role', 'Email Verified', 'Orders', 'Joined', 'Blocked'],
       ...filtered.map((u) => [
+        u.id,
         u.name, u.email, u.role,
         u.isEmailVerified ? 'Yes' : 'No',
         u._count?.orders ?? 0,
@@ -212,6 +222,7 @@ const AdminUsers: React.FC = () => {
                 <thead>
                   <tr className="text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
                     <th className="text-left px-4 py-3 font-medium">User</th>
+                    <th className="text-left px-4 py-3 font-medium">UUID</th>
                     <th className="text-left px-4 py-3 font-medium">Role</th>
                     <th className="text-left px-4 py-3 font-medium">Verified</th>
                     <th className="text-left px-4 py-3 font-medium">Orders</th>
@@ -236,6 +247,20 @@ const AdminUsers: React.FC = () => {
                             <p className="font-medium text-gray-800 dark:text-gray-200">{user.name}</p>
                             <p className="text-xs text-gray-400 dark:text-gray-500">{user.email}</p>
                           </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 min-w-[240px]">
+                          <span className="font-mono text-[11px] text-gray-600 dark:text-gray-300 break-all">
+                            {user.id}
+                          </span>
+                          <button
+                            onClick={() => copyUserId(user.id)}
+                            className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
+                            title="Copy UUID"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -415,6 +440,22 @@ const AdminUsers: React.FC = () => {
               )}
 
               <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="col-span-2">
+                  <p className="text-gray-400 dark:text-gray-500 mb-0.5">UUID</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-mono text-[11px] text-gray-700 dark:text-gray-300 break-all">{selectedUser.id}</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-6 px-2"
+                      onClick={() => copyUserId(selectedUser.id)}
+                    >
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
+                    </Button>
+                  </div>
+                </div>
                 <div>
                   <p className="text-gray-400 dark:text-gray-500 mb-0.5">Phone</p>
                   <p className="text-gray-700 dark:text-gray-300">{selectedUser.phone || '—'}</p>

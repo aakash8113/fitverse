@@ -8,7 +8,15 @@ const logger = require('../config/logger');
 const resend = new Resend(config.email.resendApiKey);
 const FROM = config.email.from;
 const FRONT = process.env.FRONTEND_URL || 'http://localhost:5173';
-const EMAIL_LOGO_URL = `${FRONT}/src/assets/logo_white.png`;
+
+const resolveLogoUrl = (logoUrl) => {
+  if (!logoUrl) return `${FRONT}/logo_white.png`;
+  if (/^https?:\/\//i.test(logoUrl) || logoUrl.startsWith('data:')) return logoUrl;
+  if (logoUrl.startsWith('/')) return `${FRONT}${logoUrl}`;
+  return `${FRONT}/${logoUrl}`;
+};
+
+const EMAIL_LOGO_SRC = resolveLogoUrl(config.email.logoUrl);
 
 // ─────────────────────────────────────────────
 // Shared layout wrapper
@@ -36,7 +44,7 @@ function layout(content) {
                     <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
                       <tr>
                         <td style="vertical-align:middle;padding-right:10px;">
-                          <img src="${EMAIL_LOGO_URL}" alt="Fitverse Logo" width="26" height="26" style="display:block;border:0;outline:none;text-decoration:none;" />
+                          <img src="${EMAIL_LOGO_SRC}" alt="Fitverse Logo" width="26" height="26" style="display:block;border:0;outline:none;text-decoration:none;" />
                         </td>
                         <td style="vertical-align:middle;">
                           <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Fitverse</span>

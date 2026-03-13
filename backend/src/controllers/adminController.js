@@ -58,11 +58,10 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     totalThriftListings,
     ordersByMonth,
     recentOrders,
-    shopCategoryGroups,
-    thriftProductCount,
+    categoryGroups,
   ] = await Promise.all([
     prisma.user.count({ where: { role: 'USER' } }),
-    prisma.product.count(),
+    prisma.product.count({ where: { isActive: true } }),
     prisma.order.count(),
     prisma.thriftListing.count(),
     prisma.order.findMany({
@@ -82,10 +81,9 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     }),
     prisma.product.groupBy({
       by: ['category'],
-      where: { isThrift: false },
+      where: { isActive: true },
       _count: { _all: true },
     }),
-    prisma.product.count({ where: { isThrift: true } }),
   ]);
 
   // Monthly revenue for current year
@@ -111,11 +109,10 @@ const getDashboardStats = asyncHandler(async (req, res) => {
   };
 
   const inventoryByCategory = [
-    ...shopCategoryGroups.map((g) => ({
+    ...categoryGroups.map((g) => ({
       category: formatCategoryLabel(g.category),
       count: g._count._all,
     })),
-    ...(thriftProductCount > 0 ? [{ category: 'Thrift', count: thriftProductCount }] : []),
   ]
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);

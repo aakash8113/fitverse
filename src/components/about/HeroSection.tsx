@@ -6,9 +6,10 @@ import heroRack from "@/assets/about/hero-rack.jpg";
 import heroFashion from "@/assets/about/hero-fashion.jpg";
 import carousel1 from "@/assets/about/carousel_1.png";
 import carousel2 from "@/assets/about/carousel_2.jpeg";
+import carousel3 from "@/assets/about/carousel_3.jpeg";
 import { ChevronDown } from "lucide-react";
 
-const SLIDES = [heroStore, heroRack, heroFashion, carousel1, carousel2];
+const SLIDES = [heroStore, carousel1, carousel2, carousel3];
 const INTERVAL = 5000;
 const TRANSITION_MS = 900;
 

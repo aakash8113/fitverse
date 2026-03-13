@@ -68,10 +68,7 @@ const AdminDashboard: React.FC = () => {
   const { data: fallbackCategoryData = [] } = useQuery({
     queryKey: ['admin', 'inventory-category-fallback'],
     queryFn: async () => {
-      const [shopRes, thriftRes] = await Promise.all([
-        productsApi.getProducts({ page: 1, limit: 1000, isThrift: false }),
-        productsApi.getProducts({ page: 1, limit: 1000, isThrift: true }),
-      ]);
+      const productsRes = await productsApi.getProducts({ page: 1, limit: 1000 });
 
       const extractProducts = (payload: any) => {
         const d = payload?.data;
@@ -89,18 +86,13 @@ const AdminDashboard: React.FC = () => {
           .join(' ');
       };
 
-      const shopProducts = extractProducts(shopRes);
-      const thriftProducts = extractProducts(thriftRes);
+      const products = extractProducts(productsRes);
 
       const counts = new Map<string, number>();
-      shopProducts.forEach((p: any) => {
+      products.forEach((p: any) => {
         const key = formatCategoryLabel(p?.category);
         counts.set(key, (counts.get(key) || 0) + 1);
       });
-
-      if (thriftProducts.length > 0) {
-        counts.set('Thrift', (counts.get('Thrift') || 0) + thriftProducts.length);
-      }
 
       return Array.from(counts.entries())
         .map(([category, count]) => ({ category, count }))

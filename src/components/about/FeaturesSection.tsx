@@ -1,17 +1,17 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { motion } from "framer-motion";
 import {
-  Camera,
   ShoppingBag,
   Leaf,
   ShieldCheck,
   Star,
   TrendingUp,
 } from "lucide-react";
+import { RiBodyScanFill } from "react-icons/ri";
 import { useState, useEffect, useRef } from "react";
 
 const features = [
-  { icon: Camera, title: "Virtual Try-On Engine", description: "AI-powered body mapping for realistic garment visualization" },
+  { icon: RiBodyScanFill, title: "Virtual Try-On Engine", description: "AI-powered body mapping for realistic garment visualization" },
   { icon: ShoppingBag, title: "Integrated Shop Platform", description: "Curated collections from brands you love, all in one place" },
   { icon: Leaf, title: "Thrift Marketplace", description: "Buy and sell pre-loved fashion sustainably" },
   { icon: ShieldCheck, title: "Secure Image Processing", description: "Enterprise-grade encryption for all your photos and data" },
