@@ -1,6 +1,6 @@
 import { ScrollReveal } from "./ScrollReveal";
 import { Eye, Sparkles, Recycle, Users, ShieldCheck } from "lucide-react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { animate, motion, useMotionValue, useSpring } from "framer-motion";
 import { useRef } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import logoWhite from "@/assets/logo_white.png";
@@ -53,6 +53,12 @@ export function SolutionSection() {
     rotateY.set(0);
   };
 
+  const handleTapSpin = () => {
+    lastX.current = null;
+    accRotation.current += 360;
+    animate(rotateY, accRotation.current, { duration: 0.7, ease: "easeInOut" });
+  };
+
   return (
     <section className="py-24 sm:py-32 bg-background">
       <div className="section-container">
@@ -83,6 +89,7 @@ export function SolutionSection() {
                 src={logo}
                 alt="Fitverse Logo"
                 className="w-3/4 h-3/4 object-contain cursor-pointer drop-shadow-md"
+                onTap={handleTapSpin}
                 style={{ rotateY: smoothRotateY }}
               />
             </div>
