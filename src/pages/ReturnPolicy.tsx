@@ -29,7 +29,7 @@ export default function ReturnPolicy() {
                 <p>
                   At Fitverse, we want you to be completely satisfied with your purchase.
                   If you're not happy with your order, we offer a hassle-free 7-day return
-                  policy. Returns are free for most items within the United States.
+                  policy. Returns are free for most items within the Vadodara.
                 </p>
                 <p>
                   We stand behind the quality of our products and are committed to making
@@ -72,7 +72,6 @@ export default function ReturnPolicy() {
                   <h3 className="font-semibold text-foreground mb-2">✓ Items We Accept:</h3>
                   <ul className="list-disc list-inside space-y-2 ml-4">
                     <li>Unworn, unwashed clothing with original tags attached</li>
-                    <li>Shoes in original box with no signs of wear</li>
                     <li>Accessories in original packaging</li>
                     <li>Items in resaleable condition</li>
                   </ul>
@@ -81,12 +80,10 @@ export default function ReturnPolicy() {
                 <div>
                   <h3 className="font-semibold text-foreground mb-2">✗ Items We Cannot Accept:</h3>
                   <ul className="list-disc list-inside space-y-2 ml-4">
-                    <li>Underwear, swimwear, and intimate apparel (for hygiene reasons)</li>
-                    <li>Items marked as "Final Sale"</li>
+
                     <li>Worn, washed, or damaged items</li>
                     <li>Items without original tags or packaging</li>
                     <li>Gift cards</li>
-                    <li>Customized or personalized items</li>
                   </ul>
                 </div>
               </div>
@@ -157,7 +154,7 @@ export default function ReturnPolicy() {
                     <div>
                       <p className="font-semibold text-foreground">Ship Your Return</p>
                       <p className="text-sm">
-                        Drop off at any USPS, FedEx, or UPS location
+                        Drop off your location
                       </p>
                     </div>
                   </div>
@@ -217,22 +214,6 @@ export default function ReturnPolicy() {
               </div>
             </div>
 
-            {/* International Returns */}
-            <div className="glass rounded-2xl border border-border/50 p-8">
-              <h2 className="text-2xl font-semibold mb-4">International Returns</h2>
-              <div className="space-y-4 text-muted-foreground">
-                <p>
-                  International returns are accepted within 7 days. However, customers are
-                  responsible for return shipping costs. We recommend using a tracked
-                  shipping method as we cannot guarantee receipt of untracked returns.
-                </p>
-                <p>
-                  Original shipping costs and customs duties are non-refundable. Refunds
-                  will be issued in INR to your original payment method.
-                </p>
-              </div>
-            </div>
-
             {/* Damaged/Defective */}
             <div className="glass rounded-2xl border border-border/50 p-8">
               <div className="flex items-center gap-3 mb-4">
@@ -244,7 +225,7 @@ export default function ReturnPolicy() {
               <div className="space-y-4 text-muted-foreground">
                 <p>
                   If you receive a damaged or defective item, please contact us immediately
-                  at support@fitverse.com with photos of the damage. We'll arrange for a
+                  at fitverse901@gmail.com with photos of the damage. We'll arrange for a
                   replacement or full refund, including return shipping costs.
                 </p>
                 <p>
@@ -272,7 +253,7 @@ export default function ReturnPolicy() {
                   </a>
                 </p>
                 <p>
-                  <span className="font-semibold">Phone:</span> +1 (555) 123-4567
+                  <span className="font-semibold">Phone:</span> +91 9724392829
                 </p>
                 <p>
                   <span className="font-semibold">Hours:</span> Monday-Friday, 9am-6pm IST

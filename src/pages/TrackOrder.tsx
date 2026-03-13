@@ -119,7 +119,7 @@ export default function TrackOrder() {
                     />
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Found in your order confirmation email
+                    Found in your orders
                   </p>
                 </div>
 
@@ -281,8 +281,7 @@ export default function TrackOrder() {
               <h3 className="font-semibold mb-2">Delivery Times</h3>
               <p className="text-sm text-muted-foreground">
                 Standard: 5-7 days
-                <br />
-                Express: 2-3 days
+                
               </p>
             </div>
 

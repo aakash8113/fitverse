@@ -378,7 +378,7 @@ export default function MyAddresses() {
                   id="country"
                   value={formData.country}
                   onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="United States"
+                  placeholder="Vadodara"
                   required
                 />
               </div>

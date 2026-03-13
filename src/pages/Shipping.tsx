@@ -1,4 +1,4 @@
-﻿import { Truck, Package, Globe, Clock, DollarSign, MapPin } from "lucide-react";
+﻿import { Truck } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Link } from "react-router-dom";
@@ -19,117 +19,6 @@ export default function Shipping() {
           <p className="text-lg text-muted-foreground">
             Fast, reliable shipping options to get your fashion finds to you quickly
           </p>
-        </div>
-
-        {/* Shipping Options */}
-        <div className="max-w-5xl mx-auto mb-16">
-          <h2 className="text-2xl font-bold mb-6">Shipping Options</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Standard Shipping */}
-            <div className="glass rounded-2xl border border-border/50 p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Package className="h-6 w-6 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2">Standard Shipping</h3>
-                  <p className="text-muted-foreground mb-4">
-                    5-7 business days delivery
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>₹5.99 or FREE on orders over ₹75</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Order by 2 PM IST for same-day processing</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Express Shipping */}
-            <div className="glass rounded-2xl border border-accent/20 p-6 relative overflow-hidden">
-              <div className="absolute top-4 right-4">
-                <span className="bg-accent text-accent-foreground text-xs font-semibold px-2.5 py-1 rounded-full">
-                  POPULAR
-                </span>
-              </div>
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Truck className="h-6 w-6 text-accent" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2">Express Shipping</h3>
-                  <p className="text-muted-foreground mb-4">
-                    2-3 business days delivery
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>₹12.99 flat rate</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Order by 12 PM IST for same-day processing</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Day */}
-            <div className="glass rounded-2xl border border-border/50 p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Clock className="h-6 w-6 text-purple-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2">Next Day Delivery</h3>
-                  <p className="text-muted-foreground mb-4">
-                    1 business day delivery
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>₹24.99 flat rate</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>Order by 10 AM IST for next-day delivery</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* International */}
-            <div className="glass rounded-2xl border border-border/50 p-6">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Globe className="h-6 w-6 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-2">International</h3>
-                  <p className="text-muted-foreground mb-4">
-                    7-14 business days delivery
-                  </p>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>Varies by destination</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span>Available to 100+ countries</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Shipping Policy */}
@@ -162,24 +51,13 @@ export default function Shipping() {
             <div>
               <h3 className="text-lg font-semibold mb-3">Shipping Restrictions</h3>
               <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                <li>We currently ship to addresses in the United States and select international destinations</li>
+                <li>We currently ship to addresses in the Vadodara and select destinations</li>
                 <li>PO Box addresses are accepted for standard shipping only</li>
                 <li>We cannot ship to military APO/FPO addresses at this time</li>
                 <li>Some remote locations may require additional delivery time</li>
               </ul>
             </div>
 
-            <div>
-              <h3 className="text-lg font-semibold mb-3">International Orders</h3>
-              <p className="text-muted-foreground">
-                International customers are responsible for any customs, duties, or taxes imposed by 
-                their country. Shipping times do not include customs processing. For questions about 
-                international shipping, please{" "}
-                <Link to="/contact" className="text-accent hover:underline">
-                  contact our support team
-                </Link>.
-              </p>
-            </div>
 
             <div>
               <h3 className="text-lg font-semibold mb-3">Lost or Damaged Packages</h3>
@@ -192,36 +70,7 @@ export default function Shipping() {
           </div>
         </div>
 
-        {/* FAQ Section */}
-        <div className="max-w-5xl mx-auto mb-16">
-          <h2 className="text-2xl font-bold mb-6">Frequently Asked Questions</h2>
-          <div className="space-y-4">
-            <div className="glass rounded-xl border border-border/50 p-6">
-              <h3 className="font-semibold mb-2">Can I change my shipping address after placing an order?</h3>
-              <p className="text-muted-foreground text-sm">
-                If your order hasn't shipped yet, we can update the shipping address. Please contact 
-                us immediately with your order number and new address.
-              </p>
-            </div>
-
-            <div className="glass rounded-xl border border-border/50 p-6">
-              <h3 className="font-semibold mb-2">Do you offer same-day delivery?</h3>
-              <p className="text-muted-foreground text-sm">
-                Same-day delivery is currently available in select metropolitan areas. Check your 
-                zip code at checkout to see if you qualify.
-              </p>
-            </div>
-
-            <div className="glass rounded-xl border border-border/50 p-6">
-              <h3 className="font-semibold mb-2">What if I need my order by a specific date?</h3>
-              <p className="text-muted-foreground text-sm">
-                We recommend selecting Express or Next Day shipping for time-sensitive orders. While 
-                we make every effort to meet delivery estimates, we cannot guarantee delivery by a 
-                specific date due to carrier variables.
-              </p>
-            </div>
-          </div>
-        </div>
+        
 
         {/* CTA */}
         <div className="text-center">
