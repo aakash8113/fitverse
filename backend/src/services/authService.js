@@ -209,6 +209,19 @@ class AuthService {
     // Find user
     const user = await prisma.user.findUnique({
       where: { email },
+      // Select only fields needed for login to avoid failures when non-auth columns drift.
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        password: true,
+        role: true,
+        isEmailVerified: true,
+        isPhoneVerified: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     if (!user) {

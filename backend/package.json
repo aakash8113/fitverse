@@ -9,6 +9,8 @@
     "start": "node server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:push": "prisma db push",
     "prisma:studio": "prisma studio",
     "prisma:seed": "node prisma/seed.js",
     "prisma:seed:carousel": "node prisma/seedCarousel.js"

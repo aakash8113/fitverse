@@ -5,6 +5,13 @@ const asyncHandler = require('../utils/asyncHandler');
 const prisma = require('../config/database');
 const { NotFoundError, BadRequestError, ForbiddenError } = require('../utils/errors');
 
+const isMissingReviewSchemaError = (error) => {
+  if (!error) return false;
+  if (error.code === 'P2021' || error.code === 'P2022') return true;
+  const raw = `${error.message || ''} ${error.meta?.table || ''} ${error.meta?.column || ''}`.toLowerCase();
+  return raw.includes('reviews') || raw.includes('review_helpful');
+};
+
 // (Image upload middleware is applied in reviewRoutes.js via upload.review)
 
 // ============================================
@@ -20,26 +27,36 @@ const getProductReviews = asyncHandler(async (req, res) => {
   const product = await prisma.product.findUnique({ where: { id: productId } });
   if (!product) throw new NotFoundError('Product not found');
 
-  const [reviews, total] = await Promise.all([
-    prisma.review.findMany({
-      where: { productId },
-      include: {
-        user: { select: { id: true, name: true } },
-        helpfulBy: { select: { userId: true } },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.review.count({ where: { productId } }),
-  ]);
+  let reviews = [];
+  let total = 0;
+  let allRatings = [];
 
-  // Rating distribution and average
-  const allRatings = await prisma.review.groupBy({
-    by: ['rating'],
-    where: { productId },
-    _count: { rating: true },
-  });
+  try {
+    [reviews, total] = await Promise.all([
+      prisma.review.findMany({
+        where: { productId },
+        include: {
+          user: { select: { id: true, name: true } },
+          helpfulBy: { select: { userId: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.review.count({ where: { productId } }),
+    ]);
+
+    // Rating distribution and average
+    allRatings = await prisma.review.groupBy({
+      by: ['rating'],
+      where: { productId },
+      _count: { rating: true },
+    });
+  } catch (error) {
+    if (!isMissingReviewSchemaError(error)) {
+      throw error;
+    }
+  }
 
   const distribution = [5, 4, 3, 2, 1].map((star) => {
     const found = allRatings.find((r) => r.rating === star);
