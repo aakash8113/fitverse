@@ -135,26 +135,76 @@ class ProductService {
     else if (query.sortBy === 'price-high') orderBy = { price: 'desc' };
     else if (query.sortBy === 'oldest') orderBy = { createdAt: 'asc' };
 
-    // Get products with total count
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy,
-      }),
-      prisma.product.count({ where }),
-    ]);
+    try {
+      // Primary query path
+      const [products, total] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+        }),
+        prisma.product.count({ where }),
+      ]);
 
-    return {
-      products,
-      pagination: {
-        currentPage: page,
-        itemsPerPage: limit,
-        totalItems: total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+      return {
+        products,
+        pagination: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (err) {
+      // Fallback keeps storefront usable if strict Prisma query fails due env/schema drift.
+      logger.error(`Primary product query failed, using fallback: ${err.message}`);
+
+      const thriftFilter = where.isThrift === true
+        ? ' AND "isThrift" = true'
+        : where.isThrift === false
+          ? ' AND "isThrift" = false'
+          : '';
+
+      const fallbackProducts = await prisma.$queryRawUnsafe(
+        `SELECT id, name, description, price, brand, images, "isThrift", "isActive", "createdAt", "updatedAt"
+         FROM "products"
+         WHERE "isActive" = true${thriftFilter}
+         ORDER BY "createdAt" DESC
+         LIMIT $1 OFFSET $2`,
+        limit,
+        skip
+      );
+
+      const fallbackCountRows = await prisma.$queryRawUnsafe(
+        `SELECT COUNT(*)::int AS total
+         FROM "products"
+         WHERE "isActive" = true${thriftFilter}`
+      );
+
+      const total = fallbackCountRows?.[0]?.total || 0;
+
+      const products = fallbackProducts.map((row) => ({
+        ...row,
+        gender: row.gender || null,
+        wearType: row.wearType || null,
+        category: row.category || null,
+        subCategory: row.subCategory || null,
+        availableSizes: Array.isArray(row.availableSizes) ? row.availableSizes : [],
+        thriftCondition: row.thriftCondition || null,
+        sizeStock: row.sizeStock || {},
+      }));
+
+      return {
+        products,
+        pagination: {
+          currentPage: page,
+          itemsPerPage: limit,
+          totalItems: total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    }
   }
 
   /**
