@@ -16,7 +16,8 @@ const resolveLogoUrl = (logoUrl) => {
   return `${FRONT}/${logoUrl}`;
 };
 
-const EMAIL_LOGO_SRC = resolveLogoUrl(config.email.logoUrl);
+const EMAIL_LOGO_SRC_LIGHT = resolveLogoUrl(config.email.logoUrl);
+const EMAIL_LOGO_SRC_DARK = resolveLogoUrl(config.email.logoUrlBlack);
 
 // ─────────────────────────────────────────────
 // Shared layout wrapper
@@ -27,7 +28,27 @@ function layout(content) {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="supported-color-schemes" content="light dark" />
   <title>Fitverse</title>
+  <style>
+    .fitverse-header { background-color: #f3f4f6 !important; }
+    .fitverse-brand { color: #111827 !important; }
+    .fitverse-logo-light { display: none !important; }
+    .fitverse-logo-dark { display: block !important; }
+
+    @media (prefers-color-scheme: dark) {
+      .fitverse-header { background-color: #18181b !important; }
+      .fitverse-brand { color: #ffffff !important; }
+      .fitverse-logo-light { display: block !important; }
+      .fitverse-logo-dark { display: none !important; }
+    }
+
+    [data-ogsc] .fitverse-header { background-color: #18181b !important; }
+    [data-ogsc] .fitverse-brand { color: #ffffff !important; }
+    [data-ogsc] .fitverse-logo-light { display: block !important; }
+    [data-ogsc] .fitverse-logo-dark { display: none !important; }
+  </style>
 </head>
 <body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
@@ -37,17 +58,18 @@ function layout(content) {
 
           <!-- Header -->
           <tr>
-            <td style="background:#18181b;border-radius:16px 16px 0 0;padding:28px 40px;">
+            <td class="fitverse-header" bgcolor="#f3f4f6" style="background:#f3f4f6;border-radius:16px 16px 0 0;padding:28px 40px;">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
                     <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
                       <tr>
                         <td style="vertical-align:middle;padding-right:10px;">
-                          <img src="${EMAIL_LOGO_SRC}" alt="Fitverse Logo" width="26" height="26" style="display:block;border:0;outline:none;text-decoration:none;" />
+                          <img src="${EMAIL_LOGO_SRC_LIGHT}" alt="Fitverse Logo" width="26" height="26" class="fitverse-logo-light" style="display:none;border:0;outline:none;text-decoration:none;" />
+                          <img src="${EMAIL_LOGO_SRC_DARK}" alt="Fitverse Logo" width="26" height="26" class="fitverse-logo-dark" style="display:block;border:0;outline:none;text-decoration:none;" />
                         </td>
                         <td style="vertical-align:middle;">
-                          <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Fitverse</span>
+                          <span class="fitverse-brand" style="font-size:22px;font-weight:700;color:#111827;letter-spacing:-0.5px;">Fitverse</span>
                         </td>
                       </tr>
                     </table>
