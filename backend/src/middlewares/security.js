@@ -22,6 +22,19 @@ const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs, // 15 minutes default
   max: config.rateLimit.maxRequests, // 100 requests per window default
   keyGenerator: getClientIp,
+  skip: (req) => {
+    // Avoid throttling read-only browsing routes in production.
+    if (req.method === 'GET') {
+      const url = req.originalUrl || '';
+      return (
+        url.startsWith('/api/products') ||
+        url.startsWith('/api/thrift/listings/stats') ||
+        url.startsWith('/api/carousels') ||
+        url.startsWith('/health')
+      );
+    }
+    return false;
+  },
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -93,6 +106,8 @@ const corsOptions = {
 
     const allowedOrigins = [
       ...configuredOrigins,
+      'https://fitverse.co.in',
+      'https://www.fitverse.co.in',
       'http://localhost:5173',
       'http://localhost:3000',
       'http://127.0.0.1:5173',

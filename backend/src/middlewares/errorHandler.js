@@ -65,6 +65,12 @@ const errorHandler = (err, req, res, next) => {
     }
   }
 
+  // CORS errors from cors middleware callback
+  if (err.message === 'Not allowed by CORS') {
+    statusCode = 403;
+    message = 'Origin not allowed by CORS policy';
+  }
+
   // Don't expose internal errors in production
   if (process.env.NODE_ENV === 'production' && statusCode === 500) {
     message = 'Internal Server Error';
