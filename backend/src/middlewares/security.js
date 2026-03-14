@@ -74,14 +74,22 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
+    const configuredOrigins = String(config.frontend.url || '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
     const allowedOrigins = [
-      config.frontend.url,
+      ...configuredOrigins,
       'http://localhost:5173',
       'http://localhost:3000',
       'http://127.0.0.1:5173',
     ];
 
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    const isPreviewHost = /https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)
+      || /https:\/\/[a-z0-9-]+\.netlify\.app$/i.test(origin);
+
+    if (allowedOrigins.indexOf(origin) !== -1 || isPreviewHost || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
