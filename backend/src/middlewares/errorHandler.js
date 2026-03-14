@@ -3,6 +3,7 @@
 
 const logger = require('../config/logger');
 const ApiResponse = require('../utils/apiResponse');
+const { isSchemaMismatchError, isTransientDbError } = require('../utils/dbErrors');
 
 /**
  * Error Handler Middleware
@@ -56,6 +57,20 @@ const errorHandler = (err, req, res, next) => {
         message = 'Database error';
         code = err.code;
     }
+  }
+
+  // Handle non-Prisma or driver-level schema drift errors consistently.
+  if (isSchemaMismatchError(err)) {
+    statusCode = 503;
+    message = 'Database schema is updating. Please retry in a few seconds';
+    code = 'DB_SCHEMA_MISMATCH';
+  }
+
+  // Handle transient DB outages/timeouts consistently.
+  if (isTransientDbError(err)) {
+    statusCode = 503;
+    message = 'Database is temporarily unavailable. Please retry in a few seconds';
+    code = 'DB_UNAVAILABLE';
   }
 
   // JWT errors

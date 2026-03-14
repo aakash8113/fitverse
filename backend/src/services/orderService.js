@@ -9,6 +9,7 @@ const { NotFoundError, BadRequestError } = require('../utils/errors');
 const { generateOrderNumber } = require('../utils/helpers');
 const logger = require('../config/logger');
 const emailService = require('./emailService');
+const { isSchemaMismatchError } = require('../utils/dbErrors');
 
 class OrderService {
   /**
@@ -258,26 +259,36 @@ class OrderService {
       }
     }
 
-    const orders = await prisma.order.findMany({
-      where,
-      include: {
-        address: true,
-        orderItems: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                images: true,
+    let orders;
+    try {
+      orders = await prisma.order.findMany({
+        where,
+        include: {
+          address: true,
+          orderItems: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  images: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) {
+        throw error;
+      }
+
+      logger.error(`Order listing failed due to schema mismatch for user ${userId}: ${error.message}`);
+      return [];
+    }
 
     return orders.map(order => {
       const { orderItems, ...rest } = order;

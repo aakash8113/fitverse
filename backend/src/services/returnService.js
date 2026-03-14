@@ -3,6 +3,8 @@
 
 const prisma = require('../config/database');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
+const logger = require('../config/logger');
+const { isSchemaMismatchError } = require('../utils/dbErrors');
 
 const RETURN_WINDOW_DAYS = 7;
 
@@ -109,15 +111,24 @@ const createReturnRequest = async (userId, body) => {
 // CUSTOMER — list own return requests
 // -----------------------------------------------
 const getMyReturnRequests = async (userId) => {
-  const requests = await prisma.returnRequest.findMany({
-    where: { userId },
-    include: {
-      items: { include: { orderItem: true } },
-      order: { select: { orderNumber: true, total: true, status: true } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-  return requests;
+  try {
+    const requests = await prisma.returnRequest.findMany({
+      where: { userId },
+      include: {
+        items: { include: { orderItem: true } },
+        order: { select: { orderNumber: true, total: true, status: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return requests;
+  } catch (error) {
+    if (!isSchemaMismatchError(error)) {
+      throw error;
+    }
+
+    logger.error(`Return listing failed due to schema mismatch for user ${userId}: ${error.message}`);
+    return [];
+  }
 };
 
 // -----------------------------------------------

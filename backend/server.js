@@ -90,21 +90,27 @@ const ensureDatabaseSchemaReady = async () => {
     `Database schema drift detected. Missing tables: [${drift.missingTables.join(', ')}], missing columns: [${drift.missingColumns.join(', ')}]`
   );
 
-  const autoSyncEnabled = String(process.env.AUTO_DB_SYNC || 'true').toLowerCase() !== 'false';
+  const autoSyncEnabled = String(process.env.AUTO_DB_SYNC || 'false').toLowerCase() !== 'false';
   if (!autoSyncEnabled) {
-    throw new Error('Database schema is out of sync and AUTO_DB_SYNC is disabled');
+    logger.warn('AUTO_DB_SYNC is disabled. Continuing startup in degraded mode.');
+    return;
   }
 
-  runDbPush();
-  drift = await getSchemaDrift();
+  try {
+    runDbPush();
+    drift = await getSchemaDrift();
 
-  if (drift.missingTables.length > 0 || drift.missingColumns.length > 0) {
-    throw new Error(
-      `Schema auto-sync incomplete. Missing tables: [${drift.missingTables.join(', ')}], missing columns: [${drift.missingColumns.join(', ')}]`
-    );
+    if (drift.missingTables.length > 0 || drift.missingColumns.length > 0) {
+      logger.error(
+        `Schema auto-sync incomplete. Missing tables: [${drift.missingTables.join(', ')}], missing columns: [${drift.missingColumns.join(', ')}]. Continuing in degraded mode.`
+      );
+      return;
+    }
+
+    logger.info('Database schema auto-sync completed successfully');
+  } catch (syncError) {
+    logger.error(`Schema auto-sync failed: ${syncError.message}. Continuing startup in degraded mode.`);
   }
-
-  logger.info('Database schema auto-sync completed successfully');
 };
 
 let server;

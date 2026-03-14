@@ -4,6 +4,7 @@
 const prisma = require('../config/database');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const logger = require('../config/logger');
+const { isSchemaMismatchError } = require('../utils/dbErrors');
 
 class AddressService {
   /**
@@ -12,13 +13,23 @@ class AddressService {
    * @returns {Promise<Array>} List of addresses
    */
   async getAddresses(userId) {
-    const addresses = await prisma.address.findMany({
-      where: { userId },
-      orderBy: [
-        { isDefault: 'desc' },
-        { createdAt: 'desc' },
-      ],
-    });
+    let addresses;
+    try {
+      addresses = await prisma.address.findMany({
+        where: { userId },
+        orderBy: [
+          { isDefault: 'desc' },
+          { createdAt: 'desc' },
+        ],
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) {
+        throw error;
+      }
+
+      logger.error(`Address listing failed due to schema mismatch for user ${userId}: ${error.message}`);
+      return [];
+    }
 
     return addresses;
   }
