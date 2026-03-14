@@ -185,14 +185,23 @@ class ProductService {
       const total = fallbackCountRows?.[0]?.total || 0;
 
       const products = fallbackProducts.map((row) => ({
-        ...row,
-        gender: row.gender || null,
-        wearType: row.wearType || null,
-        category: row.category || null,
-        subCategory: row.subCategory || null,
-        availableSizes: Array.isArray(row.availableSizes) ? row.availableSizes : [],
-        thriftCondition: row.thriftCondition || null,
-        sizeStock: row.sizeStock || {},
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
+        brand: row.brand || null,
+        gender: null,
+        wearType: null,
+        category: null,
+        subCategory: null,
+        availableSizes: [],
+        isThrift: !!row.isThrift,
+        thriftCondition: null,
+        images: Array.isArray(row.images) ? row.images : [],
+        sizeStock: {},
+        isActive: !!row.isActive,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
       }));
 
       return {
