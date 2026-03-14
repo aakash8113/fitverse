@@ -6,6 +6,14 @@ const helmet = require('helmet');
 const cors = require('cors');
 const config = require('../config/env');
 
+const getClientIp = (req) => {
+  const forwarded = req.headers['x-forwarded-for'];
+  if (typeof forwarded === 'string' && forwarded.length > 0) {
+    return forwarded.split(',')[0].trim();
+  }
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+};
+
 /**
  * Rate Limiter
  * Prevents brute force attacks and API abuse
@@ -13,6 +21,7 @@ const config = require('../config/env');
 const limiter = rateLimit({
   windowMs: config.rateLimit.windowMs, // 15 minutes default
   max: config.rateLimit.maxRequests, // 100 requests per window default
+  keyGenerator: getClientIp,
   message: 'Too many requests from this IP, please try again later',
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
@@ -25,6 +34,7 @@ const limiter = rateLimit({
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 5, // 5 requests per window
+  keyGenerator: getClientIp,
   message: 'Too many authentication attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -34,6 +44,7 @@ const authLimiter = rateLimit({
 const otpRequestLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 3,
+  keyGenerator: getClientIp,
   message: 'Too many OTP requests, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
@@ -43,6 +54,7 @@ const otpRequestLimiter = rateLimit({
 const otpVerifyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
+  keyGenerator: getClientIp,
   message: 'Too many OTP verification attempts, please try again later',
   standardHeaders: true,
   legacyHeaders: false,
