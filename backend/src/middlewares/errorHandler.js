@@ -11,6 +11,7 @@ const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
   let errors = err.errors || null;
+  let code = err.code || null;
 
   // Log error
   if (statusCode === 500) {
@@ -24,25 +25,36 @@ const errorHandler = (err, req, res, next) => {
   // Prisma errors
   if (err.code) {
     switch (err.code) {
+      case 'P2021':
+      case 'P2022':
+        // Table or column does not exist -> schema drift between code and DB.
+        statusCode = 503;
+        message = 'Database schema is updating. Please retry in a few seconds';
+        code = 'DB_SCHEMA_MISMATCH';
+        break;
       case 'P2002':
         // Unique constraint violation
         const field = err.meta?.target?.[0] || 'field';
         statusCode = 409;
         message = `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`;
+        code = 'P2002';
         break;
       case 'P2025':
         // Record not found
         statusCode = 404;
         message = 'Record not found';
+        code = 'P2025';
         break;
       case 'P2003':
         // Foreign key constraint failed
         statusCode = 400;
         message = 'Invalid reference';
+        code = 'P2003';
         break;
       default:
         statusCode = 500;
         message = 'Database error';
+        code = err.code;
     }
   }
 
@@ -50,14 +62,17 @@ const errorHandler = (err, req, res, next) => {
   if (err.name === 'JsonWebTokenError') {
     statusCode = 401;
     message = 'Invalid token';
+    code = 'INVALID_TOKEN';
   } else if (err.name === 'TokenExpiredError') {
     statusCode = 401;
     message = 'Token expired';
+    code = 'TOKEN_EXPIRED';
   }
 
   // Validation errors from Multer (file upload)
   if (err.name === 'MulterError') {
     statusCode = 400;
+    code = err.code || 'UPLOAD_ERROR';
     if (err.code === 'LIMIT_FILE_SIZE') {
       message = 'File size too large';
     } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
@@ -69,6 +84,7 @@ const errorHandler = (err, req, res, next) => {
   if (err.message === 'Not allowed by CORS') {
     statusCode = 403;
     message = 'Origin not allowed by CORS policy';
+    code = 'CORS_ORIGIN_BLOCKED';
   }
 
   // Don't expose internal errors in production
@@ -77,7 +93,7 @@ const errorHandler = (err, req, res, next) => {
   }
 
   // Send error response
-  return ApiResponse.error(res, statusCode, message, errors);
+  return ApiResponse.error(res, statusCode, message, errors, code);
 };
 
 /**
