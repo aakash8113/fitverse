@@ -12,12 +12,21 @@ const prisma = new PrismaClient({
 
 const TRANSIENT_DB_ERROR_PATTERNS = [
   'P1001',
+  'P1002',
   'P1017',
+  'P2024',
   'Can\'t reach database server',
   'Server has closed the connection',
   'Connection terminated unexpectedly',
   'Timed out fetching a new connection',
   'Connection reset',
+  'remaining connection slots are reserved',
+  'too many clients',
+  'terminating connection due to administrator command',
+  'connection pool timeout',
+  'ETIMEDOUT',
+  'ECONNRESET',
+  'EPIPE',
 ];
 
 const isTransientDbError = (error) => {
@@ -45,7 +54,7 @@ prisma.$use(async (params, next) => {
         throw error;
       }
 
-      const delayMs = attempt * 200;
+      const delayMs = attempt * 350;
       logger.warn(
         `Transient DB error on ${params.model}.${params.action} (attempt ${attempt}/${maxAttempts}): ${error.message}`
       );

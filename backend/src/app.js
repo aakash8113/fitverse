@@ -5,6 +5,7 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
+const prisma = require('./config/database');
 
 // Config
 const logger = require('./config/logger');
@@ -56,13 +57,34 @@ app.use('/api/', limiter);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development',
+app.get('/health', async (req, res) => {
+  const timeoutMs = 2500;
+  const dbPing = prisma.$queryRawUnsafe('SELECT 1 AS ok');
+  const timeout = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error('DB health check timeout')), timeoutMs);
   });
+
+  try {
+    await Promise.race([dbPing, timeout]);
+    res.status(200).json({
+      success: true,
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: 'up',
+      uptimeSeconds: Math.floor(process.uptime()),
+    });
+  } catch (error) {
+    logger.error(`Health check failed: ${error.message}`);
+    res.status(503).json({
+      success: false,
+      message: 'Service temporarily unavailable',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      database: 'down',
+      code: 'HEALTHCHECK_DB_FAILED',
+    });
+  }
 });
 
 // API Routes
