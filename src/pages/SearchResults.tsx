@@ -38,7 +38,7 @@ const convertProduct = (apiProduct: ApiProduct) => {
     image: getImageUrl(apiProduct.images?.[0]),
     images: (apiProduct.images || []).map(getImageUrl),
     sizes: ["XS", "S", "M", "L", "XL"],
-    category: apiProduct.category.toLowerCase(),
+    category: (apiProduct.category || apiProduct.gender || "").toLowerCase(),
     isNew: false,
     isThrift: apiProduct.isThrift,
     condition: apiProduct.thriftCondition ? (CONDITION_LABELS[apiProduct.thriftCondition] || apiProduct.thriftCondition) : undefined,
