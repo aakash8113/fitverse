@@ -6,6 +6,7 @@ const imageService = require('./imageService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const { parsePagination } = require('../utils/helpers');
 const logger = require('../config/logger');
+const { isSchemaMismatchError } = require('../utils/dbErrors');
 
 class ProductService {
   /**
@@ -222,9 +223,51 @@ class ProductService {
    * @returns {Promise<Object>} Product details
    */
   async getProductById(productId) {
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-    });
+    let product;
+    try {
+      product = await prisma.product.findUnique({
+        where: { id: productId },
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) {
+        throw error;
+      }
+
+      logger.error(`Primary product detail query failed, using fallback: ${error.message}`);
+
+      const rows = await prisma.$queryRawUnsafe(
+        `SELECT id, name, description, price, images, "isActive", "createdAt", "updatedAt"
+         FROM "products"
+         WHERE id = $1
+         LIMIT 1`,
+        productId
+      );
+
+      const row = rows?.[0] || null;
+      if (!row) {
+        throw new NotFoundError('Product not found');
+      }
+
+      product = {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
+        brand: null,
+        gender: null,
+        wearType: null,
+        category: null,
+        subCategory: null,
+        availableSizes: [],
+        isThrift: false,
+        thriftCondition: null,
+        images: Array.isArray(row.images) ? row.images : [],
+        sizeStock: {},
+        isActive: !!row.isActive,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      };
+    }
 
     if (!product) {
       throw new NotFoundError('Product not found');
