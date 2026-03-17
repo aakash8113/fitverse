@@ -4,41 +4,137 @@
 const prisma = require('../config/database');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
 const logger = require('../config/logger');
+const { isSchemaMismatchError } = require('../utils/dbErrors');
+
+const CART_PRODUCT_SELECT = {
+  id: true,
+  name: true,
+  description: true,
+  price: true,
+  sizeStock: true,
+  brand: true,
+  gender: true,
+  wearType: true,
+  category: true,
+  subCategory: true,
+  availableSizes: true,
+  isThrift: true,
+  thriftCondition: true,
+  images: true,
+  isActive: true,
+  createdAt: true,
+  updatedAt: true,
+};
 
 class CartService {
-  /**
-   * Get or create user's cart
-   * @param {String} userId - User ID
-   * @returns {Promise<Object>} Cart with items
-   */
-  async getOrCreateCart(userId) {
-    let cart = await prisma.cart.findUnique({
-      where: { userId },
-      include: {
-        items: {
-          include: {
-            product: true,
+  async getProductForCart(productId) {
+    try {
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: CART_PRODUCT_SELECT,
+      });
+
+      if (!product) return null;
+      return { ...product, __stockValidation: true };
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) {
+        throw error;
+      }
+
+      logger.error(`Product lookup failed due to schema mismatch, using fallback: ${error.message}`);
+      const rows = await prisma.$queryRawUnsafe(
+        `SELECT id, name, description, price, images, "isActive", "createdAt", "updatedAt"
+         FROM "products"
+         WHERE id = $1
+         LIMIT 1`,
+        productId
+      );
+
+      const row = rows?.[0] || null;
+      if (!row) return null;
+
+      return {
+        id: row.id,
+        name: row.name,
+        description: row.description,
+        price: row.price,
+        sizeStock: {},
+        brand: null,
+        gender: null,
+        wearType: null,
+        category: null,
+        subCategory: null,
+        availableSizes: [],
+        isThrift: false,
+        thriftCondition: null,
+        images: Array.isArray(row.images) ? row.images : [],
+        isActive: !!row.isActive,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+        __stockValidation: false,
+      };
+    }
+  }
+
+  async getCartWithSafeItems(userId, createIfMissing = true) {
+    let cart;
+
+    try {
+      cart = await prisma.cart.findUnique({
+        where: { userId },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: CART_PRODUCT_SELECT,
+              },
+            },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      if (!isSchemaMismatchError(error)) {
+        throw error;
+      }
 
-    // Create cart if doesn't exist
-    if (!cart) {
+      logger.error(`Cart read failed due to schema mismatch for user ${userId}: ${error.message}`);
+      const basicCart = await prisma.cart.findUnique({ where: { userId } });
+      if (!basicCart && createIfMissing) {
+        const created = await prisma.cart.create({ data: { userId } });
+        return { ...created, items: [] };
+      }
+      return { ...(basicCart || { id: null, userId }), items: [] };
+    }
+
+    if (!cart && createIfMissing) {
       cart = await prisma.cart.create({
         data: { userId },
         include: {
           items: {
             include: {
-              product: true,
+              product: {
+                select: CART_PRODUCT_SELECT,
+              },
             },
           },
         },
       });
     }
 
+    return cart;
+  }
+
+  /**
+   * Get or create user's cart
+   * @param {String} userId - User ID
+   * @returns {Promise<Object>} Cart with items
+   */
+  async getOrCreateCart(userId) {
+    const cart = await this.getCartWithSafeItems(userId, true);
+
     // Calculate cart total
-    const cartTotal = cart.items.reduce((sum, item) => {
+    const cartTotal = (cart.items || []).reduce((sum, item) => {
+      if (!item.product) return sum;
       return sum + (parseFloat(item.product.price) * item.quantity);
     }, 0);
 
@@ -57,9 +153,7 @@ class CartService {
    */
   async addToCart(userId, productId, quantity, size = '') {
     // Verify product exists and has stock
-    const product = await prisma.product.findUnique({
-      where: { id: productId },
-    });
+    const product = await this.getProductForCart(productId);
 
     if (!product) {
       throw new NotFoundError('Product not found');
@@ -71,7 +165,7 @@ class CartService {
 
     const sizeStockMap = product.sizeStock || {};
     const sizeAvailable = sizeStockMap[size || ''] ?? 0;
-    if (sizeAvailable < quantity) {
+    if (product.__stockValidation !== false && sizeAvailable < quantity) {
       throw new BadRequestError(`Only ${sizeAvailable} items available in size ${size || 'selected'}`);
     }
 
@@ -101,7 +195,7 @@ class CartService {
       // Update quantity if total doesn't exceed stock
       const newQuantity = existingItem.quantity + quantity;
       const existingSizeAvailable = (product.sizeStock || {})[sizeKey] ?? 0;
-      if (newQuantity > existingSizeAvailable) {
+      if (product.__stockValidation !== false && newQuantity > existingSizeAvailable) {
         throw new BadRequestError(`Cannot add more. Only ${existingSizeAvailable} items available in size ${sizeKey || 'selected'}.`);
       }
 
@@ -139,7 +233,12 @@ class CartService {
       where: { id: cartItemId },
       include: {
         cart: true,
-        product: true,
+        product: {
+          select: {
+            id: true,
+            sizeStock: true,
+          },
+        },
       },
     });
 
@@ -154,7 +253,7 @@ class CartService {
 
     // Check per-size stock
     const itemSizeAvailable = (cartItem.product.sizeStock || {})[cartItem.size || ''] ?? 0;
-    if (quantity > itemSizeAvailable) {
+    if (Object.keys(cartItem.product.sizeStock || {}).length > 0 && quantity > itemSizeAvailable) {
       throw new BadRequestError(`Only ${itemSizeAvailable} items available in size ${cartItem.size || 'selected'}`);
     }
 

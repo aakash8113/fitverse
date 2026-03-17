@@ -32,6 +32,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [hasToken, setHasToken] = useState<boolean>(authApi.isAuthenticated());
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -60,10 +61,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(null);
         }
       }
+      setHasToken(authApi.isAuthenticated());
       setIsLoading(false);
     };
 
     initAuth();
+  }, []);
+
+  useEffect(() => {
+    const syncAuthState = () => {
+      setHasToken(authApi.isAuthenticated());
+      if (!authApi.isAuthenticated()) {
+        setUser(null);
+      }
+    };
+
+    window.addEventListener('storage', syncAuthState);
+    window.addEventListener(authApi.authStateEventName, syncAuthState as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', syncAuthState);
+      window.removeEventListener(authApi.authStateEventName, syncAuthState as EventListener);
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -173,6 +192,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     authApi.logout();
     setUser(null);
+    setHasToken(false);
     toast({
       title: 'Logged out',
       description: 'You have been successfully logged out.',
@@ -193,7 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const value = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && hasToken,
     isLoading,
     login,
     signup,

@@ -72,8 +72,10 @@ const calculateOffset = (page, limit) => {
  * @returns {Object} {page, limit, skip}
  */
 const parsePagination = (query) => {
-  const page = parseInt(query.page, 10) || 1;
-  const limit = parseInt(query.limit, 10) || 10;
+  const pageRaw = parseInt(query.page, 10) || 1;
+  const limitRaw = parseInt(query.limit, 10) || 10;
+  const page = Math.max(1, pageRaw);
+  const limit = Math.min(100, Math.max(1, limitRaw));
   const skip = calculateOffset(page, limit);
   
   return { page, limit, skip };

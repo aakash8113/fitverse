@@ -5,10 +5,12 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 const prisma = require('./config/database');
 
 // Config
 const logger = require('./config/logger');
+const config = require('./config/env');
 const { helmetConfig, corsOptions, limiter } = require('./middlewares/security');
 const { errorHandler, notFoundHandler } = require('./middlewares/errorHandler');
 
@@ -36,6 +38,37 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmetConfig);
 app.use(cors(corsOptions));
+
+// Per-request tracing + timeout protection to avoid hanging requests behind proxies.
+app.use((req, res, next) => {
+  const incomingId = req.headers['x-request-id'];
+  req.requestId = typeof incomingId === 'string' && incomingId.trim().length > 0
+    ? incomingId.trim()
+    : crypto.randomUUID();
+
+  const startedAt = Date.now();
+  res.setHeader('X-Request-Id', req.requestId);
+
+  res.setTimeout(config.server.routeTimeoutMs, () => {
+    if (!res.headersSent) {
+      logger.error(`Request timed out (${config.server.routeTimeoutMs}ms): ${req.method} ${req.originalUrl} [${req.requestId}]`);
+      res.status(503).json({
+        success: false,
+        message: 'Request timeout. Please retry',
+        code: 'REQUEST_TIMEOUT',
+      });
+    }
+  });
+
+  res.on('finish', () => {
+    const duration = Date.now() - startedAt;
+    if (duration >= config.server.slowRequestMs) {
+      logger.warn(`Slow request (${duration}ms): ${req.method} ${req.originalUrl} -> ${res.statusCode} [${req.requestId}]`);
+    }
+  });
+
+  next();
+});
 
 // Body parsing middleware
 // capture rawBody for PhonePe webhook signature validation

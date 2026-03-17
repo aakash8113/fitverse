@@ -3,6 +3,13 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const AUTH_STATE_EVENT = 'fitverse:auth-state-changed';
+
+const emitAuthStateChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(AUTH_STATE_EVENT));
+  }
+};
 
 // Create axios instance
 export const api = axios.create({
@@ -64,6 +71,7 @@ api.interceptors.response.use(
       if (!isOnLoginPage && !isLoginRequest && !isGetMeRequest) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        emitAuthStateChanged();
         window.location.href = '/login';
       }
     }
@@ -260,6 +268,7 @@ export const authApi = {
       // Store token and user
       localStorage.setItem('token', response.data.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      emitAuthStateChanged();
     }
     return response.data;
   },
@@ -293,6 +302,7 @@ export const authApi = {
     const response = await api.put<ApiResponse<User>>('/auth/profile', data);
     if (response.data.success && response.data.data) {
       localStorage.setItem('user', JSON.stringify(response.data.data));
+      emitAuthStateChanged();
     }
     return response.data;
   },
@@ -307,6 +317,7 @@ export const authApi = {
   logout: () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    emitAuthStateChanged();
   },
 
   // Get stored user
@@ -326,6 +337,8 @@ export const authApi = {
   isAuthenticated: (): boolean => {
     return !!localStorage.getItem('token');
   },
+
+  authStateEventName: AUTH_STATE_EVENT,
 };
 
 // ============================================

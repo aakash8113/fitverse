@@ -137,6 +137,13 @@ const startServer = async () => {
     console.log(`   Password: admin123`);
     console.log(`\n💡 Run 'npm run prisma:seed' to populate sample data\n`);
   });
+
+  server.requestTimeout = config.server.requestTimeoutMs;
+  server.headersTimeout = config.server.headersTimeoutMs;
+  server.keepAliveTimeout = config.server.keepAliveTimeoutMs;
+  logger.info(
+    `HTTP timeouts configured: request=${server.requestTimeout}ms headers=${server.headersTimeout}ms keepAlive=${server.keepAliveTimeout}ms`
+  );
 };
 
 startServer().catch(async (error) => {

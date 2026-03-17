@@ -13,14 +13,15 @@ const errorHandler = (err, req, res, next) => {
   let message = err.message || 'Internal Server Error';
   let errors = err.errors || null;
   let code = err.code || null;
+  const requestId = req.requestId || req.headers['x-request-id'] || null;
 
   // Log error
   if (statusCode === 500) {
-    logger.error(`${message} - ${req.originalUrl} - ${req.method} - ${req.ip}`, {
+    logger.error(`${message} - ${req.originalUrl} - ${req.method} - ${req.ip} - reqId=${requestId || 'n/a'}`, {
       error: err.stack,
     });
   } else {
-    logger.warn(`${message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+    logger.warn(`${message} - ${req.originalUrl} - ${req.method} - ${req.ip} - reqId=${requestId || 'n/a'}`);
   }
 
   // Prisma errors
@@ -105,6 +106,15 @@ const errorHandler = (err, req, res, next) => {
   // Don't expose internal errors in production
   if (process.env.NODE_ENV === 'production' && statusCode === 500) {
     message = 'Internal Server Error';
+  }
+
+  if (requestId) {
+    res.setHeader('X-Request-Id', String(requestId));
+    if (!errors || typeof errors !== 'object' || Array.isArray(errors)) {
+      errors = { requestId };
+    } else if (!errors.requestId) {
+      errors = { ...errors, requestId };
+    }
   }
 
   // Send error response

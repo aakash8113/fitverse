@@ -221,10 +221,17 @@ const getMyReview = asyncHandler(async (req, res) => {
   const { productId } = req.params;
   const userId = req.user.id;
 
-  const review = await prisma.review.findUnique({
-    where: { productId_userId: { productId, userId } },
-    include: { helpfulBy: { select: { userId: true } } },
-  });
+  let review = null;
+  try {
+    review = await prisma.review.findUnique({
+      where: { productId_userId: { productId, userId } },
+      include: { helpfulBy: { select: { userId: true } } },
+    });
+  } catch (error) {
+    if (!isMissingReviewSchemaError(error)) {
+      throw error;
+    }
+  }
 
   res.json({
     success: true,
@@ -249,12 +256,19 @@ const canReview = asyncHandler(async (req, res) => {
   const { productId } = req.params;
   const userId = req.user.id;
 
-  const purchasedOrder = await prisma.orderItem.findFirst({
-    where: {
-      productId,
-      order: { userId, status: 'DELIVERED' },
-    },
-  });
+  let purchasedOrder = null;
+  try {
+    purchasedOrder = await prisma.orderItem.findFirst({
+      where: {
+        productId,
+        order: { userId, status: 'DELIVERED' },
+      },
+    });
+  } catch (error) {
+    if (!isMissingReviewSchemaError(error)) {
+      throw error;
+    }
+  }
 
   res.json({ success: true, data: { canReview: !!purchasedOrder } });
 });

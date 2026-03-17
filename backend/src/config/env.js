@@ -21,9 +21,18 @@ const requiredEnvVars = [
   'FRONTEND_URL',
 ];
 
+const normalizeEnvValue = (value) => {
+  if (typeof value !== 'string') return value;
+  return value.trim();
+};
+
 // Validate required environment variables
 const validateEnv = () => {
-  const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+  const missing = requiredEnvVars.filter((varName) => {
+    const raw = process.env[varName];
+    const normalized = normalizeEnvValue(raw);
+    return !normalized || normalized === '""' || normalized === "''";
+  });
   
   if (missing.length > 0) {
     console.error('❌ Missing required environment variables:');
@@ -43,7 +52,7 @@ const config = {
   port: parseInt(process.env.PORT, 10) || 5000,
   
   database: {
-    url: process.env.DATABASE_URL,
+    url: normalizeEnvValue(process.env.DATABASE_URL),
   },
   
   jwt: {
@@ -67,6 +76,14 @@ const config = {
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 900000, // 15 minutes
     maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS, 10) || 5000,
+  },
+
+  server: {
+    requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS, 10) || 30000,
+    headersTimeoutMs: parseInt(process.env.HEADERS_TIMEOUT_MS, 10) || 35000,
+    keepAliveTimeoutMs: parseInt(process.env.KEEP_ALIVE_TIMEOUT_MS, 10) || 20000,
+    routeTimeoutMs: parseInt(process.env.ROUTE_TIMEOUT_MS, 10) || 20000,
+    slowRequestMs: parseInt(process.env.SLOW_REQUEST_MS, 10) || 2000,
   },
 
   email: {

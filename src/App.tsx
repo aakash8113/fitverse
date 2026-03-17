@@ -2,6 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AxiosError } from "axios";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ScrollToTop } from "@/components/ScrollToTop";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -60,7 +61,13 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       refetchOnWindowFocus: false,
-      retry: 1,
+      retry: (failureCount, error) => {
+        const status = (error as AxiosError)?.response?.status;
+        if ([401, 403, 404, 422, 429, 503].includes(status || 0)) {
+          return false;
+        }
+        return failureCount < 1;
+      },
       staleTime: 30_000, // 30 s — reuse cached data instead of re-fetching immediately
     },
   },
