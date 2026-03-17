@@ -30,7 +30,7 @@ const initiateOnlinePayment = asyncHandler(async (req, res) => {
   });
 
   // Step 2: Build the redirect URL — PhonePe sends user back here after payment
-  const frontendUrl = config.frontend.url || 'http://localhost:5173';
+  const frontendUrl = config.frontend.primaryUrl || 'http://localhost:5173';
   const redirectUrl = `${frontendUrl}/payment-return?orderId=${order.id}`;
 
   // Step 3: Convert total to paisa (1 INR = 100 paise, minimum 100 paise)

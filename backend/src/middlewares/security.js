@@ -99,10 +99,9 @@ const corsOptions = {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
 
-    const configuredOrigins = String(config.frontend.url || '')
-      .split(',')
-      .map((item) => item.trim())
-      .filter(Boolean);
+    const configuredOrigins = Array.isArray(config.frontend.origins)
+      ? config.frontend.origins
+      : [];
 
     const allowedOrigins = [
       ...configuredOrigins,

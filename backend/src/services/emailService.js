@@ -7,7 +7,7 @@ const logger = require('../config/logger');
 
 const resend = new Resend(config.email.resendApiKey);
 const FROM = config.email.from;
-const FRONT = process.env.FRONTEND_URL || 'http://localhost:5173';
+const FRONT = config.frontend.primaryUrl || 'http://localhost:5173';
 
 const resolveLogoUrl = (logoUrl) => {
   if (!logoUrl) return `${FRONT}/logo_white.png`;

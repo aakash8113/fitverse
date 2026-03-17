@@ -26,6 +26,32 @@ const normalizeEnvValue = (value) => {
   return value.trim();
 };
 
+const normalizeUrl = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  let url = value.trim();
+  if (!url) return '';
+
+  // Recover common typo: https//example.com (missing colon)
+  if (/^https\/\//i.test(url)) {
+    url = `https://${url.slice('https//'.length)}`;
+  }
+  if (/^http\/\//i.test(url)) {
+    url = `http://${url.slice('http//'.length)}`;
+  }
+
+  if (!/^https?:\/\//i.test(url)) return '';
+  return url.replace(/\/+$/, '');
+};
+
+const parseFrontendOrigins = (rawValue) => {
+  const origins = String(rawValue || '')
+    .split(',')
+    .map((item) => normalizeUrl(item))
+    .filter(Boolean);
+
+  return Array.from(new Set(origins));
+};
+
 // Validate required environment variables
 const validateEnv = () => {
   const missing = requiredEnvVars.filter((varName) => {
@@ -46,6 +72,9 @@ const validateEnv = () => {
 
 validateEnv();
 
+const frontendOrigins = parseFrontendOrigins(process.env.FRONTEND_URL);
+const frontendPrimaryUrl = frontendOrigins[0] || 'http://localhost:5173';
+
 // Export configuration object
 const config = {
   env: process.env.NODE_ENV,
@@ -62,6 +91,8 @@ const config = {
   
   frontend: {
     url: process.env.FRONTEND_URL,
+    origins: frontendOrigins,
+    primaryUrl: frontendPrimaryUrl,
   },
   
   otp: {
@@ -89,8 +120,8 @@ const config = {
   email: {
     resendApiKey: process.env.RESEND_API_KEY,
     from: process.env.EMAIL_FROM || 'Fitverse <noreply@contact.fitverse.co.in>',
-    logoUrl: process.env.EMAIL_LOGO_URL || `${process.env.FRONTEND_URL}/logo_white.png`,
-    logoUrlBlack: process.env.EMAIL_LOGO_URL_BLACK || `${process.env.FRONTEND_URL}/logo_black.png`,
+    logoUrl: process.env.EMAIL_LOGO_URL || `${frontendPrimaryUrl}/logo_white.png`,
+    logoUrlBlack: process.env.EMAIL_LOGO_URL_BLACK || `${frontendPrimaryUrl}/logo_black.png`,
   },
 
   cloudinary: {
