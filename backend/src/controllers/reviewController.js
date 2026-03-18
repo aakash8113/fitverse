@@ -31,32 +31,39 @@ const getProductReviews = asyncHandler(async (req, res) => {
   let total = 0;
   let allRatings = [];
 
-  try {
-    [reviews, total] = await Promise.all([
-      prisma.review.findMany({
-        where: { productId },
-        include: {
-          user: { select: { id: true, name: true } },
-          helpfulBy: { select: { userId: true } },
-        },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      }),
-      prisma.review.count({ where: { productId } }),
-    ]);
-
-    // Rating distribution and average
-    allRatings = await prisma.review.groupBy({
-      by: ['rating'],
-      where: { productId },
-      _count: { rating: true },
-    });
-  } catch (error) {
-    if (!isMissingReviewSchemaError(error)) {
-      throw error;
+  const safe = async (label, fn, fallback) => {
+    try {
+      return await fn();
+    } catch (error) {
+      const kind = isMissingReviewSchemaError(error)
+        ? 'schema-mismatch'
+        : error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
+          ? 'transient-db'
+          : 'unknown-db';
+      console.error(`Review subquery failed (${label}, ${kind}): ${error.message}`);
+      return fallback;
     }
-  }
+  };
+
+  [reviews, total] = await Promise.all([
+    safe('reviews', () => prisma.review.findMany({
+      where: { productId },
+      include: {
+        user: { select: { id: true, name: true } },
+        helpfulBy: { select: { userId: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    }), []),
+    safe('reviewCount', () => prisma.review.count({ where: { productId } }), 0)
+  ]);
+
+  allRatings = await safe('ratingDistribution', () => prisma.review.groupBy({
+    by: ['rating'],
+    where: { productId },
+    _count: { rating: true },
+  }), []);
 
   const distribution = [5, 4, 3, 2, 1].map((star) => {
     const found = allRatings.find((r) => r.rating === star);
@@ -222,16 +229,23 @@ const getMyReview = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   let review = null;
-  try {
-    review = await prisma.review.findUnique({
-      where: { productId_userId: { productId, userId } },
-      include: { helpfulBy: { select: { userId: true } } },
-    });
-  } catch (error) {
-    if (!isMissingReviewSchemaError(error)) {
-      throw error;
+  const safe = async (label, fn, fallback) => {
+    try {
+      return await fn();
+    } catch (error) {
+      const kind = isMissingReviewSchemaError(error)
+        ? 'schema-mismatch'
+        : error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
+          ? 'transient-db'
+          : 'unknown-db';
+      console.error(`Review subquery failed (${label}, ${kind}): ${error.message}`);
+      return fallback;
     }
-  }
+  };
+  review = await safe('myReview', () => prisma.review.findUnique({
+    where: { productId_userId: { productId, userId } },
+    include: { helpfulBy: { select: { userId: true } } },
+  }), null);
 
   res.json({
     success: true,
@@ -257,18 +271,25 @@ const canReview = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   let purchasedOrder = null;
-  try {
-    purchasedOrder = await prisma.orderItem.findFirst({
-      where: {
-        productId,
-        order: { userId, status: 'DELIVERED' },
-      },
-    });
-  } catch (error) {
-    if (!isMissingReviewSchemaError(error)) {
-      throw error;
+  const safe = async (label, fn, fallback) => {
+    try {
+      return await fn();
+    } catch (error) {
+      const kind = isMissingReviewSchemaError(error)
+        ? 'schema-mismatch'
+        : error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT'
+          ? 'transient-db'
+          : 'unknown-db';
+      console.error(`Review subquery failed (${label}, ${kind}): ${error.message}`);
+      return fallback;
     }
-  }
+  };
+  purchasedOrder = await safe('canReview', () => prisma.orderItem.findFirst({
+    where: {
+      productId,
+      order: { userId, status: 'DELIVERED' },
+    },
+  }), null);
 
   res.json({ success: true, data: { canReview: !!purchasedOrder } });
 });

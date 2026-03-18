@@ -729,7 +729,7 @@ export default function ProductDetails() {
       {/* Related Products */}
       <div className="section-container py-12">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold">Related Product</h2>
+          <h2 className="text-2xl font-bold">Related Products</h2>
           <Link to="/shop" className="text-sm font-medium hover:underline flex items-center gap-1">
             View All
             <ChevronRight className="w-4 h-4" />

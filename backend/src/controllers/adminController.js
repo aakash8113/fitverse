@@ -9,6 +9,8 @@ const prisma = require('../config/database');
 const imageService = require('../services/imageService');
 const productService = require('../services/productService');
 const { NotFoundError, BadRequestError } = require('../utils/errors');
+const logger = require('../config/logger');
+const { isSchemaMismatchError, isTransientDbError } = require('../utils/dbErrors');
 
 const syncThriftListingStatus = async (tx, listingId) => {
   const remainingItems = await tx.thriftItem.findMany({
@@ -51,6 +53,20 @@ const syncThriftListingStatus = async (tx, listingId) => {
  * Returns aggregated dashboard statistics
  */
 const getDashboardStats = asyncHandler(async (req, res) => {
+  const safe = async (label, fn, fallback) => {
+    try {
+      return await fn();
+    } catch (error) {
+      const kind = isSchemaMismatchError(error)
+        ? 'schema-mismatch'
+        : isTransientDbError(error)
+          ? 'transient-db'
+          : 'unknown-db';
+      logger.error(`Admin stats subquery failed (${label}, ${kind}): ${error.message}`);
+      return fallback;
+    }
+  };
+
   const [
     totalUsers,
     totalProducts,
@@ -60,30 +76,30 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     recentOrders,
     categoryGroups,
   ] = await Promise.all([
-    prisma.user.count({ where: { role: 'USER' } }),
-    prisma.product.count({ where: { isActive: true } }),
-    prisma.order.count(),
-    prisma.thriftListing.count(),
-    prisma.order.findMany({
+    safe('totalUsers', () => prisma.user.count({ where: { role: 'USER' } }), 0),
+    safe('totalProducts', () => prisma.product.count({ where: { isActive: true } }), 0),
+    safe('totalOrders', () => prisma.order.count(), 0),
+    safe('totalThriftListings', () => prisma.thriftListing.count(), 0),
+    safe('ordersByMonth', () => prisma.order.findMany({
       where: {
         createdAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
         status: { notIn: ['CANCELLED'] },
       },
       select: { total: true, createdAt: true },
-    }),
-    prisma.order.findMany({
+    }), []),
+    safe('recentOrders', () => prisma.order.findMany({
       take: 8,
       orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { name: true, email: true } },
         orderItems: { select: { id: true } },
       },
-    }),
-    prisma.product.groupBy({
+    }), []),
+    safe('categoryGroups', () => prisma.product.groupBy({
       by: ['category'],
       where: { isActive: true },
       _count: { _all: true },
-    }),
+    }), []),
   ]);
 
   // Monthly revenue for current year
