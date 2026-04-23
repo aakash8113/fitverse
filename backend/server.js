@@ -136,8 +136,6 @@ const startServer = async () => {
     console.log(`   Email:    admin@fitverse.com`);
     console.log(`   Password: admin123`);
     console.log(`\n💡 Run 'npm run prisma:seed' to populate sample data\n`);
-
-    console.log(`AUTOMATIC DEPLOY TESTING`)
   });
 
   server.requestTimeout = config.server.requestTimeoutMs;
