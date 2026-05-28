@@ -19,6 +19,7 @@ import {
   Truck,
   RotateCcw,
   Check,
+  Sparkles,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -357,6 +358,28 @@ export default function ProductDetails() {
     }
   };
 
+  const handleTryOn = () => {
+    const heroImage = productImages[0];
+    if (!product?.wearType || !heroImage) {
+      toast({
+        title: "Try-on unavailable",
+        description: "This item is missing try-on details. Please try another product.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const prefill = {
+      imageUrl: heroImage,
+      wearType: product.wearType,
+      productId: product.id,
+      source: product.isThrift ? "thrift" : "shop",
+    };
+
+    sessionStorage.setItem("fitverse_tryon_prefill", JSON.stringify(prefill));
+    navigate("/fitverse-ai", { state: { tryOnPrefill: prefill } });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -667,6 +690,15 @@ export default function ProductDetails() {
                   )}
                 </Button>
               </div>
+
+              <Button
+                size="sm"
+                className="sm:hidden w-full bg-[#d1ebdb] text-black h-12 hover:bg-[#c7e4d3] transition-colors duration-200"
+                onClick={handleTryOn}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1.5" />
+                Try On
+              </Button>
 
               {/* Delivery & Returns */}
               <div className="space-y-2 pt-1">
