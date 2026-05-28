@@ -6,6 +6,13 @@ const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
 const fs = require('fs');
 
+const FORBIDDEN_TERMS = [/fitroom/gi, /fitrrom/gi];
+
+const sanitizeText = (value) => {
+  if (!value) return value;
+  return FORBIDDEN_TERMS.reduce((acc, pattern) => acc.replace(pattern, 'AI provider'), String(value));
+};
+
 const logDir = path.join(__dirname, '../../logs');
 
 if (!fs.existsSync(logDir)) {
@@ -18,10 +25,12 @@ const logFormat = winston.format.combine(
   winston.format.errors({ stack: true }),
   winston.format.splat(),
   winston.format.printf(({ timestamp, level, message, stack }) => {
-    if (stack) {
-      return `[${timestamp}] ${level.toUpperCase()}: ${message}\n${stack}`;
+    const safeMessage = sanitizeText(message);
+    const safeStack = sanitizeText(stack);
+    if (safeStack) {
+      return `[${timestamp}] ${level.toUpperCase()}: ${safeMessage}\n${safeStack}`;
     }
-    return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+    return `[${timestamp}] ${level.toUpperCase()}: ${safeMessage}`;
   })
 );
 
@@ -30,7 +39,7 @@ const consoleFormat = winston.format.combine(
   winston.format.colorize(),
   winston.format.timestamp({ format: 'HH:mm:ss' }),
   winston.format.printf(({ timestamp, level, message }) => {
-    return `[${timestamp}] ${level}: ${message}`;
+    return `[${timestamp}] ${level}: ${sanitizeText(message)}`;
   })
 );
 

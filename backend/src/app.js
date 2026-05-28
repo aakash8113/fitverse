@@ -25,9 +25,11 @@ const thriftRoutes = require('./routes/thriftRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const returnRoutes = require('./routes/returnRoutes');
 const coinRoutes = require('./routes/coinRoutes');
+const aiCreditsRoutes = require('./routes/aiCreditsRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 const carouselRoutes = require('./routes/carouselRoutes');
+const fitverseAiRoutes = require('./routes/fitverseAiRoutes');
 
 // Create Express app
 const app = express();
@@ -75,7 +77,7 @@ app.use((req, res, next) => {
 app.use(express.json({
   limit: '10mb',
   verify: (req, _res, buf) => {
-    if (req.originalUrl && req.originalUrl.includes('/payment/webhook')) {
+    if (req.originalUrl && (req.originalUrl.includes('/payment/webhook') || req.originalUrl.includes('/credits/webhook'))) {
       req.rawBody = buf.toString('utf8');
     }
   },
@@ -131,9 +133,11 @@ app.use('/api/thrift/listings', thriftRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/coins', coinRoutes);
+app.use('/api/credits', aiCreditsRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/carousels', carouselRoutes);
+app.use('/api/fitverse-ai', fitverseAiRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

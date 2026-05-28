@@ -8,6 +8,7 @@ import {
   Wrench,
   Tag,
   Users,
+  Bot,
   ClipboardList,
   LogOut,
   Menu,
@@ -31,6 +32,7 @@ const navItems = [
   { to: '/admin/thrift-inventory', label: 'Thrift Inventory', icon: Tag },
   { to: '/admin/returns', label: 'Returns', icon: RotateCcw },
   { to: '/admin/users', label: 'Users', icon: Users },
+  { to: '/admin/ai-usage', label: 'AI Usage', icon: Bot },
   { to: '/admin/coupons', label: 'Coupons', icon: Tag },
 ];
 

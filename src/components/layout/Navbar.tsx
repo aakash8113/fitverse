@@ -81,7 +81,7 @@ export function Navbar() {
             <img 
               src={theme === "dark" ? logoWhite : logoImage}
               alt="Fitverse Logo" 
-              className="h-8 w-8 sm:h-10 sm:w-10 object-contain sm:translate-y-[-1px] sm:translate-x-[-120px]"
+              className="translate-y-[1px] h-8 w-8 sm:h-10 sm:w-10 object-contain sm:translate-y-[-1px] sm:translate-x-[-120px]"
             />
             <span
               className="translate-y-[4px] text-[20px] sm:text-[26px] font-bold tracking-wider leading-none sm:translate-y-[4.5px] sm:translate-x-[-120px]"

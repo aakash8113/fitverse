@@ -140,6 +140,10 @@ const config = {
     webhookUsername: process.env.PHONEPE_WEBHOOK_USERNAME,
     webhookPassword: process.env.PHONEPE_WEBHOOK_PASSWORD,
   },
+  fitverseAi: {
+    apiKey: process.env.FITVERSE_API_KEY,
+    baseUrl: normalizeUrl(process.env.FITVERSE_AI_BASE_URL),
+  },
 };
 
 module.exports = config;

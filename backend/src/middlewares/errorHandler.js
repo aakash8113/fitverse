@@ -5,6 +5,23 @@ const logger = require('../config/logger');
 const ApiResponse = require('../utils/apiResponse');
 const { isSchemaMismatchError, isTransientDbError } = require('../utils/dbErrors');
 
+const FORBIDDEN_TERMS = [/fitroom/gi, /fitrrom/gi];
+
+const sanitizeText = (value) => {
+  if (!value) return value;
+  return FORBIDDEN_TERMS.reduce((acc, pattern) => acc.replace(pattern, 'AI provider'), String(value));
+};
+
+const sanitizeErrors = (value) => {
+  if (typeof value === 'string') return sanitizeText(value);
+  if (Array.isArray(value)) return value.map((item) => sanitizeErrors(item));
+  if (!value || typeof value !== 'object') return value;
+  return Object.entries(value).reduce((acc, [key, val]) => {
+    acc[key] = sanitizeErrors(val);
+    return acc;
+  }, {});
+};
+
 /**
  * Error Handler Middleware
  */
@@ -16,13 +33,20 @@ const errorHandler = (err, req, res, next) => {
   const requestId = req.requestId || req.headers['x-request-id'] || null;
 
   // Log error
+  const safeMessage = sanitizeText(message);
+  const safeErrors = sanitizeErrors(errors);
+  const safeStack = sanitizeText(err.stack);
+
   if (statusCode === 500) {
-    logger.error(`${message} - ${req.originalUrl} - ${req.method} - ${req.ip} - reqId=${requestId || 'n/a'}`, {
-      error: err.stack,
+    logger.error(`${safeMessage} - ${req.originalUrl} - ${req.method} - ${req.ip} - reqId=${requestId || 'n/a'}`, {
+      error: safeStack,
     });
   } else {
-    logger.warn(`${message} - ${req.originalUrl} - ${req.method} - ${req.ip} - reqId=${requestId || 'n/a'}`);
+    logger.warn(`${safeMessage} - ${req.originalUrl} - ${req.method} - ${req.ip} - reqId=${requestId || 'n/a'}`);
   }
+
+  message = safeMessage;
+  errors = safeErrors;
 
   // Prisma errors
   if (err.code) {

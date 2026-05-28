@@ -56,6 +56,9 @@ import MyReturns from "./pages/MyReturns";
 import ReturnDetail from "./pages/ReturnDetail";
 import AdminReturns from "./pages/admin/AdminReturns";
 import MyCoins from "./pages/MyCoins";
+import CreditsBuy from "./pages/CreditsBuy";
+import CreditsReturn from "./pages/CreditsReturn";
+import AdminAiUsage from "./pages/admin/AdminAiUsage";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -120,6 +123,8 @@ const App = () => (
           <Route path="/addresses" element={<ProtectedRoute><MyAddresses /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/coins" element={<ProtectedRoute><MyCoins /></ProtectedRoute>} />
+          <Route path="/credits/buy" element={<ProtectedRoute requireVerification><CreditsBuy /></ProtectedRoute>} />
+          <Route path="/credits/return" element={<ProtectedRoute requireVerification><CreditsReturn /></ProtectedRoute>} />
           
           {/* Information Pages */}
           <Route path="/contact" element={<Contact />} />
@@ -147,6 +152,7 @@ const App = () => (
           <Route path="/admin/refurbishment" element={<AdminGuard><AdminRefurbishment /></AdminGuard>} />
           <Route path="/admin/thrift-inventory" element={<AdminGuard><AdminThriftInventory /></AdminGuard>} />
           <Route path="/admin/users" element={<AdminGuard><AdminUsers /></AdminGuard>} />
+          <Route path="/admin/ai-usage" element={<AdminGuard><AdminAiUsage /></AdminGuard>} />
           <Route path="/admin/returns" element={<AdminGuard><AdminReturns /></AdminGuard>} />
           <Route path="/admin/coupons" element={<AdminGuard><AdminCoupons /></AdminGuard>} />
 

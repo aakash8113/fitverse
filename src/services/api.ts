@@ -92,6 +92,8 @@ export interface User {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   coinBalance: number;
+  aiCredits: number;
+  aiTryOnCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,6 +110,46 @@ export interface ApiErrorResponse {
   message: string;
   code?: string;
   errors?: Array<{ field: string; message: string }>;
+}
+
+// ============================================
+// FITVERSE AI TYPES
+// ============================================
+
+export type FitverseAiClothesType = 'upper' | 'lower' | 'full';
+export type FitverseAiTryOnType = 'upper' | 'lower' | 'combo' | 'full_set';
+
+export interface FitverseAiModelCheck {
+  is_good: boolean;
+  error_code?: string;
+  good_clothes_types: FitverseAiClothesType[];
+}
+
+export interface FitverseAiClothesCheck {
+  clothes_type: FitverseAiClothesType;
+  is_clothes: boolean;
+}
+
+export interface FitverseAiTaskStatus {
+  task_id: string;
+  status: 'CREATED' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+  progress?: number;
+  result_url?: string;
+  error?: string;
+  created_at?: number;
+  started_at?: number;
+  completed_at?: number;
+}
+
+export interface FitverseAiModel {
+  id: string;
+  name: string;
+  gender: 'MALE' | 'FEMALE' | 'OTHER';
+  imageUrl: string;
+  status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  goodClothesTypes: FitverseAiClothesType[];
+  note?: string | null;
+  createdAt: string;
 }
 
 export interface LoginResponse {
@@ -557,6 +599,38 @@ export interface CoinTransaction {
   createdAt: string;
 }
 
+export interface AiCreditPack {
+  id: string;
+  credits: number;
+  amountInPaise: number;
+  amount: number;
+  label: string;
+  subtitle?: string;
+}
+
+export interface AiCreditPurchase {
+  id: string;
+  userId: string;
+  credits: number;
+  amountInPaise: number;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+  phonePeOrderId?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiUsageSummary {
+  id: string;
+  name: string;
+  email: string;
+  aiCredits: number;
+  aiTryOnCount: number;
+  totalTryOns: number;
+  successRate: number;
+  purchases: AiCreditPurchase[];
+  createdAt: string;
+}
+
 export interface DashboardStats {
   totalUsers: number;
   totalProducts: number;
@@ -643,6 +717,17 @@ export const adminApi = {
 
   deleteUser: async (id: string) => {
     const response = await api.delete<ApiResponse>(`/admin/users/${id}`);
+    return response.data;
+  },
+
+  // AI Usage
+  getAiUsageSummary: async () => {
+    const response = await api.get<ApiResponse<AiUsageSummary[]>>('/admin/ai-usage');
+    return response.data;
+  },
+
+  adjustAiCredits: async (userId: string, amount: number) => {
+    const response = await api.put<ApiResponse<{ id: string; aiCredits: number }>>(`/admin/users/${userId}/ai-credits`, { amount });
     return response.data;
   },
 
@@ -1168,6 +1253,40 @@ export const coinsApi = {
 };
 
 // ============================================
+// AI CREDITS API
+// ============================================
+
+export const creditsApi = {
+  getPacks: async () => {
+    const response = await api.get<ApiResponse<AiCreditPack[]>>('/credits/packs');
+    return response.data;
+  },
+
+  getBalance: async () => {
+    const response = await api.get<ApiResponse<{ aiCredits: number; aiTryOnCount: number }>>('/credits/balance');
+    return response.data;
+  },
+
+  getPurchaseHistory: async () => {
+    const response = await api.get<ApiResponse<AiCreditPurchase[]>>('/credits/purchases');
+    return response.data;
+  },
+
+  initiatePurchase: async (packId: string) => {
+    const response = await api.post<ApiResponse<{ purchaseId: string; credits: number; amount: number; redirectUrl: string }>>(
+      '/credits/purchase/initiate',
+      { packId },
+    );
+    return response.data;
+  },
+
+  getPurchaseStatus: async (purchaseId: string) => {
+    const response = await api.get<ApiResponse<{ purchase: AiCreditPurchase; aiCredits: number }>>(`/credits/purchase/status/${purchaseId}`);
+    return response.data;
+  },
+};
+
+// ============================================
 // REVIEWS
 // ============================================
 
@@ -1232,6 +1351,78 @@ export const reviewsApi = {
 
   toggleHelpful: async (reviewId: string) => {
     const response = await api.post<ApiResponse<{ marked: boolean }>>(`/reviews/${reviewId}/helpful`);
+    return response.data;
+  },
+};
+
+// ============================================
+// FITVERSE AI
+// ============================================
+
+export const fitverseAiApi = {
+  getModels: async () => {
+    const response = await api.get<ApiResponse<FitverseAiModel[]>>('/fitverse-ai/models');
+    return response.data;
+  },
+
+  createModel: async (file: File, name: string, gender: FitverseAiModel['gender']) => {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('gender', gender);
+    formData.append('model_image', file);
+    const response = await api.post<ApiResponse<{ check: FitverseAiModelCheck; model: FitverseAiModel | null }>>(
+      '/fitverse-ai/models',
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } },
+    );
+    return response.data;
+  },
+
+  deleteModel: async (id: string) => {
+    const response = await api.delete<ApiResponse<null>>(`/fitverse-ai/models/${id}`);
+    return response.data;
+  },
+
+  checkModel: async (file: File) => {
+    const formData = new FormData();
+    formData.append('input_image', file);
+    const response = await api.post<ApiResponse<FitverseAiModelCheck>>('/fitverse-ai/model/check', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  checkClothes: async (file: File) => {
+    const formData = new FormData();
+    formData.append('input_image', file);
+    const response = await api.post<ApiResponse<FitverseAiClothesCheck>>('/fitverse-ai/clothes/check', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  createTryOnTask: async (payload: {
+    modelImage: File;
+    clothType: FitverseAiTryOnType;
+    clothImage?: File;
+    lowerClothImage?: File;
+    hdMode?: boolean;
+  }) => {
+    const formData = new FormData();
+    formData.append('model_image', payload.modelImage);
+    if (payload.clothImage) formData.append('cloth_image', payload.clothImage);
+    if (payload.lowerClothImage) formData.append('lower_cloth_image', payload.lowerClothImage);
+    formData.append('cloth_type', payload.clothType);
+    if (payload.hdMode) formData.append('hd_mode', 'true');
+
+    const response = await api.post<ApiResponse<{ task_id: string; status: string }>>('/fitverse-ai/tryon', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  getTryOnStatus: async (taskId: string) => {
+    const response = await api.get<ApiResponse<FitverseAiTaskStatus>>(`/fitverse-ai/tryon/${taskId}`);
     return response.data;
   },
 };

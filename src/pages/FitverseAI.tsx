@@ -1,7 +1,12 @@
 import { Sparkles, Shield, Zap, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { creditsApi } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { AITryOn } from "@/components/ai/AITryOn";
+import { AITryOn } from "../components/ai/AITryOn.tsx";
 
 const benefits = [
   {
@@ -16,15 +21,51 @@ const benefits = [
   },
   {
     icon: Shield,
-    title: "100% Private",
-    description: "Your photos are never stored or shared",
+    title: "Secure Processing",
+    description: "Your images are handled safely during try-on",
   },
 ];
 
 export default function FitverseAI() {
+  const { isAuthenticated } = useAuth();
+  const { data: creditsData, isLoading: creditsLoading, refetch } = useQuery({
+    queryKey: ["credits", "balance"],
+    queryFn: creditsApi.getBalance,
+    retry: false,
+    enabled: isAuthenticated,
+  });
+  const creditsAvailable = isAuthenticated ? (creditsData?.data?.aiCredits ?? 0) : 0;
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background cursor-default">
       <Navbar />
+
+      {/* Try-On Interface */}
+      <section className="py-12">
+        <div className="section-container">
+          <div className="bg-card rounded-3xl border border-border/50 p-8 lg:p-12 shadow-soft">
+            <div className="flex items-center justify-end mb-5">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-full border border-border/60 bg-secondary/50">
+                  <Sparkles className="w-4 h-4 text-foreground" />
+                  <span className="text-sm font-semibold">
+                    {creditsLoading ? "—" : creditsAvailable}
+                  </span>
+                  <span className="text-xs text-muted-foreground">credits</span>
+                </div>
+                <Button size="sm" asChild>
+                  <Link to="/credits/buy">Buy credits</Link>
+                </Button>
+              </div>
+            </div>
+            <AITryOn
+              availableCredits={isAuthenticated ? creditsAvailable : undefined}
+              onCreditsRefresh={refetch}
+            />
+          </div>
+        </div>
+      </section>
+
 
       {/* Hero */}
       <section className="relative py-16 overflow-hidden">
@@ -34,9 +75,9 @@ export default function FitverseAI() {
         <div className="section-container relative z-10 bg-blue-100 dark:bg-card rounded-3xl p-10 sm:p-14 lg:p-16 shadow-soft dark:bg-[#242F4A]">
           <div className="text-center max-w-3xl mx-auto mb-12">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-foreground">
-              Coming Soon
+              Fitverse AI Try-On
               <br />
-              {/* <span className="gradient-ai-text">Powered by AI</span> */}
+              <span className="gradient-ai-text">Powered by AI</span>
             </h1>
             <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
               Upload your photo, select any clothing item, and see exactly how it looks on you. 
@@ -64,15 +105,7 @@ export default function FitverseAI() {
         </div>
       </section>
 
-      {/* Try-On Interface */}
-      {/* <section className="py-12">
-        <div className="section-container">
-          <div className="bg-card rounded-3xl border border-border/50 p-8 lg:p-12 shadow-soft">
-            <AITryOn />
-          </div>
-        </div>
-      </section> */}
-
+      
       {/* How It Works */}
       <section className="py-24 bg-secondary/30">
         <div className="section-container">

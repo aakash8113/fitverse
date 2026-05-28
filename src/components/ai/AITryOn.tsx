@@ -1,290 +1,837 @@
-import { useState, useCallback } from "react";
-import { Upload, Image as ImageIcon, Sparkles, ChevronRight, Download, ZoomIn, Shield, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, CheckCircle2, Download, ImagePlus, Loader2, Plus, Share2, Sparkles, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { fitverseAiApi, FitverseAiClothesType, FitverseAiModel, FitverseAiTryOnType } from "@/services/api";
 
-import product1 from "@/assets/products/product-1.jpg";
-import product2 from "@/assets/products/product-2.jpg";
-import product3 from "@/assets/products/product-3.jpg";
-import product4 from "@/assets/products/product-4.jpg";
+type ModelSlotStatus = "checking" | "verified" | "rejected";
 
-const sampleClothes = [
-  { id: "1", image: product1, name: "White Blazer Set" },
-  { id: "2", image: product2, name: "Black Leather Jacket" },
-  { id: "3", image: product3, name: "Beige Sweater" },
-  { id: "4", image: product4, name: "Navy Midi Dress" },
-];
+type ModelSlot = {
+  id: string;
+  name: string;
+  gender: FitverseAiModel["gender"];
+  file: File | null;
+  imageUrl: string;
+  previewUrl: string;
+  status: ModelSlotStatus;
+  goodTypes: FitverseAiClothesType[];
+  note?: string;
+};
 
-export function AITryOn() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [selectedClothing, setSelectedClothing] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+type ClothesCheckState = {
+  status: "idle" | "checking" | "ready" | "warn" | "error";
+  message?: string;
+  detectedType?: FitverseAiClothesType;
+};
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-        setStep(2);
-      };
-      reader.readAsDataURL(file);
+const TRY_ON_LABELS: Record<FitverseAiTryOnType, string> = {
+  upper: "Top",
+  lower: "Bottom",
+  combo: "Top + Bottom",
+  full_set: "Full Outfit",
+};
+
+const DEFAULT_FRAME_HEIGHT = "h-[340px]";
+
+const formatGender = (value?: FitverseAiModel["gender"]) => {
+  if (!value) return "";
+  return `${value.charAt(0)}${value.slice(1).toLowerCase()}`;
+};
+
+type AITryOnProps = {
+  availableCredits?: number;
+  onCreditsRefresh?: () => void;
+};
+
+export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
+  const [models, setModels] = useState<ModelSlot[]>([]);
+  const [activeModelId, setActiveModelId] = useState<string | null>(null);
+  const [modelNotice, setModelNotice] = useState<string | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newModelName, setNewModelName] = useState("");
+  const [newModelGender, setNewModelGender] = useState<FitverseAiModel["gender"] | "">("");
+  const [newModelFile, setNewModelFile] = useState<File | null>(null);
+  const [newModelMessage, setNewModelMessage] = useState<string | null>(null);
+  const [isCreatingModel, setIsCreatingModel] = useState(false);
+  const [tryOnType, setTryOnType] = useState<FitverseAiTryOnType>("upper");
+  const [topFile, setTopFile] = useState<File | null>(null);
+  const [bottomFile, setBottomFile] = useState<File | null>(null);
+  const [fullFile, setFullFile] = useState<File | null>(null);
+  const [topCheck, setTopCheck] = useState<ClothesCheckState>({ status: "idle" });
+  const [bottomCheck, setBottomCheck] = useState<ClothesCheckState>({ status: "idle" });
+  const [fullCheck, setFullCheck] = useState<ClothesCheckState>({ status: "idle" });
+  const [hdMode, setHdMode] = useState(false);
+  const [taskStatus, setTaskStatus] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [modelLoading, setModelLoading] = useState(false);
+  const isBusy = taskStatus === "CREATED" || taskStatus === "PROCESSING";
+
+  const newModelPreview = useObjectPreview(newModelFile);
+  const mustCreateModel = models.length === 0;
+
+  const pollRef = useRef<number | null>(null);
+
+  const activeModel = useMemo(() => models.find((model) => model.id === activeModelId) || null, [models, activeModelId]);
+
+  const topPreview = useObjectPreview(topFile);
+  const bottomPreview = useObjectPreview(bottomFile);
+  const fullPreview = useObjectPreview(fullFile);
+
+  const modelSupportsSelection = useMemo(() => {
+    if (!activeModel) return false;
+    if (!activeModel.goodTypes?.length) return true;
+    if (tryOnType === "combo") {
+      return activeModel.goodTypes.includes("upper") && activeModel.goodTypes.includes("lower");
     }
+    if (tryOnType === "full_set") {
+      return activeModel.goodTypes.includes("full");
+    }
+    return activeModel.goodTypes.includes(tryOnType);
+  }, [activeModel, tryOnType]);
+
+  const creditCost = hdMode ? 2 : 1;
+  const hasCredits = availableCredits == null || availableCredits >= creditCost;
+
+  const requiredReady = useMemo(() => {
+    if (!activeModel || activeModel.status !== "verified") return false;
+    if (!modelSupportsSelection) return false;
+    if (!hasCredits) return false;
+
+    if (tryOnType === "combo") {
+      return !!topFile && !!bottomFile;
+    }
+    if (tryOnType === "upper") return !!topFile;
+    if (tryOnType === "lower") return !!bottomFile;
+    return !!fullFile;
+  }, [activeModel, modelSupportsSelection, hasCredits, tryOnType, topFile, bottomFile, fullFile]);
+
+  useEffect(() => {
+    if (tryOnType === "upper") {
+      setBottomFile(null);
+      setBottomCheck({ status: "idle" });
+      setFullFile(null);
+      setFullCheck({ status: "idle" });
+    } else if (tryOnType === "lower") {
+      setTopFile(null);
+      setTopCheck({ status: "idle" });
+      setFullFile(null);
+      setFullCheck({ status: "idle" });
+    } else if (tryOnType === "combo") {
+      setFullFile(null);
+      setFullCheck({ status: "idle" });
+    } else {
+      setTopFile(null);
+      setTopCheck({ status: "idle" });
+      setBottomFile(null);
+      setBottomCheck({ status: "idle" });
+    }
+    setResultUrl(null);
+    setError(null);
+  }, [tryOnType]);
+
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const response = await fitverseAiApi.getModels();
+        const list = response.data || [];
+        const mapped = list.map((item, index) => mapModelRecord(item, index));
+        setModels(mapped);
+        if (mapped.length > 0) {
+          setActiveModelId(mapped[0].id);
+        } else {
+          setDialogOpen(true);
+        }
+      } catch (err) {
+        setModelNotice("Could not load saved models.");
+        setDialogOpen(true);
+      }
+    };
+
+    loadModels();
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-        setStep(2);
-      };
-      reader.readAsDataURL(file);
+  useEffect(() => {
+    return () => {
+      if (pollRef.current) window.clearTimeout(pollRef.current);
+    };
+  }, []);
+
+  const resetDialog = () => {
+    setNewModelName("");
+    setNewModelGender("");
+    setNewModelFile(null);
+    setNewModelMessage(null);
+    setIsCreatingModel(false);
+  };
+
+  const handleDialogChange = (open: boolean) => {
+    if (!open && mustCreateModel) return;
+    setDialogOpen(open);
+    if (!open) resetDialog();
+  };
+
+  const openModelDialog = () => {
+    resetDialog();
+    setDialogOpen(true);
+  };
+
+  const updateModel = (id: string, updates: Partial<ModelSlot>) => {
+    setModels((prev) => prev.map((model) => (model.id === id ? { ...model, ...updates } : model)));
+  };
+
+  const handleCreateModel = async () => {
+    if (models.length >= 2) {
+      setNewModelMessage("You can save up to 2 models.");
+      return;
+    }
+    if (!newModelName.trim()) {
+      setNewModelMessage("Please enter a model name.");
+      return;
+    }
+    if (!newModelGender) {
+      setNewModelMessage("Please select a gender.");
+      return;
+    }
+    if (!newModelFile) {
+      setNewModelMessage("Please upload a full-body photo.");
+      return;
+    }
+
+    setResultUrl(null);
+    setTaskStatus(null);
+    setProgress(0);
+    setError(null);
+    setNewModelMessage("Verifying model...");
+    setIsCreatingModel(true);
+
+    try {
+      const response = await fitverseAiApi.createModel(newModelFile, newModelName.trim(), newModelGender);
+      const payload = response.data;
+      const check = payload?.check;
+      const model = payload?.model;
+
+      if (!check?.is_good || !model) {
+        setNewModelMessage("Model rejected. Please upload a clearer full-body photo.");
+        setIsCreatingModel(false);
+        return;
+      }
+
+      const mapped = mapModelRecord(model, models.length, newModelFile);
+      setModels((prev) => [mapped, ...prev].slice(0, 2));
+      setActiveModelId(mapped.id);
+      setModelNotice(check.error_code ? "Model verified with a warning" : "Model verified");
+      setIsCreatingModel(false);
+      setDialogOpen(false);
+      resetDialog();
+    } catch (err) {
+      setIsCreatingModel(false);
+      setNewModelMessage("Model verification failed. Please try again.");
     }
   };
 
-  const handleGenerate = () => {
-    setIsProcessing(true);
-    setStep(3);
-    
-    // Simulate AI processing
-    setTimeout(() => {
-      setResult(selectedClothing);
-      setIsProcessing(false);
-    }, 3000);
+  const handleClothUpload = async (file: File, kind: "top" | "bottom" | "full") => {
+    setResultUrl(null);
+    setTaskStatus(null);
+    setProgress(0);
+    setError(null);
+
+    if (kind === "top") {
+      setTopFile(file);
+      setTopCheck({ status: "checking" });
+    }
+    if (kind === "bottom") {
+      setBottomFile(file);
+      setBottomCheck({ status: "checking" });
+    }
+    if (kind === "full") {
+      setFullFile(file);
+      setFullCheck({ status: "checking" });
+    }
+
+    try {
+      const response = await fitverseAiApi.checkClothes(file);
+      const data = response.data;
+      const isValid = data?.is_clothes;
+      const detectedType = data?.clothes_type;
+      const message = isValid ? `Detected ${detectedType}` : "Image may not be a valid clothing item";
+      const status = isValid ? "ready" : "warn";
+
+      if (kind === "top") setTopCheck({ status, message, detectedType });
+      if (kind === "bottom") setBottomCheck({ status, message, detectedType });
+      if (kind === "full") setFullCheck({ status, message, detectedType });
+    } catch (err) {
+      const fallback = { status: "error", message: "Could not validate this image" } as ClothesCheckState;
+      if (kind === "top") setTopCheck(fallback);
+      if (kind === "bottom") setBottomCheck(fallback);
+      if (kind === "full") setFullCheck(fallback);
+    }
   };
 
-  const reset = () => {
-    setStep(1);
-    setUploadedImage(null);
-    setSelectedClothing(null);
-    setResult(null);
-    setIsProcessing(false);
+  const handleShareResult = async () => {
+    if (!resultUrl) return;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Fitverse AI Try-On",
+          url: resultUrl,
+        });
+      } catch (err) {
+        // Ignore share cancellations.
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(resultUrl);
+    } catch (err) {
+      // Ignore clipboard failures silently.
+    }
   };
+
+  const handleDownloadResult = async () => {
+    if (!resultUrl) return;
+    try {
+      const response = await fetch(resultUrl);
+      if (!response.ok) {
+        throw new Error("Download failed");
+      }
+
+      const blob = await response.blob();
+      const contentType = blob.type || "image/jpeg";
+      const ext = contentType.split("/")[1] || "jpg";
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `fitverse-tryon.${ext}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError("Download failed. Please try again.");
+    }
+  };
+
+  const handleConfirmRemove = (id: string) => {
+    if (!window.confirm("Delete this model?")) return;
+    handleRemoveModel(id);
+  };
+
+  const handleGenerate = async () => {
+    if (!activeModel || !requiredReady) return;
+    if (availableCredits != null && availableCredits < creditCost) {
+      setError(`Not enough credits. ${creditCost} credits required.`);
+      return;
+    }
+    setError(null);
+    setResultUrl(null);
+    setTaskStatus("CREATED");
+    setProgress(0);
+
+    let modelFile = activeModel.file;
+    if (!modelFile && activeModel.imageUrl) {
+      try {
+        setModelLoading(true);
+        modelFile = await fetchModelFile(activeModel.imageUrl, activeModel.id);
+        updateModel(activeModel.id, { file: modelFile });
+      } catch (err) {
+        setModelLoading(false);
+        setError("Failed to load the saved model.");
+        setTaskStatus(null);
+        return;
+      }
+      setModelLoading(false);
+    }
+
+    try {
+      const response = await fitverseAiApi.createTryOnTask({
+        modelImage: modelFile as File,
+        clothType: tryOnType,
+        clothImage: tryOnType === "upper" || tryOnType === "combo"
+          ? topFile || undefined
+          : tryOnType === "lower"
+            ? bottomFile || undefined
+            : fullFile || undefined,
+        lowerClothImage: tryOnType === "combo" ? bottomFile || undefined : undefined,
+        hdMode,
+      });
+
+      const taskId = response.data?.task_id;
+      if (!taskId) {
+        throw new Error("Failed to create task");
+      }
+
+      pollStatus(taskId, 0);
+    } catch (err) {
+      const message = (err as any)?.response?.data?.message;
+      setError(message || "Failed to start try-on. Please retry.");
+      setTaskStatus(null);
+    }
+  };
+
+  const pollStatus = async (taskId: string, attempt: number) => {
+    try {
+      const response = await fitverseAiApi.getTryOnStatus(taskId);
+      const data = response.data;
+      if (!data) throw new Error("Missing task data");
+
+      setTaskStatus(data.status);
+      setProgress(data.progress || 0);
+
+      if (data.status === "COMPLETED") {
+        setResultUrl(data.result_url || null);
+        if (onCreditsRefresh) onCreditsRefresh();
+        return;
+      }
+
+      if (data.status === "FAILED") {
+        setError(data.error || "Try-on failed. Please retry.");
+        return;
+      }
+
+      const delay = Math.min(2000 + attempt * 300, 4000);
+      pollRef.current = window.setTimeout(() => pollStatus(taskId, attempt + 1), delay);
+    } catch (err) {
+      setError("Failed to fetch task status.");
+    }
+  };
+
+  const handleRemoveModel = async (id: string) => {
+    try {
+      await fitverseAiApi.deleteModel(id);
+    } catch (err) {
+      // Ignore delete errors for now.
+    }
+    setModels((prev) => {
+      const removed = prev.find((model) => model.id === id);
+      if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+      }
+      const next = prev.filter((model) => model.id !== id);
+      if (activeModelId === id) {
+        setActiveModelId(next[0]?.id || null);
+      }
+      if (next.length === 0) {
+        setDialogOpen(true);
+      }
+      return next;
+    });
+  };
+
+  const renderUploadFrame = (
+    label: string,
+    file: File | null,
+    previewUrl: string | null,
+    onSelect: (file: File) => void,
+    status: ClothesCheckState
+  ) => (
+    <label className="flex flex-col gap-3 h-full cursor-pointer">
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const fileInput = event.target.files?.[0];
+          if (fileInput) onSelect(fileInput);
+        }}
+      />
+      <div
+        className={cn(
+          "rounded-2xl border border-dashed border-border/70 bg-secondary/40 flex items-center justify-center overflow-hidden",
+          "transition-colors hover:border-foreground/40",
+          DEFAULT_FRAME_HEIGHT
+        )}
+      >
+        {previewUrl ? (
+          <img src={previewUrl} alt={label} className="h-full w-full object-contain" />
+        ) : (
+          <div className="flex flex-col items-center text-center text-muted-foreground">
+            <ImagePlus className="w-8 h-8 mb-2" />
+            <p className="font-medium">Add {label}</p>
+            <p className="text-xs">PNG or JPG, 1024px recommended</p>
+          </div>
+        )}
+      </div>
+      {file && (
+        <div className="text-xs text-muted-foreground flex items-center gap-2">
+          {status.status === "checking" && <Loader2 className="w-3 h-3 animate-spin" />}
+          {status.status === "ready" && <CheckCircle2 className="w-3 h-3 text-emerald-500" />}
+          {status.status === "warn" && <AlertCircle className="w-3 h-3 text-amber-500" />}
+          {status.status === "error" && <AlertCircle className="w-3 h-3 text-red-500" />}
+          <span>{status.message || file.name}</span>
+        </div>
+      )}
+    </label>
+  );
 
   return (
-    <div className="min-h-[600px] relative">
-      {/* Step Indicator */}
-      <div className="flex items-center justify-center gap-4 mb-8">
-        {[1, 2, 3].map((s) => (
-          <div key={s} className="flex items-center">
-            <div
-              className={cn(
-                "w-10 h-10 rounded-full flex items-center justify-center font-medium transition-all",
-                step >= s
-                  ? "gradient-ai text-white shadow-ai"
-                  : "bg-secondary text-muted-foreground"
-              )}
-            >
-              {s}
-            </div>
-            {s < 3 && (
-              <ChevronRight
-                className={cn(
-                  "w-6 h-6 mx-2",
-                  step > s ? "text-accent" : "text-muted-foreground"
-                )}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+    <>
+      <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+        <DialogContent
+          className={cn("max-w-2xl", mustCreateModel ? "[&>button]:hidden" : "")}
+          onEscapeKeyDown={(event) => {
+            if (mustCreateModel) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (mustCreateModel) event.preventDefault();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Create a model</DialogTitle>
+            <DialogDescription>
+              Add a name, choose a gender, and upload a full-body photo. We verify the image before saving.
+            </DialogDescription>
+          </DialogHeader>
 
-      {/* Step Content */}
-      <div className="max-w-4xl mx-auto">
-        {/* Step 1: Upload Photo */}
-        {step === 1 && (
-          <div className="animate-fade-in">
-            <h3 className="text-2xl font-semibold text-center mb-2">Upload Your Photo</h3>
-            <p className="text-muted-foreground text-center mb-8">
-              Upload a full-body photo for the best results
-            </p>
-
-            <div
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={handleDrop}
-              className={cn(
-                "border-2 border-dashed rounded-3xl p-12 text-center transition-all",
-                isDragging
-                  ? "border-accent bg-accent/5 scale-[1.02]"
-                  : "border-border hover:border-accent/50"
-              )}
-            >
-              <div className="gradient-ai-subtle rounded-2xl p-8 mx-auto max-w-md">
-                <Upload className="w-12 h-12 mx-auto mb-4 text-accent" />
-                <p className="text-lg font-medium mb-2">Drag & drop your photo here</p>
-                <p className="text-sm text-muted-foreground mb-6">or click to browse</p>
-                <label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                  />
-                  <Button className="btn-ai cursor-pointer">
-                    <ImageIcon className="w-4 h-4 mr-2" />
-                    Select Photo
-                  </Button>
-                </label>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-center gap-2 mt-6 text-sm text-muted-foreground">
-              <Shield className="w-4 h-4" />
-              <span>Your images are secure and never stored</span>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Select Clothing */}
-        {step === 2 && (
-          <div className="animate-fade-in">
-            <h3 className="text-2xl font-semibold text-center mb-2">Select Clothing</h3>
-            <p className="text-muted-foreground text-center mb-8">
-              Choose an item to try on virtually
-            </p>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Your Photo */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Your Photo</h4>
-                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-secondary">
-                  <img
-                    src={uploadedImage!}
-                    alt="Your uploaded photo"
-                    className="w-full h-full object-cover"
-                  />
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={reset}
-                    className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 hover:bg-white"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Clothing Selection */}
-              <div className="space-y-4">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider">Select Clothing</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {sampleClothes.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setSelectedClothing(item.image)}
-                      className={cn(
-                        "relative aspect-[3/4] rounded-xl overflow-hidden border-2 transition-all",
-                        selectedClothing === item.image
-                          ? "border-accent ring-2 ring-accent/20 scale-[0.98]"
-                          : "border-transparent hover:border-border"
-                      )}
-                    >
-                      <img
-                        src={item.image}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                      {selectedClothing === item.image && (
-                        <div className="absolute inset-0 bg-accent/10 flex items-center justify-center">
-                          <Sparkles className="w-8 h-8 text-accent" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                <Button
-                  onClick={handleGenerate}
-                  disabled={!selectedClothing}
-                  className="w-full btn-ai h-12 text-base mt-4"
-                >
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Generate Try-On
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Result */}
-        {step === 3 && (
-          <div className="animate-fade-in">
-            <h3 className="text-2xl font-semibold text-center mb-2">
-              {isProcessing ? "AI is Working..." : "Your Virtual Try-On"}
-            </h3>
-            <p className="text-muted-foreground text-center mb-8">
-              {isProcessing ? "This usually takes a few seconds" : "See how it looks on you!"}
-            </p>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-3xl mx-auto">
-              {/* Before */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider text-center">Before</h4>
-                <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-secondary">
-                  <img
-                    src={uploadedImage!}
-                    alt="Before"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              </div>
-
-              {/* After */}
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wider text-center">After</h4>
-                <div className="aspect-[3/4] rounded-2xl overflow-hidden bg-secondary relative">
-                  {isProcessing ? (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gradient-ai-subtle">
-                      <div className="relative">
-                        <div className="w-16 h-16 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
-                        <Sparkles className="w-6 h-6 text-accent absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                      </div>
-                      <p className="mt-4 text-sm text-muted-foreground">Processing your image...</p>
-                    </div>
+          <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
+            <div className="space-y-2">
+              <Label>Model photo</Label>
+              <label className="rounded-2xl border border-dashed border-border/70 bg-secondary/40 flex items-center justify-center overflow-hidden cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                      setNewModelFile(file);
+                      setNewModelMessage(null);
+                    }
+                  }}
+                />
+                <div className={cn("w-full", DEFAULT_FRAME_HEIGHT)}>
+                  {newModelPreview ? (
+                    <img src={newModelPreview} alt="New model" className="h-full w-full object-contain" />
                   ) : (
-                    <>
-                      <img
-                        src={result!}
-                        alt="After"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute bottom-4 left-4 right-4 flex gap-2">
-                        <Button variant="secondary" size="sm" className="flex-1">
-                          <ZoomIn className="w-4 h-4 mr-1.5" />
-                          Zoom
-                        </Button>
-                        <Button variant="secondary" size="sm" className="flex-1">
-                          <Download className="w-4 h-4 mr-1.5" />
-                          Save
-                        </Button>
-                      </div>
-                    </>
+                    <div className="flex flex-col items-center text-center text-muted-foreground">
+                      <ImagePlus className="w-8 h-8 mb-2" />
+                      <p className="font-medium">Upload a full-body photo</p>
+                      <p className="text-xs">Front-facing, good lighting, 2048px recommended</p>
+                    </div>
                   )}
                 </div>
-              </div>
+              </label>
             </div>
 
-            {!isProcessing && (
-              <div className="flex justify-center gap-4 mt-8">
-                <Button variant="outline" onClick={reset} className="min-w-32">
-                  Try Another
-                </Button>
-                <Button className="btn-ai min-w-32">
-                  Add to Cart
-                </Button>
+            <div className="flex flex-col gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="model-name">Model name</Label>
+                <Input
+                  id="model-name"
+                  value={newModelName}
+                  placeholder="e.g. Summer look"
+                  onChange={(event) => {
+                    setNewModelName(event.target.value);
+                    if (newModelMessage) setNewModelMessage(null);
+                  }}
+                />
               </div>
-            )}
+
+              <div className="grid gap-2">
+                <Label>Gender</Label>
+                <Select
+                  value={newModelGender}
+                  onValueChange={(value) => {
+                    setNewModelGender(value as FitverseAiModel["gender"]);
+                    if (newModelMessage) setNewModelMessage(null);
+                  }}
+                >
+                  <SelectTrigger className="h-10 cursor-pointer">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="FEMALE">Female</SelectItem>
+                    <SelectItem value="MALE">Male</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                Photo tips: stand straight, full body in frame, neutral background, no heavy shadows.
+              </div>
+            </div>
+          </div>
+
+          {newModelMessage && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {isCreatingModel ? <Loader2 className="w-3 h-3 animate-spin" /> : <AlertCircle className="w-3 h-3" />}
+              <span>{newModelMessage}</span>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              disabled={mustCreateModel || isCreatingModel}
+            >
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleCreateModel} disabled={isCreatingModel}>
+              {isCreatingModel ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Verify & Save"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1fr_1.4fr] gap-6 cursor-default">
+      {/* Column 1: Model */}
+      <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold">Select Model</h3>
+          </div>
+          
+        </div>
+
+        <div
+          className={cn(
+            "relative rounded-2xl border border-dashed border-border/70 bg-secondary/40 flex items-center justify-center overflow-hidden",
+            DEFAULT_FRAME_HEIGHT
+          )}
+        >
+          {activeModel ? (
+            <>
+              <img src={activeModel.previewUrl} alt={activeModel.name} className="h-full w-full object-contain" />
+              <button
+                type="button"
+                onClick={() => handleConfirmRemove(activeModel.id)}
+                className="absolute right-3 top-3 h-9 w-9 rounded-full bg-background/80 text-red-500 shadow-sm border border-border/60 flex items-center justify-center"
+                aria-label="Delete model"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </>
+          ) : (
+            <div className="text-center text-muted-foreground space-y-2">
+              <ImagePlus className="w-8 h-8 mx-auto" />
+              <p className="font-medium">Create your first model</p>
+              <p className="text-xs">2048px recommended for best results</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          {models.map((model) => (
+            <button
+              key={model.id}
+              onClick={() => setActiveModelId(model.id)}
+              className={cn(
+                "w-12 h-12 rounded-full border-2 overflow-hidden",
+                activeModelId === model.id ? "border-foreground" : "border-border/60"
+              )}
+            >
+              <img src={model.previewUrl} alt={model.name} className="w-full h-full object-cover" />
+            </button>
+          ))}
+          {models.length < 2 && (
+            <button
+              type="button"
+              onClick={openModelDialog}
+              className="w-12 h-12 rounded-full border border-foreground/40 bg-foreground/10 flex items-center justify-center text-foreground"
+              aria-label="Add model"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        {activeModel && (
+          <div className="text-xs text-muted-foreground flex items-center justify-between">
+            <span>{activeModel.name} - {formatGender(activeModel.gender)}</span>
           </div>
         )}
+
+        {/* <div className="text-xs text-muted-foreground">
+          {modelNotice || "Create and verify a model to start"}
+        </div> */}
+
+        {/* {activeModel && (
+          <div className="text-xs text-muted-foreground">
+            Status: {activeModel.status === "checking" ? "Verifying" : activeModel.status === "verified" ? "Verified" : "Rejected"}
+            {activeModel.note ? ` • ${activeModel.note}` : ""}
+          </div>
+        )} */}
+      </div>
+
+      {/* Column 2: Outfit */}
+      <div className={cn("rounded-3xl border border-border/60 bg-card p-6 shadow-soft flex flex-col gap-4", !activeModel ? "opacity-60" : "")}> 
+        <div className="flex flex-col gap-3">
+          <h3 className="text-lg font-semibold">Select Outfit</h3>
+          <Select value={tryOnType} onValueChange={(value) => setTryOnType(value as FitverseAiTryOnType)}>
+            <SelectTrigger className="h-10 w-[100%] mx-auto text-sm cursor-pointer">
+              <SelectValue placeholder="Select" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(TRY_ON_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {!modelSupportsSelection && activeModel && (
+          <div className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2">
+            This model photo may not support the selected outfit type.
+          </div>
+        )}
+
+        {tryOnType === "combo" ? (
+          <div className="flex flex-col gap-4">
+            <div className="flex-1">
+              {renderUploadFrame("Top", topFile, topPreview, (file) => handleClothUpload(file, "top"), topCheck)}
+            </div>
+            <div className="flex-1">
+              {renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck)}
+            </div>
+          </div>
+        ) : tryOnType === "full_set" ? (
+          renderUploadFrame("Full Outfit", fullFile, fullPreview, (file) => handleClothUpload(file, "full"), fullCheck)
+        ) : tryOnType === "upper" ? (
+          renderUploadFrame("Top", topFile, topPreview, (file) => handleClothUpload(file, "top"), topCheck)
+        ) : (
+          renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck)
+        )}
+
+        <label className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+          <span>HD mode (slower, better quality)</span>
+          <input type="checkbox" checked={hdMode} onChange={(event) => setHdMode(event.target.checked)} />
+        </label>
+
+        
+      </div>
+
+      {/* Column 3: Output */}
+      <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold">Try-On Result</h3>
+          {taskStatus && <span className="text-xs text-muted-foreground">{taskStatus}</span>}
+        </div>
+
+        <div className="relative rounded-2xl border border-dashed border-border/70 bg-secondary/40 flex items-center justify-center overflow-hidden h-[420px]">
+          {resultUrl && (
+            <div className="absolute right-3 top-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleDownloadResult}
+                className="h-9 w-9 rounded-full bg-background/80 text-foreground shadow-sm border border-border/60 flex items-center justify-center"
+                aria-label="Download result"
+              >
+                <Download className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleShareResult}
+                className="h-9 w-9 rounded-full bg-background/80 text-foreground shadow-sm border border-border/60 flex items-center justify-center"
+                aria-label="Share result"
+              >
+                <Share2 className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+          {resultUrl ? (
+            <img src={resultUrl} alt="Try-on result" className="h-full w-full object-contain" />
+          ) : (
+            <div className="text-center text-muted-foreground">
+              {taskStatus === "PROCESSING" || taskStatus === "CREATED" ? (
+                <div className="space-y-3">
+                  <Loader2 className="w-8 h-8 mx-auto animate-spin" />
+                  <p className="text-sm">Generating your try-on...</p>
+                  <p className="text-xs">Progress {progress}%</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <ImagePlus className="w-8 h-8 mx-auto" />
+                  <p className="text-sm">Virtual try-on result will appear here</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {error && (
+          <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg p-2">{error}</div>
+        )}
+        <Button
+          onClick={handleGenerate}
+          disabled={!requiredReady || isBusy || modelLoading}
+          variant="ai"
+          className="w-full"
+        >
+          <Sparkles className="w-4 h-4" />
+          {isBusy || modelLoading ? "Generating..." : "Generate Try-On"}
+        </Button>
       </div>
     </div>
+    </>
   );
 }
+
+function useObjectPreview(file: File | null) {
+  const [preview, setPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!file) {
+      setPreview(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [file]);
+
+  return preview;
+}
+
+const mapModelRecord = (record: FitverseAiModel, index: number, file?: File | null): ModelSlot => {
+  const status: ModelSlotStatus = record.status === "VERIFIED"
+    ? "verified"
+    : record.status === "REJECTED"
+      ? "rejected"
+      : "checking";
+
+  return {
+    id: record.id,
+    name: record.name || `Model ${index + 1}`,
+    gender: record.gender || "OTHER",
+    file: file || null,
+    imageUrl: record.imageUrl,
+    previewUrl: record.imageUrl,
+    status,
+    goodTypes: record.goodClothesTypes || [],
+    note: record.note || undefined,
+  };
+};
+
+const fetchModelFile = async (url: string, id: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to download model image');
+  }
+
+  const blob = await response.blob();
+  const type = blob.type || 'image/jpeg';
+  const ext = type.split('/')[1] || 'jpg';
+  return new File([blob], `model-${id}.${ext}`, { type });
+};

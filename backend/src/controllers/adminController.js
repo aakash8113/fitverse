@@ -72,7 +72,9 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     totalProducts,
     totalOrders,
     totalThriftListings,
+    aiTryOnCount,
     ordersByMonth,
+    creditPurchasesByMonth,
     recentOrders,
     categoryGroups,
   ] = await Promise.all([
@@ -80,12 +82,20 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     safe('totalProducts', () => prisma.product.count({ where: { isActive: true } }), 0),
     safe('totalOrders', () => prisma.order.count(), 0),
     safe('totalThriftListings', () => prisma.thriftListing.count(), 0),
+    safe('aiTryOnCount', () => prisma.aiUsage.count({ where: { success: true } }), 0),
     safe('ordersByMonth', () => prisma.order.findMany({
       where: {
         createdAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
         status: { notIn: ['CANCELLED'] },
       },
       select: { total: true, createdAt: true },
+    }), []),
+    safe('creditPurchasesByMonth', () => prisma.aiCreditPurchase.findMany({
+      where: {
+        createdAt: { gte: new Date(new Date().getFullYear(), 0, 1) },
+        status: 'COMPLETED',
+      },
+      select: { amountInPaise: true, createdAt: true },
     }), []),
     safe('recentOrders', () => prisma.order.findMany({
       take: 8,
@@ -110,7 +120,10 @@ const getDashboardStats = asyncHandler(async (req, res) => {
     month,
     revenue: ordersByMonth
       .filter((o) => new Date(o.createdAt).getMonth() === i)
-      .reduce((sum, o) => sum + parseFloat(o.total?.toString() || '0'), 0),
+      .reduce((sum, o) => sum + parseFloat(o.total?.toString() || '0'), 0)
+      + creditPurchasesByMonth
+        .filter((p) => new Date(p.createdAt).getMonth() === i)
+        .reduce((sum, p) => sum + (p.amountInPaise || 0) / 100, 0),
   }));
 
   const monthlyRevenue = revenueByMonth[now.getMonth()].revenue;
@@ -141,7 +154,7 @@ const getDashboardStats = asyncHandler(async (req, res) => {
       totalOrders,
       monthlyRevenue,
       thriftRequestCount: totalThriftListings,
-      aiTryOnCount: 0,       // Pending AI feature
+      aiTryOnCount,
       revenueByMonth,
       inventoryByCategory,
       recentOrders,
@@ -168,6 +181,8 @@ const getUsers = asyncHandler(async (req, res) => {
       isEmailVerified: true,
       isPhoneVerified: true,
       coinBalance: true,
+      aiCredits: true,
+      aiTryOnCount: true,
       createdAt: true,
       updatedAt: true,
       _count: { select: { orders: true } },
@@ -194,6 +209,8 @@ const getUserById = asyncHandler(async (req, res) => {
       isEmailVerified: true,
       isPhoneVerified: true,
       coinBalance: true,
+      aiCredits: true,
+      aiTryOnCount: true,
       createdAt: true,
       updatedAt: true,
       orders: {
@@ -221,6 +238,69 @@ const getUserOrders = asyncHandler(async (req, res) => {
   });
 
   res.json({ success: true, data: orders });
+});
+
+/**
+ * GET /api/admin/ai-usage
+ * Returns AI usage summary per user
+ */
+const getAiUsageSummary = asyncHandler(async (_req, res) => {
+  const users = await prisma.user.findMany({
+    where: { role: 'USER' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      aiCredits: true,
+      aiTryOnCount: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const userIds = users.map((u) => u.id);
+  if (userIds.length === 0) {
+    return res.json({ success: true, data: [] });
+  }
+
+  const [usageTotals, successTotals, purchases] = await Promise.all([
+    prisma.aiUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds } },
+      _count: { _all: true },
+    }),
+    prisma.aiUsage.groupBy({
+      by: ['userId'],
+      where: { userId: { in: userIds }, success: true },
+      _count: { _all: true },
+    }),
+    prisma.aiCreditPurchase.findMany({
+      where: { userId: { in: userIds } },
+      orderBy: { createdAt: 'desc' },
+    }),
+  ]);
+
+  const totalMap = new Map(usageTotals.map((row) => [row.userId, row._count._all]));
+  const successMap = new Map(successTotals.map((row) => [row.userId, row._count._all]));
+  const purchaseMap = purchases.reduce((acc, purchase) => {
+    if (!acc[purchase.userId]) acc[purchase.userId] = [];
+    acc[purchase.userId].push(purchase);
+    return acc;
+  }, {});
+
+  const data = users.map((user) => {
+    const total = totalMap.get(user.id) || 0;
+    const success = successMap.get(user.id) || 0;
+    const successRate = total > 0 ? Math.round((success / total) * 100) : 0;
+    return {
+      ...user,
+      totalTryOns: total,
+      successRate,
+      purchases: purchaseMap[user.id] || [],
+    };
+  });
+
+  res.json({ success: true, data });
 });
 
 /**
@@ -885,6 +965,40 @@ const adjustUserCoins = asyncHandler(async (req, res) => {
 });
 
 /**
+ * PUT /api/admin/users/:id/ai-credits
+ * Admin manually adds or deducts AI credits for a user
+ * Body: { amount: number }
+ */
+const adjustUserAiCredits = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { amount } = req.body;
+
+  if (amount === 0 || amount == null || isNaN(parseInt(amount))) {
+    throw new BadRequestError('Amount must be a non-zero integer');
+  }
+
+  const parsedAmount = parseInt(amount);
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (!user) throw new NotFoundError('User not found');
+
+  if (parsedAmount < 0 && user.aiCredits + parsedAmount < 0) {
+    throw new BadRequestError(`Cannot deduct ${Math.abs(parsedAmount)} credits — user only has ${user.aiCredits}`);
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id },
+    data: { aiCredits: { increment: parsedAmount } },
+    select: { id: true, name: true, email: true, aiCredits: true },
+  });
+
+  res.json({
+    success: true,
+    data: updatedUser,
+    message: `${parsedAmount > 0 ? 'Credited' : 'Deducted'} ${Math.abs(parsedAmount)} AI credits`,
+  });
+});
+
+/**
  * DELETE /api/admin/users/:id
  * Permanently delete a user and all related records + uploaded images.
  */
@@ -977,11 +1091,13 @@ module.exports = {
   getUsers,
   getUserById,
   getUserOrders,
+  getAiUsageSummary,
   blockUser,
   unblockUser,
   getAllOrders,
   // Coins
   adjustUserCoins,
+  adjustUserAiCredits,
   deleteUser,
   // Thrift
   getAllThriftListings,

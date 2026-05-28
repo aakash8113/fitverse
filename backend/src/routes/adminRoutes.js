@@ -13,6 +13,7 @@ router.use(authorize('ADMIN'));
 
 // Dashboard
 router.get('/stats', adminController.getDashboardStats);
+router.get('/ai-usage', adminController.getAiUsageSummary);
 
 // Orders
 router.get('/orders', adminController.getAllOrders);
@@ -24,6 +25,7 @@ router.get('/users/:id/orders', adminController.getUserOrders);
 router.put('/users/:id/block', adminController.blockUser);
 router.put('/users/:id/unblock', adminController.unblockUser);
 router.put('/users/:id/coins', adminController.adjustUserCoins);
+router.put('/users/:id/ai-credits', adminController.adjustUserAiCredits);
 router.delete('/users/:id', adminController.deleteUser);
 
 // Carousel management
