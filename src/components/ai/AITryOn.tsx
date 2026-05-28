@@ -68,6 +68,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
   const [taskStatus, setTaskStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultTaskId, setResultTaskId] = useState<string | null>(null);
   const [resultPreviewUrl, setResultPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
@@ -133,6 +134,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       setBottomCheck({ status: "idle" });
     }
     setResultUrl(null);
+    setResultTaskId(null);
     setError(null);
   }, [tryOnType]);
 
@@ -212,6 +214,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
     }
 
     setResultUrl(null);
+    setResultTaskId(null);
     setTaskStatus(null);
     setProgress(0);
     setError(null);
@@ -245,6 +248,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
 
   const handleClothUpload = async (file: File, kind: "top" | "bottom" | "full") => {
     setResultUrl(null);
+    setResultTaskId(null);
     setTaskStatus(null);
     setProgress(0);
     setError(null);
@@ -302,21 +306,16 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
     }
   };
 
-  const loadResultPreview = async (url: string) => {
+  const loadResultPreview = async (taskId: string) => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(url, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!response.ok) {
-        throw new Error("Preview failed");
-      }
-      const blob = await response.blob();
+      const blob = await fitverseAiApi.getTryOnResult(taskId);
       const objectUrl = URL.createObjectURL(blob);
       setResultPreviewUrl(objectUrl);
+      return true;
     } catch (err) {
       setResultPreviewUrl(null);
       setError("Unable to load the result image. Please try again.");
+      return false;
     }
   };
 
@@ -330,17 +329,17 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       link.remove();
       return;
     }
-    if (!resultUrl) return;
+    if (!resultTaskId && !resultUrl) return;
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(resultUrl, {
-        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-      });
-      if (!response.ok) {
-        throw new Error("Download failed");
-      }
-
-      const blob = await response.blob();
+      const blob = resultTaskId
+        ? await fitverseAiApi.getTryOnResult(resultTaskId)
+        : await (async () => {
+            const response = await fetch(resultUrl as string);
+            if (!response.ok) {
+              throw new Error("Download failed");
+            }
+            return response.blob();
+          })();
       const contentType = blob.type || "image/jpeg";
       const ext = contentType.split("/")[1] || "jpg";
       const url = URL.createObjectURL(blob);
@@ -369,6 +368,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
     }
     setError(null);
     setResultUrl(null);
+    setResultTaskId(null);
     setResultPreviewUrl(null);
     setTaskStatus("CREATED");
     setProgress(0);
@@ -405,7 +405,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       if (!taskId) {
         throw new Error("Failed to create task");
       }
-
+      setResultTaskId(taskId);
       pollStatus(taskId, 0);
     } catch (err) {
       const message = (err as any)?.response?.data?.message;
@@ -426,10 +426,9 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       if (data.status === "COMPLETED") {
         const nextUrl = data.result_url || null;
         setResultUrl(nextUrl);
-        if (nextUrl) {
-          await loadResultPreview(nextUrl);
-        }
-        if (onCreditsRefresh) onCreditsRefresh();
+        setResultTaskId(taskId);
+        const loaded = await loadResultPreview(taskId);
+        if (loaded && onCreditsRefresh) onCreditsRefresh();
         return;
       }
 

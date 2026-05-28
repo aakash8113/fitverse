@@ -1425,6 +1425,13 @@ export const fitverseAiApi = {
     const response = await api.get<ApiResponse<FitverseAiTaskStatus>>(`/fitverse-ai/tryon/${taskId}`);
     return response.data;
   },
+
+  getTryOnResult: async (taskId: string) => {
+    const response = await api.get(`/fitverse-ai/tryon/${taskId}/result`, {
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  },
 };
 
 // Export everything

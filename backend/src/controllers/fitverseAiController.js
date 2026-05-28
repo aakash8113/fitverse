@@ -353,7 +353,9 @@ const getTryOnStatus = asyncHandler(async (req, res) => {
     payload.result_url = buildResultUrl(req, id);
   }
 
-  await settleUsage(id, data?.status);
+  if (data?.status === 'FAILED') {
+    await settleUsage(id, data?.status);
+  }
 
   return ApiResponse.success(res, 200, payload, 'Try-on task status');
 });
@@ -363,27 +365,42 @@ const getTryOnResult = asyncHandler(async (req, res) => {
   if (!id) {
     throw new BadRequestError('Task id is required');
   }
+  const fetchResultBuffer = async (url) => {
+    if (!url) return null;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    return { buffer, contentType };
+  };
 
   let signedUrl = readSignedUrl(id);
-  if (!signedUrl) {
+  let result = await fetchResultBuffer(signedUrl);
+
+  if (!result) {
+    resultCache.delete(id);
     const data = await getJsonRaw(`/tryon/v2/tasks/${id}`);
+    if (data?.status === 'FAILED') {
+      await settleUsage(id, 'FAILED');
+      throw new BadRequestError('Try-on failed');
+    }
     if (data?.status !== 'COMPLETED' || !data?.download_signed_url) {
       throw new BadRequestError('Result is not ready');
     }
     signedUrl = data.download_signed_url;
     rememberSignedUrl(id, signedUrl);
+    result = await fetchResultBuffer(signedUrl);
   }
 
-  const response = await fetch(signedUrl);
-  if (!response.ok) {
+  if (!result) {
+    await settleUsage(id, 'FAILED');
     throw new BadRequestError('Failed to fetch result image');
   }
 
-  const buffer = Buffer.from(await response.arrayBuffer());
-  const contentType = response.headers.get('content-type') || 'image/jpeg';
-  res.setHeader('Content-Type', contentType);
+  await settleUsage(id, 'COMPLETED');
+  res.setHeader('Content-Type', result.contentType);
   res.setHeader('Cache-Control', 'no-store');
-  return res.status(200).send(buffer);
+  return res.status(200).send(result.buffer);
 });
 
 module.exports = {
