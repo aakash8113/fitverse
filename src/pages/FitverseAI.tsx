@@ -1,12 +1,13 @@
 import { Sparkles, Shield, Zap, Eye } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { creditsApi } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { AITryOn } from "../components/ai/AITryOn.tsx";
+import { AITryOn, TryOnPrefill } from "../components/ai/AITryOn.tsx";
 
 const benefits = [
   {
@@ -27,6 +28,7 @@ const benefits = [
 ];
 
 export default function FitverseAI() {
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
   const { data: creditsData, isLoading: creditsLoading, refetch } = useQuery({
     queryKey: ["credits", "balance"],
@@ -35,6 +37,24 @@ export default function FitverseAI() {
     enabled: isAuthenticated,
   });
   const creditsAvailable = isAuthenticated ? (creditsData?.data?.aiCredits ?? 0) : 0;
+
+  const prefill = useMemo<TryOnPrefill | null>(() => {
+    const statePrefill = (location.state as { tryOnPrefill?: TryOnPrefill } | null)?.tryOnPrefill;
+    if (statePrefill) return statePrefill;
+    const stored = sessionStorage.getItem("fitverse_tryon_prefill");
+    if (!stored) return null;
+    try {
+      return JSON.parse(stored) as TryOnPrefill;
+    } catch {
+      return null;
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    if (prefill) {
+      sessionStorage.removeItem("fitverse_tryon_prefill");
+    }
+  }, [prefill]);
 
   return (
     <div className="min-h-screen bg-background cursor-default">
@@ -61,6 +81,7 @@ export default function FitverseAI() {
             <AITryOn
               availableCredits={isAuthenticated ? creditsAvailable : undefined}
               onCreditsRefresh={refetch}
+              prefill={prefill}
             />
           </div>
         </div>

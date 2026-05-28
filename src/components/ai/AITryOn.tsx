@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { fitverseAiApi, FitverseAiClothesType, FitverseAiModel, FitverseAiTryOnType } from "@/services/api";
+import { fitverseAiApi, FitverseAiClothesType, FitverseAiModel, FitverseAiTryOnType, WearType } from "@/services/api";
 
 type ModelSlotStatus = "checking" | "verified" | "rejected";
 
@@ -28,6 +28,13 @@ type ClothesCheckState = {
   detectedType?: FitverseAiClothesType;
 };
 
+export type TryOnPrefill = {
+  imageUrl: string;
+  wearType: WearType;
+  productId?: string;
+  source?: "shop" | "thrift";
+};
+
 const TRY_ON_LABELS: Record<FitverseAiTryOnType, string> = {
   upper: "Top",
   lower: "Bottom",
@@ -45,9 +52,10 @@ const formatGender = (value?: FitverseAiModel["gender"]) => {
 type AITryOnProps = {
   availableCredits?: number;
   onCreditsRefresh?: () => void;
+  prefill?: TryOnPrefill | null;
 };
 
-export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
+export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOnProps) {
   const [models, setModels] = useState<ModelSlot[]>([]);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
   const [modelNotice, setModelNotice] = useState<string | null>(null);
@@ -78,6 +86,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
   const mustCreateModel = models.length === 0;
 
   const pollRef = useRef<number | null>(null);
+  const prefillKeyRef = useRef<string | null>(null);
 
   const activeModel = useMemo(() => models.find((model) => model.id === activeModelId) || null, [models, activeModelId]);
 
@@ -172,6 +181,48 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       }
     };
   }, [resultPreviewUrl]);
+
+  useEffect(() => {
+    if (!prefill?.imageUrl || !prefill.wearType) return;
+
+    const key = `${prefill.wearType}:${prefill.imageUrl}`;
+    if (prefillKeyRef.current === key) return;
+    prefillKeyRef.current = key;
+
+    let canceled = false;
+
+    const applyPrefill = async () => {
+      setError(null);
+      setResultUrl(null);
+      setResultTaskId(null);
+      setResultPreviewUrl(null);
+
+      const nextType: FitverseAiTryOnType = prefill.wearType === "BOTTOMWEAR" ? "lower" : "upper";
+      setTryOnType(nextType);
+
+      try {
+        const file = await fetchClothFile(prefill.imageUrl, prefill.productId || "product");
+        if (canceled) return;
+
+        if (nextType === "upper") {
+          setTopFile(file);
+          setTopCheck({ status: "ready", message: "Selected from product", detectedType: "upper" });
+        } else {
+          setBottomFile(file);
+          setBottomCheck({ status: "ready", message: "Selected from product", detectedType: "lower" });
+        }
+      } catch (err) {
+        if (canceled) return;
+        setError("Failed to load product image for try-on.");
+      }
+    };
+
+    applyPrefill();
+
+    return () => {
+      canceled = true;
+    };
+  }, [prefill]);
 
   const resetDialog = () => {
     setNewModelName("");
@@ -870,4 +921,16 @@ const fetchModelFile = async (url: string, id: string) => {
   const type = blob.type || 'image/jpeg';
   const ext = type.split('/')[1] || 'jpg';
   return new File([blob], `model-${id}.${ext}`, { type });
+};
+
+const fetchClothFile = async (url: string, id: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error('Failed to download clothing image');
+  }
+
+  const blob = await response.blob();
+  const type = blob.type || 'image/jpeg';
+  const ext = type.split('/')[1] || 'jpg';
+  return new File([blob], `product-${id}.${ext}`, { type });
 };

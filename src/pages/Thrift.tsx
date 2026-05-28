@@ -94,6 +94,7 @@ const THRIFT_LIMIT = 20; // 4 cols x 5 rows
       : `http://localhost:5000/${p.images?.[0] || ""}`,
     sizes: p.availableSizes || ["XS", "S", "M", "L", "XL"],
     category: "thrift",
+    wearType: p.wearType,
     isThrift: true,
     condition: p.thriftCondition ? (CONDITION_LABELS[p.thriftCondition] || p.thriftCondition) : undefined,
     seller: { name: "Fitverse", rating: 4.9 },

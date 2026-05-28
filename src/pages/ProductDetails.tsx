@@ -50,6 +50,7 @@ const convertToCardProduct = (apiProduct: ApiProduct) => ({
   image: getImageUrl(apiProduct.images?.[0]),
   sizes: ["XS", "S", "M", "L", "XL"],
   category: (apiProduct.category || apiProduct.gender || "").toLowerCase(),
+  wearType: apiProduct.wearType,
   isNew: false,
   description: apiProduct.description,
   stock: getTotalStock(apiProduct.sizeStock),

@@ -1,9 +1,10 @@
-﻿import { Link } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom";
 import { Heart, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useWishlistContext } from "@/contexts/WishlistContext";
 import { useToast } from "@/hooks/use-toast";
+import { WearType } from "@/services/api";
 
 export interface Product {
   id: string;
@@ -14,6 +15,7 @@ export interface Product {
   image: string;
   sizes: string[];
   category: string;
+  wearType?: WearType;
   stock?: number;
   isNew?: boolean;
   isThrift?: boolean;
@@ -32,6 +34,7 @@ interface ProductCardProps {
 export function ProductCard({ product, className }: ProductCardProps) {
   const { toggleWishlist, isWishlisted } = useWishlistContext();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const wishlisted = isWishlisted(product.id);
 
   const handleWishlist = (e: React.MouseEvent) => {
@@ -55,6 +58,30 @@ export function ProductCard({ product, className }: ProductCardProps) {
     ? Math.round((1 - Number(product.price) / Number(product.originalPrice)) * 100) 
     : 0;
 
+  const handleTryOn = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!product.image || !product.wearType) {
+      toast({
+        title: "Try-on unavailable",
+        description: "This item is missing try-on details. Please try another product.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const prefill = {
+      imageUrl: product.image,
+      wearType: product.wearType,
+      productId: product.id,
+      source: product.isThrift ? "thrift" : "shop",
+    };
+
+    sessionStorage.setItem("fitverse_tryon_prefill", JSON.stringify(prefill));
+    navigate("/fitverse-ai", { state: { tryOnPrefill: prefill } });
+  };
+
   return (
     <Link to={`/product/${product.id}`} className={cn("card-product group block", className)}>
       {/* Image Container */}
@@ -71,7 +98,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
             <Button 
               size="sm" 
               className="flex-1 bg-[#d1ebdb] text-black h-9 hover:bg-[#c7e4d3] transition-colors duration-200"
-              onClick={(e) => e.preventDefault()}
+              onClick={handleTryOn}
             >
               <Sparkles className="h-3.5 w-3.5 mr-1.5" />
               Try On
