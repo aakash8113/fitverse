@@ -68,6 +68,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
   const [taskStatus, setTaskStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
+  const [resultPreviewUrl, setResultPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
   const isBusy = taskStatus === "CREATED" || taskStatus === "PROCESSING";
@@ -161,6 +162,14 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       if (pollRef.current) window.clearTimeout(pollRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    return () => {
+      if (resultPreviewUrl) {
+        URL.revokeObjectURL(resultPreviewUrl);
+      }
+    };
+  }, [resultPreviewUrl]);
 
   const resetDialog = () => {
     setNewModelName("");
@@ -293,10 +302,40 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
     }
   };
 
+  const loadResultPreview = async (url: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(url, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
+      if (!response.ok) {
+        throw new Error("Preview failed");
+      }
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      setResultPreviewUrl(objectUrl);
+    } catch (err) {
+      setResultPreviewUrl(null);
+      setError("Unable to load the result image. Please try again.");
+    }
+  };
+
   const handleDownloadResult = async () => {
+    if (resultPreviewUrl) {
+      const link = document.createElement("a");
+      link.href = resultPreviewUrl;
+      link.download = "fitverse-tryon.jpg";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      return;
+    }
     if (!resultUrl) return;
     try {
-      const response = await fetch(resultUrl);
+      const token = localStorage.getItem("token");
+      const response = await fetch(resultUrl, {
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
       if (!response.ok) {
         throw new Error("Download failed");
       }
@@ -330,6 +369,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
     }
     setError(null);
     setResultUrl(null);
+    setResultPreviewUrl(null);
     setTaskStatus("CREATED");
     setProgress(0);
 
@@ -384,7 +424,11 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
       setProgress(data.progress || 0);
 
       if (data.status === "COMPLETED") {
-        setResultUrl(data.result_url || null);
+        const nextUrl = data.result_url || null;
+        setResultUrl(nextUrl);
+        if (nextUrl) {
+          await loadResultPreview(nextUrl);
+        }
         if (onCreditsRefresh) onCreditsRefresh();
         return;
       }
@@ -739,8 +783,8 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
               </button>
             </div>
           )}
-          {resultUrl ? (
-            <img src={resultUrl} alt="Try-on result" className="h-full w-full object-contain" />
+          {resultPreviewUrl ? (
+            <img src={resultPreviewUrl} alt="Try-on result" className="h-full w-full object-contain" />
           ) : (
             <div className="text-center text-muted-foreground">
               {taskStatus === "PROCESSING" || taskStatus === "CREATED" ? (
