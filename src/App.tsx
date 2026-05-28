@@ -97,7 +97,7 @@ const App = () => (
           <Route path="/product/:id" element={<ProductDetails />} />
           <Route path="/collections" element={<Collections />} />
           <Route path="/search" element={<SearchResults />} />
-          <Route path="/fitverse-ai" element={<FitverseAI />} />
+          <Route path="/fitverse-ai" element={<ProtectedRoute><FitverseAI /></ProtectedRoute>} />
           <Route path="/thrift" element={<Thrift />} />
           <Route path="/thrift/sell" element={<ProtectedRoute requireVerification><ThriftSell /></ProtectedRoute>} />
           <Route path="/thrift/my-listings" element={<ProtectedRoute><ThriftMyListings /></ProtectedRoute>} />

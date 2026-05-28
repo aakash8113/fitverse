@@ -171,7 +171,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
   };
 
   const handleDialogChange = (open: boolean) => {
-    if (!open && mustCreateModel) return;
     setDialogOpen(open);
     if (!open) resetDialog();
   };
@@ -429,13 +428,15 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
     file: File | null,
     previewUrl: string | null,
     onSelect: (file: File) => void,
-    status: ClothesCheckState
+    status: ClothesCheckState,
+    disabled?: boolean
   ) => (
-    <label className="flex flex-col gap-3 h-full cursor-pointer">
+    <label className={cn("flex flex-col gap-3 h-full", disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer")}>
       <input
         type="file"
         accept="image/*"
         className="hidden"
+        disabled={disabled}
         onChange={(event) => {
           const fileInput = event.target.files?.[0];
           if (fileInput) onSelect(fileInput);
@@ -473,15 +474,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
   return (
     <>
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent
-          className={cn("max-w-2xl", mustCreateModel ? "[&>button]:hidden" : "")}
-          onEscapeKeyDown={(event) => {
-            if (mustCreateModel) event.preventDefault();
-          }}
-          onPointerDownOutside={(event) => {
-            if (mustCreateModel) event.preventDefault();
-          }}
-        >
+        <DialogContent className={cn("max-w-2xl")}>
           <DialogHeader>
             <DialogTitle>Create a model</DialogTitle>
             <DialogDescription>
@@ -571,7 +564,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
               type="button"
               variant="outline"
               onClick={() => setDialogOpen(false)}
-              disabled={mustCreateModel || isCreatingModel}
+              disabled={isCreatingModel}
             >
               Cancel
             </Button>
@@ -696,18 +689,18 @@ export function AITryOn({ availableCredits, onCreditsRefresh }: AITryOnProps) {
         {tryOnType === "combo" ? (
           <div className="flex flex-col gap-4">
             <div className="flex-1">
-              {renderUploadFrame("Top", topFile, topPreview, (file) => handleClothUpload(file, "top"), topCheck)}
+              {renderUploadFrame("Top", topFile, topPreview, (file) => handleClothUpload(file, "top"), topCheck, !activeModel)}
             </div>
             <div className="flex-1">
-              {renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck)}
+              {renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck, !activeModel)}
             </div>
           </div>
         ) : tryOnType === "full_set" ? (
-          renderUploadFrame("Full Outfit", fullFile, fullPreview, (file) => handleClothUpload(file, "full"), fullCheck)
+          renderUploadFrame("Full Outfit", fullFile, fullPreview, (file) => handleClothUpload(file, "full"), fullCheck, !activeModel)
         ) : tryOnType === "upper" ? (
-          renderUploadFrame("Top", topFile, topPreview, (file) => handleClothUpload(file, "top"), topCheck)
+          renderUploadFrame("Top", topFile, topPreview, (file) => handleClothUpload(file, "top"), topCheck, !activeModel)
         ) : (
-          renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck)
+          renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck, !activeModel)
         )}
 
         <label className="flex items-center justify-between text-xs text-muted-foreground mt-2">
