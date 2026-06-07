@@ -29,9 +29,11 @@ export default function Login() {
     
     try {
       await login(formData.email, formData.password);
-      // Redirect admins straight to dashboard, users to their intended page
+      // Redirect admins/sellers to their dashboard, users to their intended page
       const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
-      const destination = storedUser?.role === 'ADMIN' ? '/admin/dashboard' : from;
+      const destination = storedUser?.role === 'ADMIN' ? '/admin/dashboard'
+        : storedUser?.role === 'SELLER' ? '/seller/dashboard'
+        : from;
       navigate(destination, { replace: true });
     } catch (error) {
       console.error("Login failed:", error);

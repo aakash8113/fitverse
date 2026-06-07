@@ -15,6 +15,7 @@ type StatusVariant =
   | 'sold'
   | 'user'
   | 'admin'
+  | 'seller'
   | 'blocked'
   | 'processing'
   | 'shipped'
@@ -47,6 +48,7 @@ const variantStyles: Record<StatusVariant, string> = {
   refunded: 'bg-purple-50 text-purple-700 ring-purple-600/20',
 
   admin: 'bg-purple-50 text-purple-700 ring-purple-600/20',
+  seller: 'bg-blue-50 text-blue-700 ring-blue-600/20',
 };
 
 const variantLabels: Record<StatusVariant, string> = {
@@ -69,6 +71,7 @@ const variantLabels: Record<StatusVariant, string> = {
   blocked: 'Blocked',
   refunded: 'Returned',
   admin: 'Admin',
+  seller: 'Seller',
 };
 
 interface StatusBadgeProps {

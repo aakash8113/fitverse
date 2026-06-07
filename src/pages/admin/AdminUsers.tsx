@@ -45,7 +45,7 @@ const MOCK_USERS: AdminUser[] = [
 const AdminUsers: React.FC = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'USER' | 'ADMIN'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'USER' | 'ADMIN' | 'SELLER'>('all');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [coinUser, setCoinUser] = useState<AdminUser | null>(null);
@@ -187,12 +187,16 @@ const AdminUsers: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            {(['all', 'USER', 'ADMIN'] as const).map((r) => (
+            {(['all', 'USER', 'ADMIN', 'SELLER'] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
                 className={`text-xs px-3 py-1.5 rounded border transition-colors ${
-                  roleFilter === r ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-400'
+                  roleFilter === r
+                    ? r === 'SELLER'
+                      ? 'border-emerald-600 bg-emerald-600 text-white'
+                      : 'border-zinc-900 bg-zinc-900 text-white'
+                    : 'border-gray-200 text-gray-600 hover:border-gray-400'
                 }`}
               >
                 {r}
@@ -206,6 +210,7 @@ const AdminUsers: React.FC = () => {
           <span>Total: <strong className="text-gray-900 dark:text-white">{users.length}</strong></span>
           <span>Users: <strong className="text-gray-900 dark:text-white">{users.filter((u) => u.role === 'USER').length}</strong></span>
           <span>Admins: <strong className="text-purple-700 dark:text-purple-400">{users.filter((u) => u.role === 'ADMIN').length}</strong></span>
+          <span>Sellers: <strong className="text-emerald-700 dark:text-emerald-400">{users.filter((u) => u.role === 'SELLER').length}</strong></span>
           <span>Blocked: <strong className="text-red-600 dark:text-red-400">{users.filter((u) => u.isBlocked).length}</strong></span>
         </div>
 
@@ -305,7 +310,7 @@ const AdminUsers: React.FC = () => {
                           >
                             <FitverseCoinIcon className="h-3.5 w-3.5" />
                           </button>
-                          {user.role !== 'ADMIN' && (
+          {user.role !== 'ADMIN' && user.role !== 'SELLER' && (
                             <button
                               onClick={() => blockMutation.mutate({ id: user.id, block: !user.isBlocked })}
                               disabled={blockMutation.isPending}
@@ -319,7 +324,7 @@ const AdminUsers: React.FC = () => {
                               {user.isBlocked ? <UserCheck className="h-3.5 w-3.5" /> : <UserX className="h-3.5 w-3.5" />}
                             </button>
                           )}
-                          {user.role !== 'ADMIN' && (
+          {user.role !== 'ADMIN' && user.role !== 'SELLER' && (
                             <button
                               onClick={() => openDeleteDialog(user)}
                               className="text-gray-400 hover:text-red-600 p-1 rounded hover:bg-red-50 transition-colors"
@@ -487,7 +492,7 @@ const AdminUsers: React.FC = () => {
                 </div>
               </div>
 
-              {selectedUser.role !== 'ADMIN' && (
+              {selectedUser.role !== 'ADMIN' && selectedUser.role !== 'SELLER' && (
                 <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex gap-2">
                     <Button

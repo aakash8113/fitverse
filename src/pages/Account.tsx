@@ -12,6 +12,7 @@ import {
   Settings,
   Shield,
   Loader2,
+  Store,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -253,6 +254,30 @@ export default function Account() {
                   <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-accent transition-colors" />
                 </div>
               </Link>
+
+              {user.role === 'SELLER' || user.role === 'ADMIN' ? (
+                <Link
+                  to="/seller/dashboard"
+                  className="glass rounded-2xl border border-border/50 p-6 hover:border-emerald-400 transition-all duration-300 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                        <Store className="w-6 h-6 text-emerald-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold group-hover:text-emerald-600 transition-colors">
+                          Seller Dashboard
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Manage your store & products
+                        </p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-emerald-600 transition-colors" />
+                  </div>
+                </Link>
+              ) : null}
             </div>
 
             {/* Recent Orders */}

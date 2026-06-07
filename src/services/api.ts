@@ -88,7 +88,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'USER' | 'ADMIN';
+  role: 'USER' | 'ADMIN' | 'SELLER';
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   coinBalance: number;
@@ -774,7 +774,114 @@ export const adminApi = {
     return response.data;
   },
 
+};
 
+// ============================================
+// SELLER API
+// ============================================
+
+export interface SellerStats {
+  totalProducts: number;
+  totalOrders: number;
+  totalRevenue: number;
+  recentOrders: any[];
+}
+
+export interface SellerRevenue {
+  totalRevenue: number;
+  totalOrders: number;
+  revenueByMonth: { month: string; revenue: number }[];
+  revenueByProduct: { productId: string; productName: string; quantity: number; revenue: number }[];
+  revenueByCategory: { category: string; count: number; revenue: number }[];
+}
+
+export interface SellerOrder {
+  id: string;
+  orderNumber: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  shippedAt?: string;
+  deliveredAt?: string;
+  paymentMethod: string;
+  paymentStatus: string;
+  total: number;
+  shipping: number;
+  user: { id: string; name: string; email: string; phone?: string };
+  sellerItems: {
+    id: string;
+    productId: string;
+    productName: string;
+    productImage: string;
+    price: number;
+    quantity: number;
+    size: string;
+    product: { id: string; name: string; images: string[]; sellerId: string };
+  }[];
+}
+
+export const sellerApi = {
+  // Dashboard stats
+  getStats: async () => {
+    const response = await api.get<ApiResponse<SellerStats>>('/seller/stats');
+    return response.data;
+  },
+
+  // Products
+  getProducts: async (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    gender?: string;
+    category?: string;
+    sortBy?: string;
+  }) => {
+    const response = await api.get<PaginatedResponse<Product>>('/seller/products', { params });
+    return response.data;
+  },
+
+  createProduct: async (formData: FormData) => {
+    const response = await api.post<ApiResponse<Product>>('/seller/products', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  updateProduct: async (id: string, formData: FormData) => {
+    const response = await api.put<ApiResponse<Product>>(`/seller/products/${id}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  deleteProduct: async (id: string) => {
+    const response = await api.delete<ApiResponse>(`/seller/products/${id}`);
+    return response.data;
+  },
+
+  deleteProductImage: async (productId: string, imagePath: string) => {
+    const response = await api.delete<ApiResponse>(`/seller/products/${productId}/images`, {
+      data: { imagePath },
+    });
+    return response.data;
+  },
+
+  // Revenue & Analytics
+  getRevenue: async () => {
+    const response = await api.get<ApiResponse<SellerRevenue>>('/seller/revenue');
+    return response.data;
+  },
+
+  // Orders
+  getOrders: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const response = await api.get<ApiResponse<{ orders: SellerOrder[]; pagination: any }>>('/seller/orders', { params });
+    return response.data;
+  },
+
+  markOrderShipped: async (orderId: string) => {
+    const response = await api.put<ApiResponse<any>>(`/seller/orders/${orderId}/ship`);
+    return response.data;
+  },
 };
 
 // ============================================
