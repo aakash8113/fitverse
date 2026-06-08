@@ -55,9 +55,8 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
         {/* Logo */}
         <div className="flex items-center justify-between h-14 px-4 border-b border-zinc-700 shrink-0">
           <div className="flex items-center gap-2">
-            <Store className="h-4 w-4 text-emerald-400" />
             <span className="text-sm font-semibold tracking-widest uppercase text-zinc-300">
-              Seller Panel
+              FITVERSE SELLER
             </span>
           </div>
           <button
@@ -118,7 +117,7 @@ export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-gray-900 dark:text-white">Seller Panel</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-white">SELLER PANEL</span>
         </header>
 
         {/* Page content */}
