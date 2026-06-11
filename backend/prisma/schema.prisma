@@ -194,6 +194,13 @@ model Address {
 // PRODUCT — category system
 // ============================================
 
+enum SellerApprovalStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  PRICE_UPDATE_REQUESTED
+}
+
 enum Gender {
   MENS
   WOMENS
@@ -270,6 +277,8 @@ model Product {
   // Seller relationship
   sellerId  String?
   seller    User?     @relation("SellerProducts", fields: [sellerId], references: [id])
+  sellerPrice            Decimal?                    @db.Decimal(10, 2)
+  sellerApprovalStatus   SellerApprovalStatus?
 
   // Relations
   cartItems      CartItem[]

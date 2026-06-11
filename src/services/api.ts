@@ -820,6 +820,16 @@ export interface SellerOrder {
   }[];
 }
 
+export type SellerApprovalStatusType = 'REQUESTED' | 'APPROVED' | 'REJECTED' | 'PRICE_UPDATE_REQUESTED';
+
+export interface AdminSellerProduct extends Product {
+  sellerId: string;
+  seller?: { id: string; name: string; email: string; phone?: string };
+  sellerPrice?: number;
+  sellerApprovalStatus?: SellerApprovalStatusType;
+  adminNote?: string;
+}
+
 export const sellerApi = {
   // Dashboard stats
   getStats: async () => {
@@ -879,7 +889,30 @@ export const sellerApi = {
   },
 
   markOrderShipped: async (orderId: string) => {
-    const response = await api.put<ApiResponse<any>>(`/seller/orders/${orderId}/ship`);
+    const response = await api.put<any>(`/seller/orders/${orderId}/ship`);
+    return response.data;
+  },
+};
+
+// ============================================
+// ADMIN SELLER API
+// ============================================
+
+export const adminSellerApi = {
+  getRequests: async (params?: { page?: number; limit?: number; status?: string }) => {
+    const response = await api.get<ApiResponse<{ products: AdminSellerProduct[]; pagination: any }>>('/admin/seller-requests', { params });
+    return response.data;
+  },
+  approveProduct: async (id: string, finalPrice: number) => {
+    const response = await api.put<ApiResponse<AdminSellerProduct>>(`/admin/seller-requests/${id}/approve`, { finalPrice });
+    return response.data;
+  },
+  rejectProduct: async (id: string, reason?: string) => {
+    const response = await api.put<ApiResponse<AdminSellerProduct>>(`/admin/seller-requests/${id}/reject`, { reason });
+    return response.data;
+  },
+  getPendingCount: async () => {
+    const response = await api.get<ApiResponse<{ count: number }>>('/admin/seller-requests/pending-count');
     return response.data;
   },
 };

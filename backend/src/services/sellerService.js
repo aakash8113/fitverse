@@ -11,11 +11,11 @@ class SellerService {
    * Get dashboard stats for a seller
    */
   async getSellerStats(sellerId) {
-    const sellerProductIds = await this._getSellerProductIds(sellerId);
+    const sellerProductIds = await this._getApprovedProductIds(sellerId);
 
-    const [totalProducts, totalOrders, totalRevenue, recentOrders] = await Promise.all([
+    const [totalProducts, totalOrders, totalRevenue, recentOrders, pendingCount] = await Promise.all([
       prisma.product.count({
-        where: { sellerId, isActive: true, isThrift: false },
+        where: { sellerId, isThrift: false },
       }),
       sellerProductIds.length > 0
         ? prisma.orderItem.groupBy({
@@ -25,13 +25,19 @@ class SellerService {
           }).then((rows) => rows.length)
         : 0,
       sellerProductIds.length > 0
-        ? prisma.orderItem.aggregate({
+        ? prisma.orderItem.findMany({
             where: {
               productId: { in: sellerProductIds },
               order: { status: 'DELIVERED' },
             },
-            _sum: { price: true },
-          }).then((r) => parseFloat(r._sum.price?.toString() || '0'))
+            select: {
+              quantity: true,
+              product: { select: { sellerPrice: true } },
+            },
+          }).then((items) => items.reduce((sum, item) => {
+            const sp = item.product?.sellerPrice ? parseFloat(item.product.sellerPrice.toString()) : 0;
+            return sum + sp * item.quantity;
+          }, 0))
         : 0,
       sellerProductIds.length > 0
         ? prisma.orderItem.findMany({
@@ -59,6 +65,13 @@ class SellerService {
             }).map((i) => i.order);
           })
         : [],
+      prisma.product.count({
+        where: {
+          sellerId,
+          isThrift: false,
+          sellerApprovalStatus: { in: ['REQUESTED', 'PRICE_UPDATE_REQUESTED'] },
+        },
+      }),
     ]);
 
     return {
@@ -66,6 +79,7 @@ class SellerService {
       totalOrders,
       totalRevenue,
       recentOrders,
+      pendingCount,
     };
   }
 
@@ -73,7 +87,7 @@ class SellerService {
    * Get seller's own products with pagination & filters
    */
   async getSellerProducts(sellerId, query = {}) {
-    const { page = 1, limit = 20, search, gender, category, sortBy } = query;
+    const { page = 1, limit = 50, search, gender, category, sortBy, status } = query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
     const where = {
@@ -88,6 +102,7 @@ class SellerService {
     }
     if (gender) where.gender = gender.toUpperCase();
     if (category) where.category = category.toUpperCase();
+    if (status) where.sellerApprovalStatus = status;
 
     let orderBy = { createdAt: 'desc' };
     if (sortBy === 'price-low') orderBy = { price: 'asc' };
@@ -112,7 +127,7 @@ class SellerService {
   }
 
   /**
-   * Create product as a seller
+   * Create product as a seller — sets status to REQUESTED (pending admin approval)
    */
   async createSellerProduct(sellerId, productData, images = []) {
     let imagePaths = [];
@@ -134,11 +149,14 @@ class SellerService {
       Object.entries(sizeStock).map(([k, v]) => [k, parseInt(v, 10) || 0])
     );
 
+    const sellerPrice = Math.round(parseFloat(productData.price) * 100) / 100;
+
     const product = await prisma.product.create({
       data: {
         name: productData.name,
         description: productData.description,
-        price: Math.round(parseFloat(productData.price) * 100) / 100,
+        price: sellerPrice,
+        sellerPrice,
         sizeStock,
         brand: productData.brand || null,
         gender: productData.gender,
@@ -149,25 +167,32 @@ class SellerService {
         isThrift: false,
         images: imagePaths,
         sellerId,
+        sellerApprovalStatus: 'REQUESTED',
+        isActive: false,
       },
     });
 
-    logger.info(`Seller product created: ${product.id} by seller ${sellerId}`);
+    logger.info(`Seller product created: ${product.id} by seller ${sellerId} (status: REQUESTED)`);
     return product;
   }
 
   /**
    * Update a seller's own product
+   * - REQUESTED state: Everything editable, stays REQUESTED
+   * - APPROVED state: Non-price fields update immediately.
+   *   If price changes -> status = PRICE_UPDATE_REQUESTED, old price stays live
    */
   async updateSellerProduct(sellerId, productId, updateData, newImages = []) {
     const product = await this._getOwnedProduct(sellerId, productId);
 
+    delete updateData.stock;
+    delete updateData.sellerId;
+    delete updateData.isThrift;
+    delete updateData.sellerApprovalStatus;
+
     if (updateData.price) {
       updateData.price = parseFloat(updateData.price);
     }
-    delete updateData.stock;
-    delete updateData.sellerId; // Cannot reassign seller
-    delete updateData.isThrift;
 
     if (updateData.sizeStock !== undefined) {
       if (typeof updateData.sizeStock === 'string') {
@@ -194,6 +219,25 @@ class SellerService {
     if (newImages && newImages.length > 0) {
       const newImagePaths = await imageService.uploadMultiple(newImages, 'products');
       updateData.images = [...product.images, ...newImagePaths];
+    }
+
+    // ── Approval status logic ─────────────────────────────────────
+    const wasPriceChanged = updateData.price !== undefined
+      && Math.abs(updateData.price - parseFloat(product.price.toString())) > 0.01;
+
+    if (product.sellerApprovalStatus === 'APPROVED' && wasPriceChanged) {
+      // Price change on an approved product -> submit for re-approval
+      // Keep old price live, update sellerPrice only
+      const newSellerPrice = updateData.price;
+      delete updateData.price; // Don't change the live price
+      updateData.sellerPrice = newSellerPrice;
+      updateData.sellerApprovalStatus = 'PRICE_UPDATE_REQUESTED';
+
+      logger.info(`Seller ${sellerId} requested price update for product ${productId}: ${newSellerPrice}`);
+    } else if (wasPriceChanged) {
+      // REQUESTED or other states -> just update sellerPrice and price together
+      const newPrice = updateData.price;
+      updateData.sellerPrice = newPrice;
     }
 
     const updated = await prisma.product.update({
@@ -244,9 +288,10 @@ class SellerService {
 
   /**
    * Get revenue/analytics for seller's products
+   * Revenue = sellerPrice * quantity (seller's earnings, not admin's selling price)
    */
   async getSellerRevenue(sellerId) {
-    const sellerProductIds = await this._getSellerProductIds(sellerId);
+    const sellerProductIds = await this._getApprovedProductIds(sellerId);
 
     if (sellerProductIds.length === 0) {
       return {
@@ -258,7 +303,6 @@ class SellerService {
       };
     }
 
-    // Get completed order items for seller's products
     const orderItems = await prisma.orderItem.findMany({
       where: {
         productId: { in: sellerProductIds },
@@ -266,22 +310,27 @@ class SellerService {
       },
       include: {
         order: { select: { createdAt: true, orderNumber: true } },
-        product: { select: { name: true, category: true } },
+        product: { select: { name: true, category: true, sellerPrice: true } },
       },
     });
 
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const now = new Date();
 
-    // Revenue by month
+    const getSellerRevenueForOrderItem = (oi) => {
+      const sellerPrice = oi.product.sellerPrice
+        ? parseFloat(oi.product.sellerPrice.toString())
+        : parseFloat(oi.price.toString());
+      return sellerPrice * oi.quantity;
+    };
+
     const revenueByMonth = monthNames.map((month, i) => ({
       month,
       revenue: orderItems
         .filter((oi) => new Date(oi.order.createdAt).getMonth() === i && new Date(oi.order.createdAt).getFullYear() === now.getFullYear())
-        .reduce((sum, oi) => sum + parseFloat(oi.price.toString()) * oi.quantity, 0),
+        .reduce((sum, oi) => sum + getSellerRevenueForOrderItem(oi), 0),
     }));
 
-    // Revenue by product
     const productMap = new Map();
     orderItems.forEach((oi) => {
       const pid = oi.productId;
@@ -295,11 +344,10 @@ class SellerService {
       }
       const entry = productMap.get(pid);
       entry.quantity += oi.quantity;
-      entry.revenue += parseFloat(oi.price.toString()) * oi.quantity;
+      entry.revenue += getSellerRevenueForOrderItem(oi);
     });
     const revenueByProduct = Array.from(productMap.values()).sort((a, b) => b.revenue - a.revenue);
 
-    // Revenue by category
     const categoryMap = new Map();
     orderItems.forEach((oi) => {
       const cat = oi.product.category;
@@ -308,11 +356,11 @@ class SellerService {
       }
       const entry = categoryMap.get(cat);
       entry.count += oi.quantity;
-      entry.revenue += parseFloat(oi.price.toString()) * oi.quantity;
+      entry.revenue += getSellerRevenueForOrderItem(oi);
     });
     const revenueByCategory = Array.from(categoryMap.values()).sort((a, b) => b.revenue - a.revenue);
 
-    const totalRevenue = orderItems.reduce((sum, oi) => sum + parseFloat(oi.price.toString()) * oi.quantity, 0);
+    const totalRevenue = orderItems.reduce((sum, oi) => sum + getSellerRevenueForOrderItem(oi), 0);
 
     return {
       totalRevenue,
@@ -329,7 +377,7 @@ class SellerService {
   async getSellerOrders(sellerId, query = {}) {
     const { page = 1, limit = 20, status } = query;
     const skip = (parseInt(page) - 1) * parseInt(limit);
-    const sellerProductIds = await this._getSellerProductIds(sellerId);
+    const sellerProductIds = await this._getApprovedProductIds(sellerId);
 
     if (sellerProductIds.length === 0) {
       return { orders: [], pagination: { currentPage: 1, itemsPerPage: parseInt(limit), totalItems: 0, totalPages: 0 } };
@@ -363,13 +411,12 @@ class SellerService {
               user: { select: { id: true, name: true, email: true, phone: true } },
             },
           },
-          product: { select: { id: true, name: true, images: true, sellerId: true } },
+          product: { select: { id: true, name: true, images: true, sellerId: true, sellerPrice: true } },
         },
       }),
       prisma.orderItem.count({ where }),
     ]);
 
-    // Group items by order
     const orderMap = new Map();
     items.forEach((item) => {
       if (!orderMap.has(item.orderId)) {
@@ -384,6 +431,7 @@ class SellerService {
         productName: item.productName,
         productImage: item.productImage,
         price: parseFloat(item.price.toString()),
+        sellerPrice: item.product?.sellerPrice ? parseFloat(item.product.sellerPrice.toString()) : parseFloat(item.price.toString()),
         quantity: item.quantity,
         size: item.size,
         product: item.product,
@@ -405,12 +453,10 @@ class SellerService {
 
   /**
    * Mark an order item as shipped by the seller
-   * Seller can mark SHIPPED status on orders containing their products
    */
   async markOrderItemShipped(sellerId, orderId) {
-    const sellerProductIds = await this._getSellerProductIds(sellerId);
+    const sellerProductIds = await this._getApprovedProductIds(sellerId);
 
-    // Verify seller has products in this order
     const sellerItemsInOrder = await prisma.orderItem.findMany({
       where: {
         orderId,
@@ -422,7 +468,6 @@ class SellerService {
       throw new ForbiddenError('You do not have any products in this order');
     }
 
-    // Update the order status to SHIPPED if currently PROCESSING
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundError('Order not found');
     if (order.status !== 'PROCESSING') {
@@ -449,10 +494,10 @@ class SellerService {
 
   // ── Private helpers ──────────────────────────────────────────
 
-  /** Get all product IDs owned by this seller */
-  async _getSellerProductIds(sellerId) {
+  /** Get all product IDs owned by this seller that are APPROVED (live) */
+  async _getApprovedProductIds(sellerId) {
     const products = await prisma.product.findMany({
-      where: { sellerId, isActive: true, isThrift: false },
+      where: { sellerId, isActive: true, isThrift: false, sellerApprovalStatus: 'APPROVED' },
       select: { id: true },
     });
     return products.map((p) => p.id);

@@ -15,6 +15,7 @@ import {
   X,
   ChevronRight,
   RotateCcw,
+  Store,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ const navItems = [
   { to: '/admin/returns', label: 'Returns', icon: RotateCcw },
   { to: '/admin/users', label: 'Users', icon: Users },
   { to: '/admin/ai-usage', label: 'AI Usage', icon: Bot },
+  { to: '/admin/seller-products', label: 'Seller Products', icon: Store },
   { to: '/admin/coupons', label: 'Coupons', icon: Tag },
 ];
 

@@ -59,6 +59,7 @@ import MyCoins from "./pages/MyCoins";
 import CreditsBuy from "./pages/CreditsBuy";
 import CreditsReturn from "./pages/CreditsReturn";
 import AdminAiUsage from "./pages/admin/AdminAiUsage";
+import AdminSellerProducts from "./pages/admin/AdminSellerProducts";
 import { SellerGuard } from "@/components/seller/SellerGuard";
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import SellerProducts from "./pages/seller/SellerProducts";
@@ -160,6 +161,7 @@ const App = () => (
           <Route path="/admin/ai-usage" element={<AdminGuard><AdminAiUsage /></AdminGuard>} />
           <Route path="/admin/returns" element={<AdminGuard><AdminReturns /></AdminGuard>} />
           <Route path="/admin/coupons" element={<AdminGuard><AdminCoupons /></AdminGuard>} />
+          <Route path="/admin/seller-products" element={<AdminGuard><AdminSellerProducts /></AdminGuard>} />
 
           {/* Seller Panel */}
           <Route path="/seller" element={<SellerGuard><Navigate to="/seller/dashboard" replace /></SellerGuard>} />

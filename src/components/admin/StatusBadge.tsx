@@ -17,6 +17,8 @@ type StatusVariant =
   | 'admin'
   | 'seller'
   | 'blocked'
+  | 'requested'
+  | 'price_update_requested'
   | 'processing'
   | 'shipped'
   | 'delivered'
@@ -31,6 +33,8 @@ const variantStyles: Record<StatusVariant, string> = {
   in_inventory: 'bg-green-50 text-green-700 ring-green-600/20',
 
   pending: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
+  requested: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
+  price_update_requested: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   in_progress: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   under_refurbishment: 'bg-blue-50 text-blue-700 ring-blue-600/20',
   processing: 'bg-blue-50 text-blue-700 ring-blue-600/20',
@@ -58,6 +62,8 @@ const variantLabels: Record<StatusVariant, string> = {
   delivered: 'Delivered',
   in_inventory: 'In Inventory',
   pending: 'Pending',
+  requested: 'Pending Approval',
+  price_update_requested: 'Price Update Pending',
   in_progress: 'In Progress',
   under_refurbishment: 'Under Refurbishment',
   processing: 'Processing',
