@@ -216,18 +216,13 @@ export function FilterSidebar({
   const subCategoryList = category ? (SUBCATEGORIES[category] || []) : [];
 
   return (
-    <div className={cn("dark:bg-[#121212]", className)}>
+    <div className={cn(className)}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="font-semibold text-lg">Filters</h3>
         <div className="flex items-center gap-2">
           {hasFilters && (
             <Button variant="ghost" size="sm" onClick={clearAll} className="text-xs">
               Clear all
-            </Button>
-          )}
-          {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="lg:hidden">
-              <X className="h-5 w-5" />
             </Button>
           )}
         </div>

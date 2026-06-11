@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom";
 import {
   User,
   Mail,
@@ -13,17 +13,21 @@ import {
   Shield,
   Loader2,
   Store,
+  LogOut,
 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { ordersApi, addressesApi, ApiResponse, Order } from "@/services/api";
 
 export default function Account() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   // Fetch orders count
   const { data: ordersData } = useQuery<ApiResponse<Order[]>>({
@@ -40,6 +44,11 @@ export default function Account() {
   const orders = ordersData?.data || [];
   const addresses = addressesData?.data || [];
   const recentOrders = orders.slice(0, 3);
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -67,8 +76,8 @@ export default function Account() {
 
   const stats = {
     totalOrders: orders.length,
-    wishlistItems: 0, // We don't have wishlist API yet
-    savedAddresses: addresses.length,
+    wishlistItems: 0,
+    savedAddresses: addresses.length, 
   };
 
   if (!user) {
@@ -143,6 +152,18 @@ export default function Account() {
                   Edit Profile
                 </Button>
               </Link>
+
+              {/* Logout — mobile only */}
+              <div className="lg:hidden mt-2">
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
             </div>
 
             {/* Quick Stats */}

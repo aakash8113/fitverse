@@ -76,7 +76,8 @@ class ImageService {
       //   -> fitverse/products/abc
       if (urlOrPublicId.startsWith('http')) {
         const cleanUrl = String(urlOrPublicId).split('?')[0];
-        const match = cleanUrl.match(/\/upload\/(?:v\d+\/)?(.*?)(?:\.[a-zA-Z0-9]+)?$/);
+        // Match both /upload/ and /authenticated/ path patterns from Cloudinary
+        const match = cleanUrl.match(/\/(?:upload|authenticated)\/(?:v\d+\/)?(.*?)(?:\.[a-zA-Z0-9]+)?$/);
         publicId = match ? match[1] : urlOrPublicId;
       }
 

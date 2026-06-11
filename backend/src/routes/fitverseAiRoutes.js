@@ -3,7 +3,7 @@
 const express = require('express');
 const multer = require('multer');
 const fitverseAiController = require('../controllers/fitverseAiController');
-const { protect } = require('../middlewares/auth');
+const { protect, optionalAuth } = require('../middlewares/auth');
 const config = require('../config/env');
 const { BadRequestError } = require('../utils/errors');
 
@@ -39,6 +39,7 @@ router.post(
   ]),
   fitverseAiController.createTryOn
 );
+router.get('/models/:id/image', optionalAuth, fitverseAiController.getModelImage);
 router.get('/tryon/:id/result', protect, fitverseAiController.getTryOnResult);
 router.get('/tryon/:id', protect, fitverseAiController.getTryOnStatus);
 

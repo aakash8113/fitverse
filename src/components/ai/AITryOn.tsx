@@ -891,6 +891,13 @@ function useObjectPreview(file: File | null) {
   return preview;
 }
 
+const addTokenToUrl = (url: string): string => {
+  const token = localStorage.getItem('token');
+  if (!token) return url;
+  const separator = url.includes('?') ? '&' : '?';
+  return `${url}${separator}token=${encodeURIComponent(token)}`;
+};
+
 const mapModelRecord = (record: FitverseAiModel, index: number, file?: File | null): ModelSlot => {
   const status: ModelSlotStatus = record.status === "VERIFIED"
     ? "verified"
@@ -898,13 +905,15 @@ const mapModelRecord = (record: FitverseAiModel, index: number, file?: File | nu
       ? "rejected"
       : "checking";
 
+  const imgUrl = addTokenToUrl(record.imageUrl);
+
   return {
     id: record.id,
     name: record.name || `Model ${index + 1}`,
     gender: record.gender || "OTHER",
     file: file || null,
-    imageUrl: record.imageUrl,
-    previewUrl: record.imageUrl,
+    imageUrl: imgUrl,
+    previewUrl: imgUrl,
     status,
     goodTypes: record.goodClothesTypes || [],
     note: record.note || undefined,
@@ -912,7 +921,10 @@ const mapModelRecord = (record: FitverseAiModel, index: number, file?: File | nu
 };
 
 const fetchModelFile = async (url: string, id: string) => {
-  const response = await fetch(url);
+  const token = localStorage.getItem('token');
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const response = await fetch(url, { headers });
   if (!response.ok) {
     throw new Error('Failed to download model image');
   }

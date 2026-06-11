@@ -165,21 +165,26 @@ const uploadModelImage = async (file, userId) => {
         {
           folder: 'fitverse/models',
           resource_type: 'image',
+          type: 'authenticated', // 🔒 Makes the image private on Cloudinary
         },
         (error, res) => (error ? reject(error) : resolve(res))
       );
       stream.end(file.buffer);
     });
-    return result.secure_url || result.url;
+    // 🔒 Strip the /s--...--/ signature out of the URL before saving to DB
+    let finalUrl = result.secure_url || result.url;
+    finalUrl = finalUrl.replace(/\/s--[a-zA-Z0-9_-]+--\//, '/');
+    return finalUrl;
   }
 
-  const uploadDir = path.resolve(__dirname, '../../uploads/models');
+  // 🔒 Local fallback: Save to a non-public directory (not the static 'uploads' folder)
+  const uploadDir = path.resolve(__dirname, '../../private_uploads/models');
   fs.mkdirSync(uploadDir, { recursive: true });
   const ext = path.extname(file.originalname || '.jpg').toLowerCase() || '.jpg';
   const filename = `model-${userId}-${Date.now()}${ext}`;
   const fullPath = path.join(uploadDir, filename);
   fs.writeFileSync(fullPath, file.buffer);
-  return `/uploads/models/${filename}`;
+  return `/private_uploads/models/${filename}`;
 };
 
 const checkModel = asyncHandler(async (req, res) => {
@@ -217,20 +222,27 @@ const createModel = asyncHandler(async (req, res) => {
     return ApiResponse.success(res, 200, { check, model: null }, 'Model rejected');
   }
 
-  const imageUrl = await uploadModelImage(req.file, req.user.id);
+  const rawImageUrl = await uploadModelImage(req.file, req.user.id);
   const model = await prisma.aiModel.create({
     data: {
       userId: req.user.id,
       name: nameRaw,
       gender: genderRaw,
-      imageUrl,
+      imageUrl: rawImageUrl,
       status: 'VERIFIED',
       goodClothesTypes: check.good_clothes_types || [],
       note: check.error_code || null,
     },
   });
 
-  return ApiResponse.success(res, 201, { check, model }, 'Model saved');
+  // Return secure proxy URL instead of raw Cloudinary URL
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const secureModel = {
+    ...model,
+    imageUrl: `${baseUrl}/api/fitverse-ai/models/${model.id}/image`,
+  };
+
+  return ApiResponse.success(res, 201, { check, model: secureModel }, 'Model saved');
 });
 
 const checkClothes = asyncHandler(async (req, res) => {
@@ -251,7 +263,14 @@ const listModels = asyncHandler(async (req, res) => {
     orderBy: { createdAt: 'desc' },
   });
 
-  return ApiResponse.success(res, 200, models, 'Models retrieved');
+  // Map over models to replace the real URL with the secure proxy
+  const baseUrl = `${req.protocol}://${req.get('host')}`;
+  const secureModels = models.map((model) => ({
+    ...model,
+    imageUrl: `${baseUrl}/api/fitverse-ai/models/${model.id}/image`,
+  }));
+
+  return ApiResponse.success(res, 200, secureModels, 'Models retrieved');
 });
 
 const deleteModel = asyncHandler(async (req, res) => {
@@ -403,6 +422,85 @@ const getTryOnResult = asyncHandler(async (req, res) => {
   return res.status(200).send(result.buffer);
 });
 
+const getModelImage = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  // Support token via query param for <img> tags that can't set Authorization header
+  let userId = req.user?.id;
+  if (!userId && req.query.token) {
+    try {
+      const jwt = require('jsonwebtoken');
+      const jwtConfig = require('../config/env');
+      const decoded = jwt.verify(req.query.token, jwtConfig.jwt.secret);
+      userId = decoded.id;
+    } catch (e) {
+      throw new BadRequestError('Invalid or expired token');
+    }
+  }
+
+  if (!userId) {
+    throw new BadRequestError('Authentication required');
+  }
+
+  // 1. Verify the model belongs to the requesting user
+  const model = await prisma.aiModel.findFirst({
+    where: { id, userId },
+  });
+
+  if (!model) {
+    throw new BadRequestError('Model not found or access denied');
+  }
+
+  // 2. Strip any lingering signature from stored URL (safety check — for old models uploaded before the fix)
+  const cleanStoredUrl = String(model.imageUrl).replace(/\/s--[a-zA-Z0-9_-]+--\//, '/');
+  const imageUrl = cleanStoredUrl;
+
+  // 3. Extract public_id from the clean Cloudinary URL
+  let publicId = null;
+  if (imageUrl.startsWith('http')) {
+    const parts = imageUrl.split('/');
+    const authIdx = parts.findIndex(p => p === 'upload' || p === 'authenticated');
+    if (authIdx !== -1) {
+      const afterType = parts.slice(authIdx + 1);
+      const versionIdx = afterType.findIndex(p => /^v\d+$/.test(p));
+      const startIdx = versionIdx !== -1 ? versionIdx + 1 : 0;
+      publicId = afterType.slice(startIdx).join('/').replace(/\.[a-zA-Z0-9]+$/, '');
+    }
+  }
+
+  // 4. Handle Cloudinary Image — redirect to a short-lived signed URL
+  if (imageUrl.startsWith('http')) {
+    if (!cloudinary) {
+      throw new BadRequestError('Cloudinary not configured');
+    }
+
+    if (!publicId) throw new BadRequestError('Invalid image reference');
+
+    // 🔐 Generate a short-lived signed URL (valid for 1 hour)
+    // The signature is created server-side using CLOUDINARY_API_SECRET
+    const signedUrl = cloudinary.url(publicId, {
+      type: 'authenticated',
+      secure: true,
+      sign_url: true,
+      resource_type: 'image',
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+    });
+
+    // 302 redirect — browser fetches directly from Cloudinary with the signed URL
+    return res.redirect(signedUrl);
+  }
+
+  // 5. Handle Local Fallback Image
+  if (imageUrl.startsWith('/private_uploads/') || imageUrl.startsWith('/uploads/models/')) {
+    const localPath = path.resolve(__dirname, '../../', imageUrl.replace(/^\//, ''));
+    if (fs.existsSync(localPath)) {
+      return res.sendFile(localPath);
+    }
+  }
+
+  throw new BadRequestError('Image file not found');
+});
+
 module.exports = {
   checkModel,
   createModel,
@@ -412,4 +510,5 @@ module.exports = {
   createTryOn,
   getTryOnStatus,
   getTryOnResult,
+  getModelImage,
 };
