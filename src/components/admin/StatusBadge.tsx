@@ -16,6 +16,7 @@ type StatusVariant =
   | 'user'
   | 'admin'
   | 'seller'
+  | 'business'
   | 'blocked'
   | 'requested'
   | 'price_update_requested'
@@ -53,6 +54,7 @@ const variantStyles: Record<StatusVariant, string> = {
 
   admin: 'bg-purple-50 text-purple-700 ring-purple-600/20',
   seller: 'bg-blue-50 text-blue-700 ring-blue-600/20',
+  business: 'bg-yellow-50 text-yellow-700 ring-yellow-600/20',
 };
 
 const variantLabels: Record<StatusVariant, string> = {
@@ -78,6 +80,7 @@ const variantLabels: Record<StatusVariant, string> = {
   refunded: 'Returned',
   admin: 'Admin',
   seller: 'Seller',
+  business: 'Business',
 };
 
 interface StatusBadgeProps {

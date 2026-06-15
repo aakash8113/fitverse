@@ -32,6 +32,7 @@ const couponRoutes = require('./routes/couponRoutes');
 const carouselRoutes = require('./routes/carouselRoutes');
 const fitverseAiRoutes = require('./routes/fitverseAiRoutes');
 const sellerRoutes = require('./routes/sellerRoutes');
+const b2bRoutes = require('./routes/b2bRoutes');
 
 // Create Express app
 const app = express();
@@ -142,6 +143,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/carousels', carouselRoutes);
 app.use('/api/fitverse-ai', fitverseAiRoutes);
 app.use('/api/seller', sellerRoutes);
+app.use('/api/v1', b2bRoutes);
 
 // Welcome route
 app.get('/', (req, res) => {

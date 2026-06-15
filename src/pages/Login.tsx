@@ -33,6 +33,7 @@ export default function Login() {
       const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
       const destination = storedUser?.role === 'ADMIN' ? '/admin/dashboard'
         : storedUser?.role === 'SELLER' ? '/seller/dashboard'
+        : storedUser?.role === 'BUSINESS' ? '/business/dashboard'
         : from;
       navigate(destination, { replace: true });
     } catch (error) {

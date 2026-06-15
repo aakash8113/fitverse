@@ -19,6 +19,7 @@ enum UserRole {
   USER
   ADMIN
   SELLER
+  BUSINESS
 }
 
 enum CarouselPlacement {
@@ -83,6 +84,11 @@ model User {
 
   // Seller
   sellerProducts Product[] @relation("SellerProducts")
+
+  // Business (B2B API)
+  businessCredits    Int                  @default(0)
+  businessApiKeys    BusinessApiKey[]
+  businessPurchases  BusinessCreditPurchase[]
 
   // Relations
   cart            Cart?
@@ -159,6 +165,42 @@ model AiCreditPurchase {
   @@index([userId])
   @@index([status])
   @@map("ai_credit_purchases")
+}
+
+// ============================================
+// B2B AI API
+// ============================================
+
+model BusinessApiKey {
+  id            String    @id @default(uuid())
+  businessId    String
+  name          String    // e.g. "Production Key", "Staging Key"
+  keyHash       String    @unique // hashed API key
+  keyPrefix     String    // first 8 chars for identification
+  isActive      Boolean   @default(true)
+  lastUsedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  business User @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@index([keyHash])
+  @@map("business_api_keys")
+}
+
+model BusinessCreditPurchase {
+  id            String   @id @default(uuid())
+  businessId    String
+  credits       Int
+  amountInPaise Int
+  status        String   @default("COMPLETED")
+  createdAt     DateTime @default(now())
+
+  business User @relation(fields: [businessId], references: [id], onDelete: Cascade)
+
+  @@index([businessId])
+  @@map("business_credit_purchases")
 }
 
 // ============================================

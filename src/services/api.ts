@@ -88,7 +88,7 @@ export interface User {
   name: string;
   email: string;
   phone?: string;
-  role: 'USER' | 'ADMIN' | 'SELLER';
+  role: 'USER' | 'ADMIN' | 'SELLER' | 'BUSINESS';
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   coinBalance: number;
@@ -829,6 +829,58 @@ export interface AdminSellerProduct extends Product {
   sellerApprovalStatus?: SellerApprovalStatusType;
   adminNote?: string;
 }
+
+// ============================================
+// BUSINESS (B2B) API
+// ============================================
+
+export interface BusinessApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  isActive: boolean;
+  lastUsedAt?: string;
+  createdAt: string;
+}
+
+export interface AiUsageItem {
+  id: string;
+  userId: string;
+  taskId: string;
+  hdMode: boolean;
+  success: boolean | null;
+  createdAt: string;
+}
+
+export const businessApi = {
+  // Credits
+  getCredits: async () => {
+    const response = await api.get<ApiResponse<{ credits: number; costPerTask: number }>>('/v1/credits');
+    return response.data;
+  },
+
+  // Usage history
+  getUsage: async (params?: { page?: number; limit?: number }) => {
+    const response = await api.get<ApiResponse<{ items: AiUsageItem[]; pagination: any }>>('/v1/usage', { params });
+    return response.data;
+  },
+
+  // API Keys
+  getApiKeys: async () => {
+    const response = await api.get<ApiResponse<BusinessApiKey[]>>('/v1/keys');
+    return response.data;
+  },
+
+  createApiKey: async (name: string) => {
+    const response = await api.post<ApiResponse<{ key: string; name: string; prefix: string }>>('/v1/keys', { name });
+    return response.data;
+  },
+
+  revokeApiKey: async (id: string) => {
+    const response = await api.delete<ApiResponse>(`/v1/keys/${id}`);
+    return response.data;
+  },
+};
 
 export const sellerApi = {
   // Dashboard stats

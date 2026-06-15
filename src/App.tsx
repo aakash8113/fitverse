@@ -60,7 +60,13 @@ import CreditsBuy from "./pages/CreditsBuy";
 import CreditsReturn from "./pages/CreditsReturn";
 import AdminAiUsage from "./pages/admin/AdminAiUsage";
 import AdminSellerProducts from "./pages/admin/AdminSellerProducts";
+import AdminBusiness from "./pages/admin/AdminBusiness";
 import { SellerGuard } from "@/components/seller/SellerGuard";
+import { BusinessGuard } from "@/components/business/BusinessGuard";
+import BusinessDashboard from "./pages/business/BusinessDashboard";
+import BusinessApiKeys from "./pages/business/BusinessApiKeys";
+import BusinessUsage from "./pages/business/BusinessUsage";
+import BusinessBuyCredits from "./pages/business/BusinessBuyCredits";
 import SellerDashboard from "./pages/seller/SellerDashboard";
 import SellerProducts from "./pages/seller/SellerProducts";
 import SellerOrders from "./pages/seller/SellerOrders";
@@ -162,6 +168,7 @@ const App = () => (
           <Route path="/admin/returns" element={<AdminGuard><AdminReturns /></AdminGuard>} />
           <Route path="/admin/coupons" element={<AdminGuard><AdminCoupons /></AdminGuard>} />
           <Route path="/admin/seller-products" element={<AdminGuard><AdminSellerProducts /></AdminGuard>} />
+          <Route path="/admin/business" element={<AdminGuard><AdminBusiness /></AdminGuard>} />
 
           {/* Seller Panel */}
           <Route path="/seller" element={<SellerGuard><Navigate to="/seller/dashboard" replace /></SellerGuard>} />
@@ -169,6 +176,13 @@ const App = () => (
           <Route path="/seller/products" element={<SellerGuard><SellerProducts /></SellerGuard>} />
           <Route path="/seller/orders" element={<SellerGuard><SellerOrders /></SellerGuard>} />
           <Route path="/seller/analytics" element={<SellerGuard><SellerAnalytics /></SellerGuard>} />
+
+          {/* Business Panel */}
+          <Route path="/business" element={<BusinessGuard><Navigate to="/business/dashboard" replace /></BusinessGuard>} />
+          <Route path="/business/dashboard" element={<BusinessGuard><BusinessDashboard /></BusinessGuard>} />
+          <Route path="/business/api-keys" element={<BusinessGuard><BusinessApiKeys /></BusinessGuard>} />
+          <Route path="/business/usage" element={<BusinessGuard><BusinessUsage /></BusinessGuard>} />
+          <Route path="/business/buy-credits" element={<BusinessGuard><BusinessBuyCredits /></BusinessGuard>} />
 
           {/* 404 - Must be last */}
           <Route path="*" element={<NotFound />} />
