@@ -36,7 +36,7 @@ export default function Checkout() {
     (sum, item) => sum + Number(item.product.price) * item.quantity,
     0
   );
-  const shipping = subtotal > 0 ? 15.0 : 0;
+  const shipping = 0; // FREE shipping
   const couponDiscount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal + shipping - couponDiscount);
   const orderTotal = subtotal + shipping;

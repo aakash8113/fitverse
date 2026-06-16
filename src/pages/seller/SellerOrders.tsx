@@ -4,7 +4,7 @@ import { SellerLayout } from '@/components/seller/SellerLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
 import { sellerApi } from '@/services/api';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Package, Truck } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const ORDER_STATUSES = ['', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'];
@@ -13,27 +13,12 @@ const SellerOrders: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
-  const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
-
   const { data, isLoading } = useQuery({
     queryKey: ['seller', 'orders', statusFilter],
     queryFn: () => sellerApi.getOrders({ limit: 50, status: statusFilter || undefined }),
   });
 
   const orders = data?.data?.orders || [];
-
-  const handleMarkShipped = async (orderId: string) => {
-    setShippingOrderId(orderId);
-    try {
-      await sellerApi.markOrderShipped(orderId);
-      toast({ title: 'Order marked as shipped' });
-      queryClient.invalidateQueries({ queryKey: ['seller', 'orders'] });
-    } catch (err: any) {
-      toast({ title: 'Error', description: err.response?.data?.message || err.message, variant: 'destructive' });
-    } finally {
-      setShippingOrderId(null);
-    }
-  };
 
   return (
     <SellerLayout>
@@ -72,6 +57,7 @@ const SellerOrders: React.FC = () => {
           <div className="space-y-4">
             {orders.map((order: any) => {
               const canShip = order.status === 'PROCESSING';
+              const isShiprocket = order.shippingMethod === 'SHIPROCKET';
               return (
                 <div
                   key={order.id}
@@ -93,24 +79,32 @@ const SellerOrders: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <StatusBadge status={order.status?.toLowerCase() || 'processing'} />
-                      {canShip && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleMarkShipped(order.id)}
-                          disabled={shippingOrderId === order.id}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs"
-                        >
-                          {shippingOrderId === order.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                          ) : (
-                            <Truck className="h-3 w-3 mr-1" />
-                          )}
-                          Mark Shipped
-                        </Button>
+                      {isShiprocket && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 bg-blue-50 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-1 rounded-full">
+                          <Truck className="h-3 w-3" />
+                          Shiprocket
+                        </span>
                       )}
+                      <StatusBadge status={order.status?.toLowerCase() || 'processing'} />
                     </div>
                   </div>
+
+                  {/* Shiprocket tracking info */}
+                  {isShiprocket && (
+                    <div className="flex items-start gap-2 bg-purple-50 border border-purple-100 dark:bg-purple-900/20 dark:border-purple-800 rounded-lg px-3 py-2.5 mb-3">
+                      <Truck className="h-3.5 w-3.5 text-purple-500 shrink-0 mt-0.5" />
+                      <div className="text-xs text-purple-700 dark:text-purple-300">
+                        <p className="font-semibold">Shiprocket Fulfillment</p>
+                        {order.courierName && <p>Courier: {order.courierName}</p>}
+                        {order.awbCode && <p>AWB: <span className="font-mono">{order.awbCode}</span></p>}
+                        {order.trackingUrl && (
+                          <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-blue-600 hover:underline mt-0.5">
+                            <ExternalLink className="h-3 w-3" /> Track on courier site
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Order items from seller */}
                   <div className="space-y-2">
@@ -133,7 +127,7 @@ const SellerOrders: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* Payment info */}
+                  {/* Payment & shipping info */}
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
                     <div className="flex gap-4 text-xs text-gray-500">
                       <span>Payment: {order.paymentMethod}</span>
@@ -149,6 +143,21 @@ const SellerOrders: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* Info about pickup addresses */}
+        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-xs text-amber-800 dark:text-amber-200">
+          <div className="flex items-start gap-2">
+            <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold">Important: Pickup Addresses Needed for Shiprocket</p>
+              <p className="mt-0.5">
+                When the admin sends an order to Shiprocket, your default pickup address is used for courier pickup.
+                Add and set a default pickup address in the{" "}
+                <a href="/seller/pickup-addresses" className="underline font-medium">Pickup Addresses</a> section.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </SellerLayout>
   );

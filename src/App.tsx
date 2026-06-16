@@ -71,6 +71,7 @@ import SellerDashboard from "./pages/seller/SellerDashboard";
 import SellerProducts from "./pages/seller/SellerProducts";
 import SellerOrders from "./pages/seller/SellerOrders";
 import SellerAnalytics from "./pages/seller/SellerAnalytics";
+import SellerPickupAddresses from "./pages/seller/SellerPickupAddresses";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -176,6 +177,7 @@ const App = () => (
           <Route path="/seller/products" element={<SellerGuard><SellerProducts /></SellerGuard>} />
           <Route path="/seller/orders" element={<SellerGuard><SellerOrders /></SellerGuard>} />
           <Route path="/seller/analytics" element={<SellerGuard><SellerAnalytics /></SellerGuard>} />
+          <Route path="/seller/pickup-addresses" element={<SellerGuard><SellerPickupAddresses /></SellerGuard>} />
 
           {/* Business Panel */}
           <Route path="/business" element={<BusinessGuard><Navigate to="/business/dashboard" replace /></BusinessGuard>} />

@@ -144,6 +144,11 @@ const config = {
     apiKey: process.env.FITVERSE_API_KEY,
     baseUrl: normalizeUrl(process.env.FITVERSE_AI_BASE_URL),
   },
+  shiprocket: {
+    email: process.env.SHIPROCKET_EMAIL,
+    password: process.env.SHIPROCKET_PASSWORD,
+    webhookToken: process.env.SHIPROCKET_WEBHOOK_TOKEN || '',
+  },
 };
 
 module.exports = config;

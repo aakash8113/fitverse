@@ -11,6 +11,7 @@ import {
   X,
   ChevronRight,
   Store,
+  MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/seller/products', label: 'My Products', icon: ShoppingBag },
   { to: '/seller/orders', label: 'Orders', icon: ClipboardList },
   { to: '/seller/analytics', label: 'Analytics', icon: TrendingUp },
+  { to: '/seller/pickup-addresses', label: 'Pickup Addresses', icon: MapPin },
 ];
 
 export const SellerLayout: React.FC<SellerLayoutProps> = ({ children }) => {

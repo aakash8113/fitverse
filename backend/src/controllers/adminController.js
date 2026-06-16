@@ -367,9 +367,24 @@ const getAllOrders = asyncHandler(async (req, res) => {
     prisma.order.count({ where }),
   ]);
 
+  // Map response to include shipping fields in a user-friendly way
+  const ordersWithShipping = orders.map((order) => ({
+    ...order,
+    shippingInfo: order.shippingMethod ? {
+      method: order.shippingMethod,
+      courierName: order.courierName,
+      awbCode: order.awbCode,
+      trackingUrl: order.trackingUrl,
+      courierId: order.courierId,
+      labelUrl: order.labelUrl,
+      shipmentId: order.shipmentId,
+      pickupScheduledAt: order.pickupScheduledAt,
+    } : null,
+  }));
+
   res.json({
     success: true,
-    data: orders,
+    data: ordersWithShipping,
     pagination: { total, page: parseInt(page), limit: parseInt(limit), totalPages: Math.ceil(total / parseInt(limit)) },
   });
 });

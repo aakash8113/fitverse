@@ -78,7 +78,7 @@ class OrderService {
       return sum + (parseFloat(item.product.price) * item.quantity);
     }, 0);
 
-    const shipping = 15.00; // Fixed shipping cost
+    const shipping = 0; // FREE shipping — costs included in product prices
     const tax = 0; // Prices are inclusive of tax
 
     // Coupon discount (validated server-side — never trust frontend amount)
@@ -118,7 +118,7 @@ class OrderService {
         // Create payment intent
         paymentResult = await paymentService.createPaymentIntent({
           amount: total,
-          currency: 'usd',
+          currency: 'inr',
           metadata: {
             userId,
             orderNumber,
@@ -419,12 +419,40 @@ class OrderService {
       throw new NotFoundError('Order not found');
     }
 
+    // ── Guard: Shiprocket-managed orders — only CANCELLED allowed manually ──
+    if (order.shippingMethod === 'SHIPROCKET') {
+      if (status !== 'CANCELLED') {
+        throw new BadRequestError(
+          'This order is being handled by Shiprocket. Only CANCELLED status can be set manually.'
+        );
+      }
+      // Auto-cancel on Shiprocket as well
+      try {
+        const shippingService = require('./shippingService');
+        if (order.awbCode) {
+          await shippingService.cancelShipment(order.awbCode);
+        }
+      } catch (cancelErr) {
+        logger.error(`Failed to cancel Shiprocket shipment for order ${orderId}: ${cancelErr.message}`);
+        // Don't block the DB update
+      }
+    }
+
     const updateData = {
       status,
     };
 
+    if (status === 'SHIPPED') {
+      updateData.shippingMethod = 'ADMIN';
+      updateData.shippedAt = new Date();
+    }
+
     if (status === 'DELIVERED') {
       updateData.deliveredAt = new Date();
+    }
+
+    if (status === 'CANCELLED') {
+      updateData.cancelledAt = new Date();
     }
 
     const updatedOrder = await prisma.order.update({
@@ -552,7 +580,7 @@ class OrderService {
     }
 
     const subtotal = itemsToOrder.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
-    const shipping = 15.0;
+    const shipping = 0; // FREE shipping — costs included in product prices
     const tax = 0; // Prices are inclusive of tax
 
     // Coupon discount

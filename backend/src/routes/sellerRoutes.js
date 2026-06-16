@@ -4,6 +4,7 @@
 const express = require('express');
 const router = express.Router();
 const sellerController = require('../controllers/sellerController');
+const pickupAddressController = require('../controllers/pickupAddressController');
 const { protect, authorize } = require('../middlewares/auth');
 const upload = require('../middlewares/upload');
 
@@ -34,6 +35,12 @@ router.get('/revenue', sellerController.getSellerRevenue);
 
 // Orders
 router.get('/orders', sellerController.getSellerOrders);
-router.put('/orders/:orderId/ship', sellerController.markOrderShipped);
+// Sellers cannot mark orders as shipped — this is handled by admin or Shiprocket
+
+// Pickup Addresses (Shipping)
+router.get('/pickup-addresses', pickupAddressController.getMyPickupAddresses);
+router.post('/pickup-addresses', pickupAddressController.createPickupAddress);
+router.put('/pickup-addresses/:id', pickupAddressController.updatePickupAddress);
+router.delete('/pickup-addresses/:id', pickupAddressController.deletePickupAddress);
 
 module.exports = router;

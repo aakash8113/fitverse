@@ -5,6 +5,8 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/adminController');
 const carouselController = require('../controllers/carouselController');
+const pickupLocationController = require('../controllers/pickupLocationController');
+const adminUserController = require('../controllers/adminUserController');
 const { protect, authorize } = require('../middlewares/auth');
 
 // All admin routes require authentication + ADMIN role
@@ -51,5 +53,15 @@ router.delete('/thrift/inventory/:id', adminController.deleteThriftInventoryItem
 router.get('/refurbishment', adminController.getRefurbishmentItems);
 router.put('/refurbishment/:id', adminController.updateRefurbishmentItem);
 router.post('/refurbishment/:id/move-to-inventory', adminController.moveRefurbishmentItemToInventory);
+
+// User Creation (admin creates sellers/businesses with Shiprocket address registration)
+router.post('/users/create-seller', authorize('ADMIN'), adminUserController.createSeller);
+router.post('/users/create-business', authorize('ADMIN'), adminUserController.createBusiness);
+
+// Pickup Locations (admin warehouse for Shiprocket)
+router.get('/pickup-locations', pickupLocationController.getPickupLocations);
+router.post('/pickup-locations', pickupLocationController.createPickupLocation);
+router.put('/pickup-locations/:id', pickupLocationController.updatePickupLocation);
+router.delete('/pickup-locations/:id', pickupLocationController.deletePickupLocation);
 
 module.exports = router;
