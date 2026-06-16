@@ -950,6 +950,28 @@ export const sellerApi = {
 // ADMIN SELLER API
 // ============================================
 
+export interface AdminBusinessUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  isEmailVerified: boolean;
+  createdAt: string;
+  businessCredits: number;
+  _count: { businessApiKeys: number; aiUsage: number };
+}
+
+export const adminBusinessApi = {
+  getBusinesses: async () => {
+    const response = await api.get<ApiResponse<AdminBusinessUser[]>>('/admin/businesses');
+    return response.data;
+  },
+  adjustCredits: async (id: string, amount: number) => {
+    const response = await api.put<ApiResponse<{ id: string; businessCredits: number }>>(`/admin/businesses/${id}/credits`, { amount });
+    return response.data;
+  },
+};
+
 export const adminSellerApi = {
   getRequests: async (params?: { page?: number; limit?: number; status?: string }) => {
     const response = await api.get<ApiResponse<{ products: AdminSellerProduct[]; pagination: any }>>('/admin/seller-requests', { params });

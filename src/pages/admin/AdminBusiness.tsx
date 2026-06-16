@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatusBadge } from '@/components/admin/StatusBadge';
-import { adminApi, AdminUser } from '@/services/api';
+import { adminBusinessApi, AdminBusinessUser } from '@/services/api';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,22 +13,22 @@ import { Search, Loader2, Zap, Copy } from 'lucide-react';
 const AdminBusiness: React.FC = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
-  const [adjustDialog, setAdjustDialog] = useState<{ user: AdminUser | null; open: boolean }>({ user: null, open: false });
+  const [adjustDialog, setAdjustDialog] = useState<{ user: AdminBusinessUser | null; open: boolean }>({ user: null, open: false });
   const [creditAmount, setCreditAmount] = useState('');
 
   const { data, isLoading } = useQuery({
-    queryKey: ['admin', 'users'],
-    queryFn: adminApi.getUsers,
+    queryKey: ['admin', 'businesses'],
+    queryFn: adminBusinessApi.getBusinesses,
     retry: false,
   });
 
-  const users: AdminUser[] = (data?.data || []).filter((u: AdminUser) => u.role === 'BUSINESS');
+  const users: AdminBusinessUser[] = data?.data || [];
 
   const adjustCreditsMutation = useMutation({
     mutationFn: ({ userId, amount }: { userId: string; amount: number }) =>
-      adminApi.adjustAiCredits(userId, amount),
+      adminBusinessApi.adjustCredits(userId, amount),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['admin', 'users'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'businesses'] });
       toast({ title: 'Credits adjusted' });
       setAdjustDialog({ user: null, open: false });
     },

@@ -67,7 +67,13 @@ const createTryOn = asyncHandler(async (req, res) => {
   }
 
   // Deduct credit before processing
-  await b2bService.deductCredit(req.business.id);
+  let deducted = false;
+  try {
+    await b2bService.deductCredit(req.business.id);
+    deducted = true;
+  } catch (e) {
+    throw e;
+  }
 
   const form = new FormData();
   form.append('cloth_type', cloth_type);
@@ -77,7 +83,19 @@ const createTryOn = asyncHandler(async (req, res) => {
   form.append('cloth_image', toBlob(clothFile), clothFile?.originalname || 'cloth.jpg');
   if (lowerFile) form.append('lower_cloth_image', toBlob(lowerFile), lowerFile.originalname || 'lower.jpg');
 
-  const data = await postForm('/tryon/v2/tasks', form);
+  let data;
+  try {
+    data = await postForm('/tryon/v2/tasks', form);
+  } catch (err) {
+    // Refund credit if 3rd-party API failed
+    if (deducted) {
+      await prisma.user.update({
+        where: { id: req.business.id },
+        data: { businessCredits: { increment: 1 } },
+      });
+    }
+    throw err;
+  }
 
   if (data?.task_id) {
     await prisma.aiUsage.create({
@@ -85,6 +103,7 @@ const createTryOn = asyncHandler(async (req, res) => {
         userId: req.business.id,
         taskId: data.task_id,
         hdMode: hd_mode === 'true',
+        success: null,
       },
     });
   }
@@ -101,6 +120,15 @@ const getTryOnStatus = asyncHandler(async (req, res) => {
   if (!id) throw new BadRequestError('Task id is required');
 
   const data = await getJson(`/tryon/v2/tasks/${id}`);
+
+  // Update usage record status when task completes or fails
+  if (data?.status === 'COMPLETED' || data?.status === 'FAILED') {
+    await prisma.aiUsage.updateMany({
+      where: { taskId: id, success: null },
+      data: { success: data.status === 'COMPLETED' },
+    });
+  }
+
   return ApiResponse.success(res, 200, {
     task_id: data?.task_id || id,
     status: data?.status,
