@@ -179,8 +179,8 @@ class SellerService {
   /**
    * Update a seller's own product
    * - REQUESTED state: Everything editable, stays REQUESTED
-   * - APPROVED state: Non-price fields update immediately.
-   *   If price changes -> status = PRICE_UPDATE_REQUESTED, old price stays live
+   * - APPROVED state: Only non-price fields editable. Price changes are blocked.
+   *   Seller must delete and recreate to change price.
    */
   async updateSellerProduct(sellerId, productId, updateData, newImages = []) {
     const product = await this._getOwnedProduct(sellerId, productId);
@@ -190,8 +190,17 @@ class SellerService {
     delete updateData.isThrift;
     delete updateData.sellerApprovalStatus;
 
-    if (updateData.price) {
-      updateData.price = parseFloat(updateData.price);
+    // For APPROVED products: only allow sizeStock, availableSizes, and images changes
+    if (product.sellerApprovalStatus === 'APPROVED') {
+      const allowedFields = ['sizeStock', 'availableSizes', 'images'];
+      const blockedFields = Object.keys(updateData).filter(k => !allowedFields.includes(k));
+      blockedFields.forEach(k => delete updateData[k]);
+    } else {
+      if (updateData.price) {
+        const newPrice = parseFloat(updateData.price);
+        updateData.price = newPrice;
+        updateData.sellerPrice = newPrice;
+      }
     }
 
     if (updateData.sizeStock !== undefined) {
@@ -219,25 +228,6 @@ class SellerService {
     if (newImages && newImages.length > 0) {
       const newImagePaths = await imageService.uploadMultiple(newImages, 'products');
       updateData.images = [...product.images, ...newImagePaths];
-    }
-
-    // ── Approval status logic ─────────────────────────────────────
-    const wasPriceChanged = updateData.price !== undefined
-      && Math.abs(updateData.price - parseFloat(product.price.toString())) > 0.01;
-
-    if (product.sellerApprovalStatus === 'APPROVED' && wasPriceChanged) {
-      // Price change on an approved product -> submit for re-approval
-      // Keep old price live, update sellerPrice only
-      const newSellerPrice = updateData.price;
-      delete updateData.price; // Don't change the live price
-      updateData.sellerPrice = newSellerPrice;
-      updateData.sellerApprovalStatus = 'PRICE_UPDATE_REQUESTED';
-
-      logger.info(`Seller ${sellerId} requested price update for product ${productId}: ${newSellerPrice}`);
-    } else if (wasPriceChanged) {
-      // REQUESTED or other states -> just update sellerPrice and price together
-      const newPrice = updateData.price;
-      updateData.sellerPrice = newPrice;
     }
 
     const updated = await prisma.product.update({

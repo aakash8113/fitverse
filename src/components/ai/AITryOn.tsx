@@ -823,14 +823,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
               >
                 <Download className="h-4 w-4" />
               </button>
-              <button
-                type="button"
-                onClick={handleShareResult}
-                className="h-9 w-9 rounded-full bg-background/80 text-foreground shadow-sm border border-border/60 flex items-center justify-center"
-                aria-label="Share result"
-              >
-                <Share2 className="h-4 w-4" />
-              </button>
             </div>
           )}
           {resultPreviewUrl ? (
