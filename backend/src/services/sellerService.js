@@ -240,17 +240,28 @@ class SellerService {
   }
 
   /**
-   * Delete a seller's own product (soft delete)
+   * Delete a seller's own product
+   * - Active (approved/live) products: NOT allowed — throw error
+   * - Inactive products: Hard delete from DB (removes from seller products, admin requests)
    */
   async deleteSellerProduct(sellerId, productId) {
-    await this._getOwnedProduct(sellerId, productId);
+    const product = await this._getOwnedProduct(sellerId, productId);
 
-    await prisma.product.update({
-      where: { id: productId },
-      data: { isActive: false },
-    });
+    // Block deletion of active products
+    if (product.isActive) {
+      throw new BadRequestError('Cannot delete a live product. Please contact an admin.');
+    }
 
-    logger.info(`Seller product soft-deleted: ${productId} by seller ${sellerId}`);
+    // Hard delete from DB for inactive/unapproved products
+    await prisma.product.delete({ where: { id: productId } });
+
+    // Clean up images
+    if (product.images && product.images.length > 0) {
+      const imageService = require('./imageService');
+      await imageService.deleteMultiple(product.images).catch(() => {});
+    }
+
+    logger.info(`Seller product hard-deleted: ${productId} by seller ${sellerId}`);
     return { message: 'Product removed successfully' };
   }
 

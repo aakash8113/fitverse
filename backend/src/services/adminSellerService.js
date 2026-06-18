@@ -115,7 +115,6 @@ class AdminSellerService {
       data: {
         sellerApprovalStatus: 'REJECTED',
         isActive: false,
-        adminNote: reason || null,
       },
       include: {
         seller: { select: { id: true, name: true, email: true } },
