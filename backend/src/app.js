@@ -80,14 +80,14 @@ app.use((req, res, next) => {
 // Body parsing middleware
 // capture rawBody for webhook signature validation (Razorpay + credits)
 app.use(express.json({
-  limit: '10mb',
+  limit: '50mb',
   verify: (req, _res, buf) => {
     if (req.originalUrl && (req.originalUrl.includes('/payment/webhook') || req.originalUrl.includes('/credits/webhook'))) {
       req.rawBody = buf.toString('utf8');
     }
   },
 }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
 // Rate limiting
