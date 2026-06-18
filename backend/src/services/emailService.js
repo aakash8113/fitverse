@@ -108,7 +108,7 @@ function layout(content) {
 // Button helper
 // ─────────────────────────────────────────────
 function btn(text, href) {
-  return `<a href="${href}" style="display:inline-block;background:#18181b;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:12px 28px;border-radius:8px;letter-spacing:0.3px;">${text}</a>`;
+  return `<a href="${href}" style="display:inline-block;background:#18181b;color:#ffffff;font-size:14px;font-weight:500;text-decoration:none;padding:12px 28px;border-radius:6px;">${text}</a>`;
 }
 
 // ─────────────────────────────────────────────
@@ -117,10 +117,10 @@ function btn(text, href) {
 function otpBox(otp) {
   return `
 <div style="margin:28px 0;text-align:center;">
-  <div style="display:inline-block;background:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;padding:20px 40px;">
-    <span style="font-size:36px;font-weight:800;letter-spacing:10px;color:#18181b;font-variant-numeric:tabular-nums;">${otp}</span>
+  <div style="display:inline-block;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px 40px;">
+    <span style="font-size:36px;font-weight:700;letter-spacing:10px;color:#18181b;font-variant-numeric:tabular-nums;">${otp}</span>
   </div>
-  <p style="margin:12px 0 0;font-size:13px;color:#94a3b8;">This code expires in <strong>5 minutes</strong></p>
+  <p style="margin:12px 0 0;font-size:13px;color:#94a3b8;">This code expires in 5 minutes.</p>
 </div>`;
 }
 
@@ -130,15 +130,15 @@ function otpBox(otp) {
 async function sendOTPEmail(to, name, otp) {
   const firstName = (name || 'there').split(' ')[0];
   const html = layout(`
-    <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">Verify your email</h1>
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:600;color:#0f172a;">Verify your email address</h1>
     <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
-      Hi ${firstName}, welcome to Fitverse! Use the code below to verify your email address and complete your signup.
+      Hi ${firstName}, welcome to Fitverse. Use the verification code below to complete your registration.
     </p>
 
     ${otpBox(otp)}
 
     <p style="margin:24px 0 0;font-size:14px;color:#64748b;line-height:1.6;">
-      If you didn't create a Fitverse account, you can safely ignore this email.
+      If you did not create a Fitverse account, you may ignore this message.
     </p>
   `);
 
@@ -151,15 +151,15 @@ async function sendOTPEmail(to, name, otp) {
 async function sendResendOTPEmail(to, name, otp) {
   const firstName = (name || 'there').split(' ')[0];
   const html = layout(`
-    <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">New verification code</h1>
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:600;color:#0f172a;">New verification code</h1>
     <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
-      Hi ${firstName}, here's your new verification code. The previous one has been invalidated.
+      Hi ${firstName}, a new verification code has been generated. The previous code has been invalidated.
     </p>
 
     ${otpBox(otp)}
 
     <p style="margin:24px 0 0;font-size:14px;color:#64748b;line-height:1.6;">
-      If you didn't request this, please ignore this email or contact our support team.
+      If you did not request this, please contact our support team.
     </p>
   `);
 
@@ -172,54 +172,49 @@ async function sendResendOTPEmail(to, name, otp) {
 async function sendWelcomeEmail(to, name) {
   const firstName = (name || 'there').split(' ')[0];
   const html = layout(`
-    <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#0f172a;">Welcome to Fitverse, ${firstName}! 🎉</h1>
-    <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
-      Your account is now verified and ready to go. Discover the latest fitness fashion, experience our AI-powered virtual try-on, and find amazing pre-loved pieces in our Thrift marketplace.
+    <h1 style="margin:0 0 8px;font-size:22px;font-weight:600;color:#0f172a;">Welcome to Fitverse, ${firstName}</h1>
+    <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.6;">
+      Your account has been verified. Explore the latest fitness fashion, experience our AI-powered virtual try-on, and discover pre-loved pieces in the Thrift marketplace.
     </p>
 
-    <!-- Feature cards -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
       <tr>
         <td style="padding-right:8px;vertical-align:top;width:50%;">
-          <div style="background:#f8fafc;border-radius:10px;padding:16px;">
-            <div style="font-size:22px;margin-bottom:6px;">👗</div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
             <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">Shop Collection</p>
-            <p style="margin:0;font-size:12px;color:#64748b;">Latest activewear &amp; fashion drops</p>
+            <p style="margin:0;font-size:12px;color:#64748b;">Latest activewear and fashion.</p>
           </div>
         </td>
         <td style="padding-left:8px;vertical-align:top;width:50%;">
-          <div style="background:#f8fafc;border-radius:10px;padding:16px;">
-            <div style="font-size:22px;margin-bottom:6px;">✨</div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
             <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">AI Try-On</p>
-            <p style="margin:0;font-size:12px;color:#64748b;">See how clothes look on you</p>
+            <p style="margin:0;font-size:12px;color:#64748b;">Visualise outfits on your model.</p>
           </div>
         </td>
       </tr>
       <tr><td colspan="2" height="12"></td></tr>
       <tr>
         <td style="padding-right:8px;vertical-align:top;width:50%;">
-          <div style="background:#f0fdf4;border-radius:10px;padding:16px;">
-            <div style="font-size:22px;margin-bottom:6px;">♻️</div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
             <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">Thrift Marketplace</p>
-            <p style="margin:0;font-size:12px;color:#64748b;">Buy &amp; sell pre-loved fashion</p>
+            <p style="margin:0;font-size:12px;color:#64748b;">Buy and sell pre-loved fashion.</p>
           </div>
         </td>
         <td style="padding-left:8px;vertical-align:top;width:50%;">
-          <div style="background:#f0f7ff;border-radius:10px;padding:16px;">
-            <div style="font-size:22px;margin-bottom:6px;">🚚</div>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px;">
             <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#0f172a;">Fast Delivery</p>
-            <p style="margin:0;font-size:12px;color:#64748b;">Swift dispatch across India</p>
+            <p style="margin:0;font-size:12px;color:#64748b;">Swift dispatch across India.</p>
           </div>
         </td>
       </tr>
     </table>
 
     <div style="text-align:center;">
-      ${btn('Start Shopping →', `${FRONT}/shop`)}
+      ${btn('Explore the shop', `${FRONT}/shop`)}
     </div>
   `);
 
-  return send(to, `Welcome to Fitverse, ${firstName}!`, html);
+  return send(to, `Welcome to Fitverse, ${firstName}`, html);
 }
 
 // ─────────────────────────────────────────────
@@ -245,14 +240,14 @@ async function sendOrderConfirmationEmail(to, name, order) {
         <table cellpadding="0" cellspacing="0" width="100%">
           <tr>
             <td style="width:48px;padding-right:12px;vertical-align:middle;">
-              ${imageUrl ? `<img src="${imageUrl}" width="48" height="48" style="border-radius:8px;object-fit:cover;display:block;" />` : '<div style="width:48px;height:48px;background:#f1f5f9;border-radius:8px;"></div>'}
+              ${imageUrl ? `<img src="${imageUrl}" width="48" height="48" style="border-radius:6px;object-fit:cover;display:block;" />` : '<div style="width:48px;height:48px;background:#f1f5f9;border-radius:6px;"></div>'}
             </td>
             <td style="vertical-align:middle;">
-              <p style="margin:0;font-size:14px;font-weight:600;color:#0f172a;">${item.productName}</p>
+              <p style="margin:0;font-size:14px;font-weight:500;color:#0f172a;">${item.productName}</p>
               <p style="margin:2px 0 0;font-size:13px;color:#64748b;">Qty: ${item.quantity}</p>
             </td>
             <td style="vertical-align:middle;text-align:right;">
-              <p style="margin:0;font-size:14px;font-weight:600;color:#0f172a;">₹${(parseFloat(item.price) * item.quantity).toFixed(2)}</p>
+              <p style="margin:0;font-size:14px;font-weight:500;color:#0f172a;">₹${(parseFloat(item.price) * item.quantity).toFixed(2)}</p>
             </td>
           </tr>
         </table>
@@ -266,38 +261,33 @@ async function sendOrderConfirmationEmail(to, name, order) {
     : '—';
 
   const html = layout(`
-    <!-- Checkmark badge -->
-    <div style="text-align:center;margin-bottom:24px;">
-      <div style="display:inline-flex;align-items:center;justify-content:center;width:56px;height:56px;background:#f0fdf4;border-radius:50%;font-size:28px;">✅</div>
-    </div>
-
-    <h1 style="margin:0 0 6px;font-size:24px;font-weight:700;color:#0f172a;text-align:center;">Order confirmed!</h1>
-    <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.6;text-align:center;">
-      Hi ${firstName}, thanks for your order. We've received it and will keep you updated on its progress.
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:600;color:#0f172a;">Order confirmed</h1>
+    <p style="margin:0 0 28px;font-size:15px;color:#475569;line-height:1.6;">
+      Hi ${firstName}, thank you for your order. We have received it and will notify you when it ships.
     </p>
 
     <!-- Order meta -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:12px;padding:20px 24px;margin-bottom:28px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px 24px;margin-bottom:28px;">
       <tr>
         <td style="width:50%;padding-bottom:12px;">
-          <p style="margin:0;font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">Order Number</p>
-          <p style="margin:4px 0 0;font-size:15px;font-weight:700;color:#0f172a;">${order.orderNumber}</p>
+          <p style="margin:0;font-size:11px;font-weight:500;color:#94a3b8;letter-spacing:0.5px;text-transform:uppercase;">Order Number</p>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#0f172a;">${order.orderNumber}</p>
         </td>
         <td style="width:50%;padding-bottom:12px;text-align:right;">
-          <p style="margin:0;font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">Payment</p>
-          <p style="margin:4px 0 0;font-size:15px;font-weight:600;color:#0f172a;">${payMethodLabel}</p>
+          <p style="margin:0;font-size:11px;font-weight:500;color:#94a3b8;letter-spacing:0.5px;text-transform:uppercase;">Payment</p>
+          <p style="margin:4px 0 0;font-size:15px;font-weight:500;color:#0f172a;">${payMethodLabel}</p>
         </td>
       </tr>
       <tr>
         <td colspan="2">
-          <p style="margin:0;font-size:11px;font-weight:600;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">Delivery Address</p>
+          <p style="margin:0;font-size:11px;font-weight:500;color:#94a3b8;letter-spacing:0.5px;text-transform:uppercase;">Delivery Address</p>
           <p style="margin:4px 0 0;font-size:13px;color:#475569;">${addressBlock}</p>
         </td>
       </tr>
     </table>
 
     <!-- Items list -->
-    <h3 style="margin:0 0 4px;font-size:13px;font-weight:600;color:#94a3b8;letter-spacing:0.8px;text-transform:uppercase;">Items Ordered</h3>
+    <h3 style="margin:0 0 4px;font-size:11px;font-weight:500;color:#94a3b8;letter-spacing:0.5px;text-transform:uppercase;">Items Ordered</h3>
     <table width="100%" cellpadding="0" cellspacing="0">
       ${itemRows}
     </table>
@@ -313,21 +303,21 @@ async function sendOrderConfirmationEmail(to, name, order) {
         <td style="padding:6px 0;font-size:13px;color:#64748b;text-align:right;">₹${parseFloat(order.shipping || 0).toFixed(2)}</td>
       </tr>
       <tr>
-        <td style="padding:12px 0 0;border-top:2px solid #e2e8f0;font-size:16px;font-weight:700;color:#0f172a;">Total</td>
-        <td style="padding:12px 0 0;border-top:2px solid #e2e8f0;font-size:16px;font-weight:700;color:#0f172a;text-align:right;">₹${parseFloat(order.total || 0).toFixed(2)}</td>
+        <td style="padding:12px 0 0;border-top:1px solid #e2e8f0;font-size:16px;font-weight:600;color:#0f172a;">Total</td>
+        <td style="padding:12px 0 0;border-top:1px solid #e2e8f0;font-size:16px;font-weight:600;color:#0f172a;text-align:right;">₹${parseFloat(order.total || 0).toFixed(2)}</td>
       </tr>
     </table>
 
     <div style="text-align:center;margin-top:32px;">
-      ${btn('View Order Details →', `${FRONT}/orders/${order.id}`)}
+      ${btn('View order details', `${FRONT}/orders/${order.id}`)}
     </div>
 
     <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-      Need help? Reply to this email or visit our <a href="${FRONT}/contact" style="color:#3b82f6;text-decoration:none;">support page</a>.
+      Need assistance? Reply to this email or visit our <a href="${FRONT}/contact" style="color:#18181b;text-decoration:underline;">support page</a>.
     </p>
   `);
 
-  return send(to, `Order confirmed — ${order.orderNumber}`, html);
+  return send(to, `Order confirmed - ${order.orderNumber}`, html);
 }
 
 // ─────────────────────────────────────────────
@@ -346,7 +336,6 @@ async function send(to, subject, html) {
     return true;
   } catch (error) {
     logger.error(`Email send failed to ${to} | subject: "${subject}" | error: ${error.message}`);
-    // Don't throw — email failures should never break core flows
     return false;
   }
 }
