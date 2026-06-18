@@ -391,7 +391,7 @@ export interface AdminUser extends User {
 }
 export interface CoinTransaction { id: string; userId: string; amount: number; type: 'THRIFT_REWARD' | 'ORDER_PAYMENT' | 'ADMIN_ADJUSTMENT'; description: string; referenceId?: string; createdAt: string; }
 export interface AiCreditPack { id: string; credits: number; amountInPaise: number; amount: number; label: string; subtitle?: string; }
-export interface AiCreditPurchase { id: string; userId: string; credits: number; amountInPaise: number; status: 'PENDING' | 'COMPLETED' | 'FAILED'; phonePeOrderId?: string | null; createdAt: string; updatedAt: string; }
+export interface AiCreditPurchase { id: string; userId: string; credits: number; amountInPaise: number; status: 'PENDING' | 'COMPLETED' | 'FAILED'; razorpayOrderId?: string | null; razorpayPaymentId?: string | null; createdAt: string; updatedAt: string; }
 export interface AiUsageSummary { id: string; name: string; email: string; aiCredits: number; aiTryOnCount: number; totalTryOns: number; successRate: number; purchases: AiCreditPurchase[]; createdAt: string; }
 export interface DashboardStats { totalUsers: number; totalProducts: number; totalOrders: number; monthlyRevenue: number; thriftRequestCount: number; aiTryOnCount: number; revenueByMonth: { month: string; revenue: number }[]; inventoryByCategory: { category: string; count: number }[]; recentOrders: Order[]; }
 export interface ThriftRequest { id: string; userId: string; userName: string; userEmail: string; address: string; pickupDate: string; pickupTime: string; itemDescription: string; images: string[]; status: 'PENDING' | 'PICKED_UP' | 'UNDER_REFURBISHMENT' | 'APPROVED' | 'REJECTED'; createdAt: string; updatedAt: string; }
@@ -555,9 +555,10 @@ export const adminThriftApi = {
 // ============================================
 
 export const paymentApi = {
-  initiateOnlinePayment: async (data: { addressId: string; paymentMethod: 'CARD' | 'WALLET'; productIds?: string[]; coinsToUse?: number; couponCode?: string }) => { const r = await api.post<ApiResponse<{ orderId: string; orderNumber: string; total: number; redirectUrl: string; phonePeOrderId: string; expireAt: number }>>('/payment/initiate', data); return r.data; },
+  initiateOnlinePayment: async (data: { addressId: string; paymentMethod: 'CARD' | 'WALLET'; productIds?: string[]; coinsToUse?: number; couponCode?: string }) => { const r = await api.post<ApiResponse<{ orderId?: string; orderNumber?: string; total: number; razorpayOrderId?: string; receipt?: string; paidWithCoins?: boolean }>>('/payment/initiate', data); return r.data; },
+  verifyPayment: async (data: { razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string; receipt: string }) => { const r = await api.post<ApiResponse<{ orderId: string; orderNumber: string; status: string; paymentStatus: string; total: number }>>('/payment/verify', data); return r.data; },
   getPaymentStatus: async (orderId: string) => { const r = await api.get<ApiResponse<{ orderId: string; orderNumber: string; status: string; paymentStatus: string; total: number }>>(`/payment/status/${orderId}`); return r.data; },
-  initiateRefund: async (orderId: string) => { const r = await api.post<ApiResponse<{ refundId: string; merchantRefundId: string; state: string; amount: number }>>(`/payment/refund/${orderId}`); return r.data; },
+  initiateRefund: async (orderId: string) => { const r = await api.post<ApiResponse<{ refundId: string; amount: number; status: string; speedProcessed: string }>>(`/payment/refund/${orderId}`); return r.data; },
 };
 
 // ============================================

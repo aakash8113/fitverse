@@ -130,15 +130,10 @@ const config = {
     apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
 
-  phonepe: {
-    clientId: process.env.PHONEPE_CLIENT_ID,
-    clientSecret: process.env.PHONEPE_CLIENT_SECRET,
-    clientVersion: parseInt(process.env.PHONEPE_CLIENT_VERSION, 10) || 1,
-    // 'SANDBOX' for UAT testing | 'PRODUCTION' when live
-    env: process.env.PHONEPE_ENV || 'SANDBOX',
-    // Webhook credentials configured in PhonePe Business Dashboard
-    webhookUsername: process.env.PHONEPE_WEBHOOK_USERNAME,
-    webhookPassword: process.env.PHONEPE_WEBHOOK_PASSWORD,
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID,
+    keySecret: process.env.RAZORPAY_KEY_SECRET,
+    webhookSecret: process.env.RAZORPAY_WEBHOOK_SECRET || '',
   },
   fitverseAi: {
     apiKey: process.env.FITVERSE_API_KEY,

@@ -263,7 +263,7 @@ export default function Checkout() {
                     </span>
                     Secure checkout
                   </p>
-                  <p>Free returns within 7 days</p>
+                  <p>Free returns within 3 days</p>
                 </div>
               </div>
             </div>

@@ -1,5 +1,5 @@
 // AI Credits Controller
-// Handles credit balance, purchases, and PhonePe checkout
+// Handles credit balance, purchases, and Razorpay checkout
 
 const asyncHandler = require('../utils/asyncHandler');
 const ApiResponse = require('../utils/apiResponse');
@@ -17,7 +17,7 @@ const CREDIT_PACKS = [
 
 const findPack = (id) => CREDIT_PACKS.find((pack) => pack.id === id);
 
-const completePurchase = async (purchaseId, phonePeOrderId) => {
+const completePurchase = async (purchaseId, razorpayPaymentId, razorpayOrderId) => {
   const purchase = await prisma.aiCreditPurchase.findUnique({ where: { id: purchaseId } });
   if (!purchase) return null;
   if (purchase.status === 'COMPLETED') return purchase;
@@ -30,7 +30,8 @@ const completePurchase = async (purchaseId, phonePeOrderId) => {
       where: { id: purchaseId },
       data: {
         status: 'COMPLETED',
-        phonePeOrderId: phonePeOrderId || fresh.phonePeOrderId,
+        razorpayPaymentId: razorpayPaymentId || fresh.razorpayPaymentId,
+        razorpayOrderId: razorpayOrderId || fresh.razorpayOrderId,
       },
     });
 
@@ -117,17 +118,16 @@ const initiateCreditPurchase = asyncHandler(async (req, res) => {
     },
   });
 
-  const redirectUrl = `${config.frontend.primaryUrl}/credits/return?purchaseId=${purchase.id}`;
-
-  let paymentResponse;
+  // Create a Razorpay order for the credit purchase
+  let razorpayOrder;
   try {
-    paymentResponse = await paymentService.initiatePayment({
+    razorpayOrder = await paymentService.createOrder({
       merchantOrderId: purchase.id,
       amountInPaise: pack.amountInPaise,
-      redirectUrl,
-      metaInfo: {
-        udf1: req.user.id,
-        udf2: pack.id,
+      notes: {
+        userId: req.user.id,
+        packId: pack.id,
+        type: 'credit_purchase',
       },
     });
   } catch (error) {
@@ -138,9 +138,10 @@ const initiateCreditPurchase = asyncHandler(async (req, res) => {
     throw error;
   }
 
+  // Store the Razorpay order ID
   await prisma.aiCreditPurchase.update({
     where: { id: purchase.id },
-    data: { phonePeOrderId: paymentResponse.phonePeOrderId },
+    data: { razorpayOrderId: razorpayOrder.id },
   });
 
   return ApiResponse.success(
@@ -150,11 +151,51 @@ const initiateCreditPurchase = asyncHandler(async (req, res) => {
       purchaseId: purchase.id,
       credits: pack.credits,
       amount: pack.amountInPaise / 100,
-      redirectUrl: paymentResponse.redirectUrl,
-      phonePeOrderId: paymentResponse.phonePeOrderId,
-      expireAt: paymentResponse.expireAt,
+      razorpayOrderId: razorpayOrder.id,
     },
-    'Credit purchase initiated'
+    'Credit purchase initiated — open Razorpay Checkout'
+  );
+});
+
+/**
+ * POST /api/credits/purchase/verify
+ * Body: { purchaseId, razorpayOrderId, razorpayPaymentId, razorpaySignature }
+ */
+const verifyCreditPurchase = asyncHandler(async (req, res) => {
+  const { purchaseId, razorpayOrderId, razorpayPaymentId, razorpaySignature } = req.body;
+
+  if (!purchaseId || !razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+    throw new BadRequestError('Missing required payment verification fields');
+  }
+
+  // Verify the payment signature
+  const isValid = paymentService.verifyPaymentSignature({
+    razorpayOrderId,
+    razorpayPaymentId,
+    razorpaySignature,
+  });
+
+  if (!isValid) {
+    throw new BadRequestError('Payment verification failed — invalid signature');
+  }
+
+  // Complete the purchase
+  await completePurchase(purchaseId, razorpayPaymentId, razorpayOrderId);
+
+  const fresh = await prisma.aiCreditPurchase.findUnique({ where: { id: purchaseId } });
+  const user = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    select: { aiCredits: true },
+  });
+
+  return ApiResponse.success(
+    res,
+    200,
+    {
+      purchase: fresh,
+      aiCredits: user?.aiCredits ?? 0,
+    },
+    'Credit purchase verified successfully'
   );
 });
 
@@ -168,16 +209,16 @@ const getPurchaseStatus = asyncHandler(async (req, res) => {
     throw new NotFoundError('Purchase not found');
   }
 
-  if (purchase.status === 'PENDING') {
+  if (purchase.status === 'PENDING' && purchase.razorpayOrderId) {
     try {
-      const phonePeStatus = await paymentService.getOrderStatus(purchase.id);
-      if (phonePeStatus.state === 'COMPLETED') {
-        await completePurchase(purchase.id, phonePeStatus.orderId);
-      } else if (phonePeStatus.state === 'FAILED') {
-        await failPurchase(purchase.id);
+      const payments = await paymentService.getPaymentsForOrder(purchase.razorpayOrderId);
+      const capturedPayment = payments.find(p => p.status === 'captured');
+      
+      if (capturedPayment) {
+        await completePurchase(purchase.id, capturedPayment.id, purchase.razorpayOrderId);
       }
     } catch (error) {
-      logger.warn(`PhonePe credit status poll failed for ${purchase.id}: ${error.message}`);
+      logger.warn(`Razorpay credit status poll failed for ${purchase.id}: ${error.message}`);
     }
   }
 
@@ -200,25 +241,53 @@ const getPurchaseStatus = asyncHandler(async (req, res) => {
 
 /**
  * POST /api/credits/webhook
+ * Razorpay webhook for credits
  */
 const handleCreditsWebhook = async (req, res) => {
   res.status(200).json({ success: true });
 
   try {
-    const authorization = req.headers['authorization'] || '';
+    const signature = req.headers['x-razorpay-signature'] || '';
     const bodyString = req.rawBody || JSON.stringify(req.body);
-    const callbackResponse = paymentService.validateWebhook(authorization, bodyString);
-    const { state, originalMerchantOrderId, orderId: phonePeOrderId } = callbackResponse.payload;
 
-    logger.info(`PhonePe credits webhook | purchaseId=${originalMerchantOrderId} | state=${state}`);
+    const isValid = paymentService.validateWebhook(bodyString, signature);
+    if (!isValid) {
+      logger.warn('Razorpay credits webhook validation failed');
+      return;
+    }
 
-    if (state === 'COMPLETED') {
-      await completePurchase(originalMerchantOrderId, phonePeOrderId);
-    } else if (state === 'FAILED') {
-      await failPurchase(originalMerchantOrderId);
+    const event = req.body;
+    logger.info(`Razorpay credits webhook | event=${event.event}`);
+
+    if (event.event === 'payment.captured') {
+      const payment = event.payload.payment.entity;
+      const razorpayOrderId = payment.order_id;
+      const razorpayPaymentId = payment.id;
+
+      // Find the credit purchase by razorpayOrderId
+      const purchase = await prisma.aiCreditPurchase.findFirst({
+        where: { razorpayOrderId },
+      });
+
+      if (purchase) {
+        await completePurchase(purchase.id, razorpayPaymentId, razorpayOrderId);
+      } else {
+        logger.warn(`Razorpay credits webhook: no purchase found for order ${razorpayOrderId}`);
+      }
+    } else if (event.event === 'payment.failed') {
+      const payment = event.payload.payment.entity;
+      const razorpayOrderId = payment.order_id;
+
+      const purchase = await prisma.aiCreditPurchase.findFirst({
+        where: { razorpayOrderId },
+      });
+
+      if (purchase) {
+        await failPurchase(purchase.id);
+      }
     }
   } catch (error) {
-    logger.error(`PhonePe credits webhook error: ${error.message}`);
+    logger.error(`Razorpay credits webhook error: ${error.message}`);
   }
 };
 
@@ -227,6 +296,7 @@ module.exports = {
   getCreditBalance,
   getPurchaseHistory,
   initiateCreditPurchase,
+  verifyCreditPurchase,
   getPurchaseStatus,
   handleCreditsWebhook,
 };

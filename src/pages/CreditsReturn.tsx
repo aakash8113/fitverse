@@ -84,7 +84,7 @@ export default function CreditsReturn() {
           <div className="text-center space-y-5">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto" />
             <h1 className="text-2xl font-bold">Credits added successfully!</h1>
-            <p className="text-muted-foreground text-sm">Redirecting you back to Fitverse AI…</p>
+              <p className="text-muted-foreground text-sm">Redirecting you to Fitverse AI…</p>
           </div>
         );
       case "failed":

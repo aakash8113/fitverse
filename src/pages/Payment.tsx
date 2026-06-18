@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { ArrowLeft, Loader2, CreditCard, Banknote, Wallet, Tag, Coins } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
@@ -11,9 +11,18 @@ import { cartApi, ordersApi, paymentApi, coinsApi, couponsApi, CouponValidationR
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
+// Razorpay global type
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 const PAYMENT_OPTIONS = [
   { id: "COD" as const, label: "Cash on Delivery", icon: Banknote, description: "Pay when your order arrives" },
-  { id: "CARD" as const, label: "Card (PhonePe)", icon: CreditCard, description: "Credit / Debit / UPI" },
+  { id: "CARD" as const, label: "Card / UPI", icon: CreditCard, description: "Credit / Debit / UPI / Wallet" },
 ];
 
 export default function Payment() {
@@ -57,7 +66,7 @@ export default function Payment() {
   const total = Math.max(0, afterCouponTotal - coinsToUse);
   const orderTotal = subtotal + shipping;
 
-  // Create order mutation
+  // Create order mutation (for COD)
   const createOrderMutation = useMutation({
     mutationFn: (data: {
       addressId: string;
@@ -80,29 +89,112 @@ export default function Payment() {
     },
   });
 
-  // PhonePe payment mutation
-  const initiatePaymentMutation = useMutation({
-    mutationFn: (data: {
-      addressId: string;
-      paymentMethod: string;
-      productIds?: string[];
-      coinsToUse?: number;
-      couponCode?: string;
-    }) => paymentApi.initiateOnlinePayment(data as any),
-    onSuccess: (result) => {
-      if (result.data?.redirectUrl) {
-        window.location.href = result.data.redirectUrl;
+  // Load Razorpay script
+  const loadRazorpayScript = useCallback(() => {
+    return new Promise<void>((resolve, reject) => {
+      if (window.Razorpay) {
+        resolve();
+        return;
       }
-    },
-    onError: (error: any) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error("Failed to load Razorpay SDK"));
+      document.body.appendChild(script);
+    });
+  }, []);
+
+  const handleRazorpayPayment = async () => {
+    if (!selectedAddressId) {
+      toast({ title: "Address Required", description: "Please select an address first.", variant: "destructive" });
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Step 1: Load Razorpay script
+      await loadRazorpayScript();
+
+      // Step 2: Create order via backend
+      const payload: Parameters<typeof paymentApi.initiateOnlinePayment>[0] = {
+        addressId: selectedAddressId,
+        paymentMethod: "CARD",
+        productIds: buyNowProductId ? [buyNowProductId] : undefined,
+        coinsToUse: total > 0 ? coinsToUse : 0,
+        couponCode: appliedCoupon?.coupon.code || undefined,
+      };
+
+      const result = await paymentApi.initiateOnlinePayment(payload);
+      const { razorpayOrderId, receipt, total: amount } = result.data;
+
+      // If paid with coins, redirect to confirmation
+      if (result.data.paidWithCoins) {
+        navigate(`/order-confirmation?orderId=${result.data.orderId}`);
+        return;
+      }
+
+      // Step 3: Open Razorpay Checkout
+      // Razorpay Checkout automatically shows all available payment methods
+      // (UPI, Card, Net Banking, Wallet) based on merchant account configuration
+      const options: any = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || '',
+        amount: Math.round(amount * 100),
+        currency: "INR",
+        name: "Fitverse",
+        description: "Order Payment",
+        order_id: razorpayOrderId,
+        image: "https://res.cloudinary.com/dw1mjqbbj/image/upload/v1773408756/logo_white_huzakb.png",
+        prefill: {
+          name: user?.name || "",
+          email: user?.email || "",
+          contact: user?.phone || "",
+        },
+        notes: {
+          receipt: receipt,
+        },
+        theme: {
+          color: "#000000",
+        },
+        handler: async function (response: any) {
+          // Payment successful — verify on backend (creates DB order)
+          try {
+            const verifyResult = await paymentApi.verifyPayment({
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              receipt: receipt,
+            });
+            navigate(`/order-confirmation?orderId=${verifyResult.data?.orderId}`);
+          } catch (verifyError: any) {
+            toast({
+              title: "Payment Verification Failed",
+              description: verifyError.response?.data?.message || "Could not verify payment. Please try again.",
+              variant: "destructive",
+            });
+            setSubmitting(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            // User closed Razorpay modal without completing payment
+            // No DB order exists — safe to just reset
+            setSubmitting(false);
+          },
+        },
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+    } catch (error: any) {
       setSubmitting(false);
       toast({
         title: "Payment Failed",
         description: error.response?.data?.message || "Could not initiate payment.",
         variant: "destructive",
       });
-    },
-  });
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (!selectedAddressId) {
@@ -111,22 +203,19 @@ export default function Payment() {
     }
 
     setSubmitting(true);
-    const payload = {
-      addressId: selectedAddressId,
-      paymentMethod: paymentMethod === "CARD" ? "CARD" : "COD",
-      productIds: buyNowProductId ? [buyNowProductId] : undefined,
-      coinsToUse: total > 0 ? coinsToUse : 0,
-      couponCode: appliedCoupon?.coupon.code || undefined,
-    };
 
-    try {
-      if (paymentMethod === "CARD") {
-        await initiatePaymentMutation.mutateAsync(payload);
-      } else {
-        await createOrderMutation.mutateAsync(payload);
-      }
-    } catch {
-      // Handled by mutation onError
+    if (paymentMethod === "CARD") {
+      await handleRazorpayPayment();
+    } else {
+      // COD
+      const payload = {
+        addressId: selectedAddressId,
+        paymentMethod: "COD",
+        productIds: buyNowProductId ? [buyNowProductId] : undefined,
+        coinsToUse: total > 0 ? coinsToUse : 0,
+        couponCode: appliedCoupon?.coupon.code || undefined,
+      };
+      await createOrderMutation.mutateAsync(payload);
     }
   };
 
@@ -361,9 +450,9 @@ export default function Payment() {
                     <span className="w-4 h-4 rounded-full bg-green-500/20 flex items-center justify-center">
                       <span className="w-2 h-2 rounded-full bg-green-500" />
                     </span>
-                    Secure checkout
+                    Secure checkout with Razorpay
                   </p>
-                  <p>Free returns within 7 days</p>
+                  <p>Free returns within 3 days</p>
                 </div>
               </div>
             </div>

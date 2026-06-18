@@ -13,7 +13,7 @@ const { isSchemaMismatchError } = require('../utils/dbErrors');
 
 class OrderService {
   /**
-   * Create order from cart
+   * Create order from cart (for COD and COINS-only payments)
    * @param {String} userId - User ID
    * @param {Object} orderData - {addressId, paymentMethod}
    * @returns {Promise<Object>} Created order
@@ -114,26 +114,6 @@ class OrderService {
         });
         paymentId = paymentResult.paymentId;
         paymentStatus = total === 0 ? 'COMPLETED' : 'COD_PENDING';
-      } else {
-        // Create payment intent
-        paymentResult = await paymentService.createPaymentIntent({
-          amount: total,
-          currency: 'inr',
-          metadata: {
-            userId,
-            orderNumber,
-          },
-        });
-        paymentId = paymentResult.paymentId;
-
-        // Verify payment (in production, this would be a webhook)
-        const verification = await paymentService.verifyPayment(paymentId);
-        
-        if (!verification.success) {
-          throw new BadRequestError('Payment failed. Please try again.');
-        }
-
-        paymentStatus = 'COMPLETED';
       }
     } catch (error) {
       logger.error(`Payment processing failed: ${error.message}`);
@@ -141,31 +121,227 @@ class OrderService {
     }
 
     // Create order with transaction to ensure atomicity
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await this._createOrderInDb({
+      userId,
+      orderNumber,
+      addressId,
+      paymentMethod: effectivePaymentMethod,
+      paymentStatus,
+      paymentId,
+      subtotal,
+      shipping,
+      tax,
+      total,
+      coinsToUse,
+      validatedCoupon,
+      couponDiscount,
+      itemsToOrder,
+      cart,
+    });
+
+    logger.info(`Order created: ${orderNumber} for user ${userId}`);
+
+    // Return order with full details
+    const fullOrder = await this.getOrderById(userId, order.id);
+
+    // Fire-and-forget confirmation email
+    this._sendConfirmationEmail(userId, fullOrder);
+
+    return fullOrder;
+  }
+
+  /**
+   * Validate cart and create a Razorpay order (NO DB order created).
+   * Returns razorpayOrderId + receipt for frontend to open checkout.
+   * @param {String} userId
+   * @param {Object} orderData
+   * @returns {Promise<{razorpayOrderId: string, receipt: string, amount: number, cartInfo: Object}>}
+   */
+  async initiatePrepaidOrder(userId, orderData) {
+    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse, couponCode } = orderData;
+
+    // Verify address
+    const address = await prisma.address.findUnique({ where: { id: addressId } });
+    if (!address) throw new NotFoundError('Address not found');
+    if (address.userId !== userId) throw new BadRequestError('Unauthorized access to address');
+
+    // Get cart
+    const cart = await prisma.cart.findUnique({
+      where: { userId },
+      include: { items: { include: { product: true } } },
+    });
+    if (!cart || cart.items.length === 0) throw new BadRequestError('Cart is empty');
+
+    const itemsToOrder = productIds?.length
+      ? cart.items.filter((item) => productIds.includes(item.productId))
+      : cart.items;
+    if (itemsToOrder.length === 0) throw new BadRequestError('No matching items found in cart');
+
+    // Validate stock
+    for (const item of itemsToOrder) {
+      const avail = (item.product.sizeStock || {})[item.size || ''] ?? 0;
+      if (avail < item.quantity)
+        throw new BadRequestError(`Insufficient stock for ${item.product.name}`);
+      if (!item.product.isActive)
+        throw new BadRequestError(`${item.product.name} is no longer available`);
+    }
+
+    // Calculate totals
+    const subtotal = itemsToOrder.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
+    const shipping = 0;
+    const tax = 0;
+
+    // Coupon
+    let couponDiscount = 0;
+    let validatedCoupon = null;
+    if (couponCode) {
+      const couponResult = await couponService.validateCoupon(userId, couponCode, itemsToOrder);
+      couponDiscount = couponResult.discountAmount;
+      validatedCoupon = couponResult.coupon;
+    }
+
+    // Coins
+    const userForCoins = await prisma.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
+    const afterCouponP = Math.max(0, subtotal + shipping - couponDiscount);
+    const maxCoinsP = Math.ceil(afterCouponP);
+    const coinsToUse = Math.min(Math.max(0, parseInt(rawCoinsToUse || 0)), userForCoins.coinBalance, maxCoinsP);
+    const total = Math.max(0, afterCouponP - coinsToUse);
+    const effectivePaymentMethod = total === 0 ? 'COINS' : paymentMethod;
+
+    if (total === 0) {
+      // Coins cover entire amount — create order directly
+      const orderNumber = generateOrderNumber();
+      const paymentResult = await paymentService.processCOD({ amount: 0, orderNumber });
+      return this._createOrderInDb({
+        userId, orderNumber, addressId,
+        paymentMethod: 'COINS', paymentStatus: 'COMPLETED',
+        paymentId: paymentResult.paymentId,
+        subtotal, shipping, tax, total: 0,
+        coinsToUse, validatedCoupon, couponDiscount,
+        itemsToOrder, cart,
+      });
+    }
+
+    // Generate receipt for Razorpay
+    const receipt = generateOrderNumber();
+
+    // Create Razorpay order
+    const razorpayOrder = await paymentService.createOrder({
+      merchantOrderId: receipt,
+      amountInPaise: Math.round(parseFloat(total) * 100),
+      notes: {
+        userId,
+        receipt,
+        addressId,
+        paymentMethod: effectivePaymentMethod,
+        productIds: productIds ? JSON.stringify(productIds) : '',
+        coinsToUse: String(coinsToUse),
+        couponCode: couponCode || '',
+        subtotal: String(subtotal),
+        couponDiscount: String(couponDiscount),
+      },
+    });
+
+    logger.info(`Prepaid order initiated: receipt=${receipt} razorpayOrderId=${razorpayOrder.id} for user ${userId}`);
+
+    // Return only the Razorpay order info — NO DB order yet
+    return {
+      razorpayOrderId: razorpayOrder.id,
+      receipt,
+      amount: total,
+      subtotal,
+      shipping,
+      tax,
+      couponDiscount,
+      coinsToUse,
+      paymentMethod: effectivePaymentMethod,
+      addressId,
+      productIds: productIds || null,
+      couponCode: couponCode || null,
+      validatedCoupon: validatedCoupon || null,
+      itemsToOrder,
+      cart,
+    };
+  }
+
+  /**
+   * Create the DB order after successful Razorpay payment verification.
+   * This is called from /api/payment/verify after signature is validated.
+   * @param {String} userId
+   * @param {Object} data - All the info returned by initiatePrepaidOrder
+   * @param {String} razorpayPaymentId
+   * @returns {Promise<Object>} Created order
+   */
+  async createPaidOrder(userId, data, razorpayPaymentId) {
+    const {
+      receipt: orderNumber,
+      addressId,
+      paymentMethod,
+      subtotal,
+      shipping,
+      tax,
+      amount: total,
+      coinsToUse,
+      couponCode,
+      couponDiscount,
+      validatedCoupon,
+      itemsToOrder,
+      cart,
+    } = data;
+
+    const order = await this._createOrderInDb({
+      userId,
+      orderNumber,
+      addressId,
+      paymentMethod,
+      paymentStatus: 'COMPLETED',
+      paymentId: razorpayPaymentId,
+      subtotal,
+      shipping,
+      tax,
+      total,
+      coinsToUse,
+      validatedCoupon,
+      couponDiscount,
+      itemsToOrder,
+      cart,
+    });
+
+    logger.info(`Paid order created: ${orderNumber} for user ${userId}`);
+
+    const fullOrder = await this.getOrderById(userId, order.id);
+    this._sendConfirmationEmail(userId, fullOrder);
+    return fullOrder;
+  }
+
+  /**
+   * Internal helper — creates order, order items, reduces stock, clears cart, deducts coins, records coupon.
+   */
+  async _createOrderInDb({ userId, orderNumber, addressId, paymentMethod, paymentStatus, paymentId, subtotal, shipping, tax, total, coinsToUse, validatedCoupon, couponDiscount, itemsToOrder, cart }) {
+    return prisma.$transaction(async (tx) => {
       // Create order
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
           userId,
           addressId,
-          paymentMethod: effectivePaymentMethod,
+          paymentMethod,
           paymentStatus,
           paymentId,
           subtotal,
           shipping,
           tax,
           total,
-          coinsUsed: coinsToUse,
+          coinsUsed: coinsToUse || 0,
           couponId: validatedCoupon?.id || null,
           couponCode: validatedCoupon?.code || null,
-          couponDiscount,
+          couponDiscount: couponDiscount || 0,
           status: 'PROCESSING',
         },
       });
 
       // Create order items and reduce stock
       for (const item of itemsToOrder) {
-        // Create order item (snapshot of product at time of order)
         await tx.orderItem.create({
           data: {
             orderId: newOrder.id,
@@ -186,7 +362,7 @@ class OrderService {
         await tx.product.update({ where: { id: item.productId }, data: { sizeStock: newSizeStock } });
       }
 
-      // Only remove ordered items from cart (supports buy-now partial checkout)
+      // Remove ordered items from cart
       await tx.cartItem.deleteMany({
         where: {
           cartId: cart.id,
@@ -194,7 +370,7 @@ class OrderService {
         },
       });
 
-      // Deduct coins from user balance if used
+      // Deduct coins
       if (coinsToUse > 0) {
         await tx.user.update({
           where: { id: userId },
@@ -211,20 +387,19 @@ class OrderService {
         });
       }
 
-      // Record coupon usage and increment its counter
+      // Record coupon usage
       if (validatedCoupon) {
         await couponService.applyCoupon(tx, validatedCoupon.id, newOrder.id, userId);
       }
 
       return newOrder;
     });
+  }
 
-    logger.info(`Order created: ${orderNumber} for user ${userId}`);
-
-    // Return order with full details
-    const fullOrder = await this.getOrderById(userId, order.id);
-
-    // Fire-and-forget confirmation email (never fails the order response)
+  /**
+   * Send confirmation email (fire-and-forget)
+   */
+  _sendConfirmationEmail(userId, fullOrder) {
     prisma.user
       .findUnique({ where: { id: userId }, select: { name: true, email: true } })
       .then((user) => {
@@ -235,22 +410,14 @@ class OrderService {
         }
       })
       .catch((err) => logger.error(`User fetch for order email failed: ${err.message}`));
-
-    return fullOrder;
   }
 
   /**
    * Get user's orders
-   * @param {String} userId - User ID
-   * @param {Object} query - Query parameters
-   * @returns {Promise<Array>} List of orders
    */
   async getOrders(userId, query = {}) {
-    const where = {
-      userId,
-    };
+    const where = { userId };
 
-    // Filter by status
     const VALID_ORDER_STATUSES = ['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
     if (query.status) {
       const s = query.status.toUpperCase();
@@ -277,16 +444,11 @@ class OrderService {
             },
           },
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { createdAt: 'desc' },
       });
     } catch (error) {
-      if (!isSchemaMismatchError(error)) {
-        throw error;
-      }
-
-      logger.error(`Order listing failed due to schema mismatch for user ${userId}: ${error.message}`);
+      if (!isSchemaMismatchError(error)) throw error;
+      logger.error(`Order listing failed for user ${userId}: ${error.message}`);
       return [];
     }
 
@@ -298,9 +460,6 @@ class OrderService {
 
   /**
    * Get single order by ID
-   * @param {String} userId - User ID
-   * @param {String} orderId - Order ID
-   * @returns {Promise<Object>} Order details
    */
   async getOrderById(userId, orderId) {
     const order = await prisma.order.findUnique({
@@ -322,13 +481,8 @@ class OrderService {
       },
     });
 
-    if (!order) {
-      throw new NotFoundError('Order not found');
-    }
-
-    if (order.userId !== userId) {
-      throw new BadRequestError('Unauthorized access to order');
-    }
+    if (!order) throw new NotFoundError('Order not found');
+    if (order.userId !== userId) throw new BadRequestError('Unauthorized access to order');
 
     const { orderItems, ...rest } = order;
     return { ...rest, items: orderItems };
@@ -336,410 +490,106 @@ class OrderService {
 
   /**
    * Cancel order
-   * @param {String} userId - User ID
-   * @param {String} orderId - Order ID
-   * @returns {Promise<Object>} Updated order
    */
   async cancelOrder(userId, orderId) {
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      include: {
-        orderItems: true,
-      },
+      include: { orderItems: true },
     });
 
-    if (!order) {
-      throw new NotFoundError('Order not found');
-    }
+    if (!order) throw new NotFoundError('Order not found');
+    if (order.userId !== userId) throw new BadRequestError('Unauthorized access to order');
+    if (!['PROCESSING'].includes(order.status)) throw new BadRequestError('Cannot cancel order at this stage');
 
-    if (order.userId !== userId) {
-      throw new BadRequestError('Unauthorized access to order');
-    }
-
-    // Can only cancel processing orders (not shipped/delivered)
-    if (!['PROCESSING'].includes(order.status)) {
-      throw new BadRequestError('Cannot cancel order at this stage');
-    }
-
-    // Update order status and restore stock
     await prisma.$transaction(async (tx) => {
-      // Update order status
-      await tx.order.update({
-        where: { id: orderId },
-        data: {
-          status: 'CANCELLED',
-          cancelledAt: new Date(),
-        },
-      });
-
-      // Restore per-size stock
+      await tx.order.update({ where: { id: orderId }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
       for (const item of order.orderItems) {
         if (!item.productId) continue;
         const curP = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
         if (!curP) continue;
         const restoreStock = { ...(curP.sizeStock || {}) };
-        const rsk = item.size || '';
-        restoreStock[rsk] = (restoreStock[rsk] || 0) + item.quantity;
+        restoreStock[item.size || ''] = (restoreStock[item.size || ''] || 0) + item.quantity;
         await tx.product.update({ where: { id: item.productId }, data: { sizeStock: restoreStock } });
       }
     });
 
-    // Initiate refund if payment was completed (PhonePe)
-    if (order.paymentStatus === 'COMPLETED') {
+    // Refund if payment was completed
+    if (order.paymentStatus === 'COMPLETED' && order.paymentMethod !== 'COD' && order.paymentId) {
       try {
         await paymentService.initiateRefund({
-          merchantRefundId: `REF-${order.id}`,
-          originalMerchantOrderId: order.id,
+          paymentId: order.paymentId,
           amountInPaise: Math.round(parseFloat(order.total) * 100),
+          receipt: `REF-${order.id}`,
+          notes: { orderId: order.id, orderNumber: order.orderNumber },
         });
       } catch (refundErr) {
-        // Refund initiation failed — log it but don't block the cancellation response.
-        // The order is already cancelled in the DB; the refund can be retried manually.
         logger.error(`Refund initiation failed for order ${orderId}: ${refundErr.message}`);
       }
     }
 
     logger.info(`Order cancelled: ${orderId}`);
-
-    return await this.getOrderById(userId, orderId);
+    return this.getOrderById(userId, orderId);
   }
 
   /**
    * Update order status (ADMIN only)
-   * @param {String} orderId - Order ID
-   * @param {String} status - New status
-   * @returns {Promise<Object>} Updated order
    */
   async updateOrderStatus(orderId, status) {
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-    });
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundError('Order not found');
 
-    if (!order) {
-      throw new NotFoundError('Order not found');
+    if (order.shippingMethod === 'SHIPROCKET' && status !== 'CANCELLED') {
+      throw new BadRequestError('This order is being handled by Shiprocket. Only CANCELLED status can be set manually.');
     }
 
-    // ── Guard: Shiprocket-managed orders — only CANCELLED allowed manually ──
-    if (order.shippingMethod === 'SHIPROCKET') {
-      if (status !== 'CANCELLED') {
-        throw new BadRequestError(
-          'This order is being handled by Shiprocket. Only CANCELLED status can be set manually.'
-        );
-      }
-      // Auto-cancel on Shiprocket as well
-      try {
-        const shippingService = require('./shippingService');
-        if (order.awbCode) {
-          await shippingService.cancelShipment(order.awbCode);
-        }
-      } catch (cancelErr) {
-        logger.error(`Failed to cancel Shiprocket shipment for order ${orderId}: ${cancelErr.message}`);
-        // Don't block the DB update
-      }
-    }
+    const updateData = { status };
+    if (status === 'SHIPPED') { updateData.shippingMethod = 'ADMIN'; updateData.shippedAt = new Date(); }
+    if (status === 'DELIVERED') updateData.deliveredAt = new Date();
+    if (status === 'CANCELLED') updateData.cancelledAt = new Date();
 
-    const updateData = {
-      status,
-    };
-
-    if (status === 'SHIPPED') {
-      updateData.shippingMethod = 'ADMIN';
-      updateData.shippedAt = new Date();
-    }
-
-    if (status === 'DELIVERED') {
-      updateData.deliveredAt = new Date();
-    }
-
-    if (status === 'CANCELLED') {
-      updateData.cancelledAt = new Date();
-    }
-
-    const updatedOrder = await prisma.order.update({
-      where: { id: orderId },
-      data: updateData,
-    });
-
+    const updatedOrder = await prisma.order.update({ where: { id: orderId }, data: updateData });
     logger.info(`Order status updated: ${orderId} -> ${status}`);
-
     return updatedOrder;
   }
 
   /**
    * Get all orders (ADMIN only)
-   * @param {Object} query - Query parameters
-   * @returns {Promise<Array>} List of all orders
    */
   async getAllOrders(query = {}) {
     const where = {};
-
     const VALID_ORDER_STATUSES = ['PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED'];
     if (query.status) {
       const s = query.status.toUpperCase();
-      if (VALID_ORDER_STATUSES.includes(s)) {
-        where.status = s;
-      }
+      if (VALID_ORDER_STATUSES.includes(s)) where.status = s;
     }
 
-    const orders = await prisma.order.findMany({
+    return prisma.order.findMany({
       where,
       include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
+        user: { select: { id: true, name: true, email: true } },
         address: true,
         orderItems: true,
       },
-      orderBy: {
-        createdAt: 'desc',
-      },
+      orderBy: { createdAt: 'desc' },
     });
-
-    return orders;
   }
 
   /**
-   * Track order publicly by order number + email
-   * @param {String} orderNumber - Order number
-   * @param {String} email - User email (lowercase)
-   * @returns {Promise<Object>} Order tracking info
+   * Track order publicly
    */
   async trackOrder(orderNumber, email) {
     const order = await prisma.order.findFirst({
-      where: {
-        orderNumber,
-        user: {
-          email: {
-            equals: email,
-            mode: 'insensitive',
-          },
-        },
-      },
-      include: {
-        orderItems: true,
-        address: true,
-      },
+      where: { orderNumber, user: { email: { equals: email, mode: 'insensitive' } } },
+      include: { orderItems: true, address: true },
     });
-
-    if (!order) {
-      throw new NotFoundError('Order not found. Please check your order number and email address.');
-    }
+    if (!order) throw new NotFoundError('Order not found. Please check your order number and email address.');
 
     return {
-      id: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
-      paymentMethod: order.paymentMethod,
-      paymentStatus: order.paymentStatus,
-      total: order.total,
-      createdAt: order.createdAt,
-      deliveredAt: order.deliveredAt,
-      address: order.address,
-      items: order.orderItems,
+      id: order.id, orderNumber: order.orderNumber, status: order.status,
+      paymentMethod: order.paymentMethod, paymentStatus: order.paymentStatus,
+      total: order.total, createdAt: order.createdAt, deliveredAt: order.deliveredAt,
+      address: order.address, items: order.orderItems,
     };
-  }
-  // ─────────────────────────────────────────────────────────────────────────
-  // PhonePe-specific helpers
-  // ─────────────────────────────────────────────────────────────────────────
-
-  /**
-   * Create an order with PENDING status (used before redirecting to PhonePe).
-   * Does NOT call any payment gateway — the caller handles that.
-   * @param {String} userId
-   * @param {Object} orderData - {addressId, paymentMethod, productIds?}
-   * @returns {Promise<Object>} The newly created order
-   */
-  async createPendingOrder(userId, orderData) {
-    const { addressId, paymentMethod, productIds, coinsToUse: rawCoinsToUse, couponCode } = orderData;
-
-    const address = await prisma.address.findUnique({ where: { id: addressId } });
-    if (!address) throw new NotFoundError('Address not found');
-    if (address.userId !== userId) throw new BadRequestError('Unauthorized access to address');
-
-    const cart = await prisma.cart.findUnique({
-      where: { userId },
-      include: { items: { include: { product: true } } },
-    });
-    if (!cart || cart.items.length === 0) throw new BadRequestError('Cart is empty');
-
-    const itemsToOrder = productIds?.length
-      ? cart.items.filter((item) => productIds.includes(item.productId))
-      : cart.items;
-    if (itemsToOrder.length === 0) throw new BadRequestError('No matching items found in cart');
-
-    for (const item of itemsToOrder) {
-      const avail = (item.product.sizeStock || {})[item.size || ''] ?? 0;
-      if (avail < item.quantity)
-        throw new BadRequestError(`Insufficient stock for ${item.product.name} in size ${item.size || 'selected'}. Only ${avail} available.`);
-      if (!item.product.isActive)
-        throw new BadRequestError(`${item.product.name} is no longer available`);
-    }
-
-    const subtotal = itemsToOrder.reduce((sum, item) => sum + parseFloat(item.product.price) * item.quantity, 0);
-    const shipping = 0; // FREE shipping — costs included in product prices
-    const tax = 0; // Prices are inclusive of tax
-
-    // Coupon discount
-    let couponDiscount = 0;
-    let validatedCoupon = null;
-    if (couponCode) {
-      const couponResult = await couponService.validateCoupon(userId, couponCode, itemsToOrder);
-      couponDiscount = couponResult.discountAmount;
-      validatedCoupon = couponResult.coupon;
-    }
-
-    // Fitverse Coins discount
-    const userForCoins = await prisma.user.findUnique({ where: { id: userId }, select: { coinBalance: true } });
-    const afterCouponP = Math.max(0, subtotal + shipping - couponDiscount);
-    const maxCoinsP = Math.ceil(afterCouponP);
-    const coinsToUse = Math.min(Math.max(0, parseInt(rawCoinsToUse || 0)), userForCoins.coinBalance, maxCoinsP);
-    const total = Math.max(0, afterCouponP - coinsToUse);
-    const effectivePaymentMethod = total === 0 ? 'COINS' : paymentMethod;
-    const orderNumber = generateOrderNumber();
-
-    const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
-        data: {
-          orderNumber,
-          userId,
-          addressId,
-          paymentMethod: effectivePaymentMethod,
-          paymentStatus: total === 0 ? 'COMPLETED' : 'PENDING',
-          paymentId: null,
-          subtotal,
-          shipping,
-          tax,
-          total,
-          coinsUsed: coinsToUse,
-          couponId: validatedCoupon?.id || null,
-          couponCode: validatedCoupon?.code || null,
-          couponDiscount,
-          status: 'PROCESSING',
-        },
-      });
-
-      for (const item of itemsToOrder) {
-        await tx.orderItem.create({
-          data: {
-            orderId: newOrder.id,
-            productId: item.productId,
-            productName: item.product.name,
-            productImage: item.product.images[0] || '',
-            price: item.product.price,
-            quantity: item.quantity,
-            size: item.size || '',
-          },
-        });
-
-        // Reduce per-size stock
-        const cur = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
-        const updSizeStock = { ...(cur.sizeStock || {}) };
-        const skp = item.size || '';
-        updSizeStock[skp] = Math.max(0, (updSizeStock[skp] || 0) - item.quantity);
-        await tx.product.update({ where: { id: item.productId }, data: { sizeStock: updSizeStock } });
-      }
-
-      // Remove ordered items from cart immediately
-      await tx.cartItem.deleteMany({
-        where: {
-          cartId: cart.id,
-          productId: { in: itemsToOrder.map((i) => i.productId) },
-        },
-      });
-
-      // Deduct coins from user balance if used
-      if (coinsToUse > 0) {
-        await tx.user.update({
-          where: { id: userId },
-          data: { coinBalance: { decrement: coinsToUse } },
-        });
-        await tx.coinTransaction.create({
-          data: {
-            userId,
-            amount: -coinsToUse,
-            type: 'ORDER_PAYMENT',
-            description: `Coins used for order ${orderNumber}`,
-            referenceId: newOrder.id,
-          },
-        });
-      }
-
-      // Record coupon usage
-      if (validatedCoupon) {
-        await couponService.applyCoupon(tx, validatedCoupon.id, newOrder.id, userId);
-      }
-
-      return newOrder;
-    });
-
-    logger.info(`Pending order created: ${orderNumber} for user ${userId}`);
-    return this.getOrderById(userId, order.id);
-  }
-
-  /**
-   * Mark an order as PAID after successful PhonePe payment confirmation (webhook).
-   * @param {String} orderId           - DB order ID (== PhonePe merchantOrderId)
-   * @param {String} phonePeOrderId    - PhonePe internal order ID
-   */
-  async markOrderPaid(orderId, phonePeOrderId) {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        status: 'PROCESSING',
-        paymentStatus: 'COMPLETED',
-        paymentId: phonePeOrderId || null,
-      },
-    });
-    logger.info(`Order ${orderId} marked PAID. PhonePe orderId: ${phonePeOrderId}`);
-  }
-
-  /**
-   * Mark an order as FAILED/CANCELLED after failed PhonePe payment (webhook).
-   * @param {String} orderId
-   */
-  async markOrderFailed(orderId) {
-    // Restore stock and cancel order
-    const order = await prisma.order.findUnique({
-      where: { id: orderId },
-      include: { orderItems: true },
-    });
-    if (!order) return;
-
-    await prisma.$transaction(async (tx) => {
-      // Restore per-size stock
-      for (const item of order.orderItems) {
-        if (!item.productId) continue;
-        const failedProd = await tx.product.findUnique({ where: { id: item.productId }, select: { sizeStock: true } });
-        if (!failedProd) continue;
-        const failStock = { ...(failedProd.sizeStock || {}) };
-        const fsk = item.size || '';
-        failStock[fsk] = (failStock[fsk] || 0) + item.quantity;
-        await tx.product.update({ where: { id: item.productId }, data: { sizeStock: failStock } });
-      }
-      // Cancel order
-      await tx.order.update({
-        where: { id: orderId },
-        data: { status: 'CANCELLED', paymentStatus: 'FAILED' },
-      });
-    });
-    logger.info(`Order ${orderId} marked FAILED/CANCELLED after payment failure`);
-  }
-
-  /**
-   * Mark an order as REFUNDED.
-   * @param {String} orderId
-   * @param {String} refundId
-   */
-  async markOrderRefunded(orderId, refundId) {
-    await prisma.order.update({
-      where: { id: orderId },
-      data: { status: 'REFUNDED', paymentStatus: 'REFUNDED' },
-    });
-    logger.info(`Order ${orderId} marked REFUNDED. Refund ID: ${refundId}`);
   }
 }
 

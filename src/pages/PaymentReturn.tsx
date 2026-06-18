@@ -80,7 +80,7 @@ export default function PaymentReturn() {
             <Loader2 className="w-16 h-16 animate-spin text-primary mx-auto" />
             <h1 className="text-2xl font-bold">Verifying your payment…</h1>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              Please wait while we confirm your payment with PhonePe. Do not close this tab.
+              Please wait while we confirm your payment. Do not close this tab.
             </p>
           </div>
         );
@@ -122,7 +122,7 @@ export default function PaymentReturn() {
             <Clock className="w-16 h-16 text-amber-500 mx-auto" />
             <h1 className="text-2xl font-bold">Payment Pending</h1>
             <p className="text-muted-foreground max-w-sm mx-auto">
-              We're still waiting for confirmation from PhonePe. Your payment may still go
+              We're still waiting for confirmation. Your payment may still go
               through — check your orders in a few minutes.
             </p>
             <div className="flex gap-3 justify-center">

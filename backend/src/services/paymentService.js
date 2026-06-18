@@ -1,185 +1,227 @@
-﻿// Payment Service — PhonePe Node.js Backend SDK v2.0.3
-// Docs: https://developer.phonepe.com/payment-gateway/backend-sdk/nodejs-be-sdk
+﻿// Payment Service — Razorpay
+// Docs: https://razorpay.com/docs/api/
+// Uses the official Razorpay Node.js SDK
 
-const { StandardCheckoutClient, Env, StandardCheckoutPayRequest, MetaInfo, RefundRequest } = require('pg-sdk-node');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 const config = require('../config/env');
 const logger = require('../config/logger');
 
 // 
-// SDK client initialisation (singleton)
+// Razorpay client initialisation (singleton)
 // 
 let _client = null;
 
 function getClient() {
   if (_client) return _client;
 
-  const { clientId, clientSecret, clientVersion, env } = config.phonepe;
+  const { keyId, keySecret } = config.razorpay;
 
-  if (!clientId || !clientSecret) {
-    logger.warn('  PhonePe credentials not set — payments will be unavailable until configured.');
+  if (!keyId || !keySecret) {
+    logger.warn('Razorpay credentials not set — payments will be unavailable until configured.');
     return null;
   }
 
-  const sdkEnv = env === 'PRODUCTION' ? Env.PRODUCTION : Env.SANDBOX;
-  _client = StandardCheckoutClient.getInstance(clientId, clientSecret, clientVersion, sdkEnv);
+  _client = new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
 
-  logger.info(' PhonePe SDK initialised in ' + env + ' mode');
+  logger.info('Razorpay client initialised');
   return _client;
 }
 
 class PaymentService {
   // 
-  // Initiate Payment (redirect user to PhonePe)
+  // Create Razorpay Order (for checkout)
   // 
   /**
-   * Create a PhonePe Standard Checkout payment.
+   * Create a Razorpay order for payment initiation.
    * @param {Object} opts
-   * @param {string} opts.merchantOrderId  - Your unique order ID (we use DB order.id)
-   * @param {number} opts.amountInPaise    - Amount in paisa  (INR 1 = 100 paise)
-   * @param {string} opts.redirectUrl      - URL to redirect after payment (success or failure)
-   * @param {Object} [opts.metaInfo]       - Optional UDFs stored in PhonePe
-   * @returns {Promise<{redirectUrl: string, phonePeOrderId: string, state: string, expireAt: string}>}
+   * @param {string} opts.merchantOrderId  - Our internal order ID (used as receipt)
+   * @param {number} opts.amountInPaise    - Amount in paisa (INR 1 = 100 paise)
+   * @param {Object} [opts.notes]          - Optional notes stored in Razorpay
+   * @returns {Promise<{id: string, amount: number, currency: string, receipt: string, status: string}>}
    */
-  async initiatePayment({ merchantOrderId, amountInPaise, redirectUrl, metaInfo = {} }) {
+  async createOrder({ merchantOrderId, amountInPaise, notes = {} }) {
     const client = getClient();
     if (!client) {
-      throw new Error('PhonePe SDK not initialised — check PHONEPE_CLIENT_ID / PHONEPE_CLIENT_SECRET in .env');
+      throw new Error('Razorpay not initialised — check RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET in .env');
     }
 
     try {
-      const meta = MetaInfo.builder()
-        .udf1(metaInfo.udf1 || '')
-        .udf2(metaInfo.udf2 || '')
-        .udf3(metaInfo.udf3 || '')
-        .build();
+      const options = {
+        amount: amountInPaise,
+        currency: 'INR',
+        receipt: merchantOrderId,
+        notes,
+      };
 
-      const request = StandardCheckoutPayRequest.builder()
-        .merchantOrderId(merchantOrderId)
-        .amount(amountInPaise)
-        .redirectUrl(redirectUrl)
-        .expireAfter(1800)
-        .metaInfo(meta)
-        .build();
+      const order = await client.orders.create(options);
 
-      const response = await client.pay(request);
-
-      logger.info('PhonePe payment initiated | merchantOrderId=' + merchantOrderId + ' | state=' + response.state);
+      logger.info(`Razorpay order created | id=${order.id} | receipt=${merchantOrderId} | amount=${amountInPaise}`);
 
       return {
-        redirectUrl: response.redirectUrl,
-        phonePeOrderId: response.orderId,
-        state: response.state,
-        expireAt: response.expireAt,
+        id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        receipt: order.receipt,
+        status: order.status,
       };
     } catch (error) {
-      logger.error('PhonePe initiatePayment error: ' + error.message);
+      logger.error(`Razorpay createOrder error: ${error.message}`);
       throw error;
     }
   }
 
   // 
-  // Check Order Status
+  // Verify Payment Signature (webhook & callback)
   // 
   /**
-   * Check the current status of a PhonePe order.
-   * @param {string} merchantOrderId - The same ID passed during initiation
+   * Verify Razorpay payment signature.
+   * Used to validate that the payment was genuinely made to you.
+   * @param {Object} opts
+   * @param {string} opts.razorpayOrderId   - Order ID from Razorpay
+   * @param {string} opts.razorpayPaymentId - Payment ID from Razorpay
+   * @param {string} opts.razorpaySignature - Signature from Razorpay callback
+   * @returns {boolean}
    */
-  async getOrderStatus(merchantOrderId) {
+  verifyPaymentSignature({ razorpayOrderId, razorpayPaymentId, razorpaySignature }) {
+    const { keySecret } = config.razorpay;
+    const body = razorpayOrderId + '|' + razorpayPaymentId;
+    const expectedSignature = crypto
+      .createHmac('sha256', keySecret)
+      .update(body)
+      .digest('hex');
+
+    return expectedSignature === razorpaySignature;
+  }
+
+  // 
+  // Fetch Payments for an Order
+  // 
+  /**
+   * Get all payments made for a Razorpay order.
+   * Used for status polling when webhook hasn't fired yet.
+   * @param {string} razorpayOrderId - Razorpay order ID
+   * @returns {Promise<Array>} List of payments
+   */
+  async getPaymentsForOrder(razorpayOrderId) {
     const client = getClient();
-    if (!client) throw new Error('PhonePe SDK not initialised');
+    if (!client) throw new Error('Razorpay not initialised');
 
     try {
-      const response = await client.getOrderStatus(merchantOrderId);
-      return {
-        state: response.state,
-        amount: response.amount,
-        orderId: response.orderId,
-        paymentDetails: response.paymentDetails || [],
-      };
+      const payments = await client.orders.fetchPayments(razorpayOrderId);
+      return payments.items || [];
     } catch (error) {
-      logger.error('PhonePe getOrderStatus error: ' + error.message);
+      logger.error(`Razorpay getPaymentsForOrder error: ${error.message}`);
       throw error;
     }
   }
 
   // 
-  // Validate Webhook Callback
+  // Fetch Payment by ID
   // 
   /**
-   * Validate an incoming PhonePe S2S webhook.
-   * @param {string} authorization  - from request headers
-   * @param {string} responseBody   - raw string body
+   * Fetch a specific payment by its Razorpay payment ID.
+   * @param {string} paymentId - Razorpay payment ID
+   * @returns {Promise<Object>} Payment details
    */
-  validateWebhook(authorization, responseBody) {
+  async fetchPayment(paymentId) {
     const client = getClient();
-    if (!client) throw new Error('PhonePe SDK not initialised');
+    if (!client) throw new Error('Razorpay not initialised');
 
-    const { webhookUsername, webhookPassword } = config.phonepe;
+    try {
+      const payment = await client.payments.fetch(paymentId);
+      return payment;
+    } catch (error) {
+      logger.error(`Razorpay fetchPayment error: ${error.message}`);
+      throw error;
+    }
+  }
 
-    return client.validateCallback(
-      webhookUsername,
-      webhookPassword,
-      authorization,
-      responseBody,
-    );
+  // 
+  // Validate Webhook
+  // 
+  /**
+   * Validate an incoming Razorpay webhook.
+   * @param {string} body - Raw request body as string
+   * @param {string} signature - x-razorpay-signature header value
+   * @returns {boolean}
+   */
+  validateWebhook(body, signature) {
+    const { webhookSecret } = config.razorpay;
+    if (!webhookSecret) {
+      logger.warn('Razorpay webhook secret not configured — webhook validation skipped');
+      return true;
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', webhookSecret)
+      .update(body)
+      .digest('hex');
+
+    return expectedSignature === signature;
   }
 
   // 
   // Initiate Refund
   // 
   /**
-   * Initiate a PhonePe refund.
+   * Initiate a refund for a captured payment.
    * @param {Object} opts
-   * @param {string} opts.merchantRefundId        - Your unique refund ID
-   * @param {string} opts.originalMerchantOrderId - The order ID the refund is for
-   * @param {number} opts.amountInPaise            - Amount to refund in paisa
+   * @param {string} opts.paymentId       - Razorpay payment ID to refund
+   * @param {number} opts.amountInPaise   - Amount to refund in paisa (partial refund)
+   * @param {string} [opts.receipt]       - Optional receipt for the refund
+   * @param {Object} [opts.notes]         - Optional notes
+   * @returns {Promise<Object>} Refund details
    */
-  async initiateRefund({ merchantRefundId, originalMerchantOrderId, amountInPaise }) {
+  async initiateRefund({ paymentId, amountInPaise, receipt, notes = {} }) {
     const client = getClient();
-    if (!client) throw new Error('PhonePe SDK not initialised');
+    if (!client) throw new Error('Razorpay not initialised');
 
     try {
-      const request = RefundRequest.builder()
-        .merchantRefundId(merchantRefundId)
-        .originalMerchantOrderId(originalMerchantOrderId)
-        .amount(amountInPaise)
-        .build();
+      const refundOptions = {
+        amount: amountInPaise,
+        notes,
+      };
+      if (receipt) refundOptions.receipt = receipt;
 
-      const response = await client.refund(request);
+      const refund = await client.payments.refund(paymentId, refundOptions);
 
-      logger.info('PhonePe refund initiated | merchantRefundId=' + merchantRefundId + ' | state=' + response.state);
+      logger.info(`Razorpay refund initiated | paymentId=${paymentId} | refundId=${refund.id} | amount=${amountInPaise}`);
 
       return {
-        refundId: response.refundId,
-        state: response.state,
-        amount: response.amount,
+        refundId: refund.id,
+        amount: refund.amount,
+        currency: refund.currency,
+        status: refund.status,
+        speedRequested: refund.speed_requested,
+        speedProcessed: refund.speed_processed,
       };
     } catch (error) {
-      logger.error('PhonePe initiateRefund error: ' + error.message);
+      logger.error(`Razorpay initiateRefund error: ${error.message}`);
       throw error;
     }
   }
 
   // 
-  // Check Refund Status
+  // Fetch Refund
   // 
   /**
-   * Check status of a PhonePe refund.
-   * @param {string} merchantRefundId - The refund ID used during initiation
+   * Fetch details of a specific refund.
+   * @param {string} refundId - Razorpay refund ID
+   * @returns {Promise<Object>} Refund details
    */
-  async getRefundStatus(merchantRefundId) {
+  async fetchRefund(refundId) {
     const client = getClient();
-    if (!client) throw new Error('PhonePe SDK not initialised');
+    if (!client) throw new Error('Razorpay not initialised');
 
     try {
-      const response = await client.getRefundStatus(merchantRefundId);
-      return {
-        state: response.state,
-        amount: response.amount,
-        merchantRefundId: response.merchantRefundId,
-      };
+      const refund = await client.refunds.fetch(refundId);
+      return refund;
     } catch (error) {
-      logger.error('PhonePe getRefundStatus error: ' + error.message);
+      logger.error(`Razorpay fetchRefund error: ${error.message}`);
       throw error;
     }
   }

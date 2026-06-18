@@ -6,7 +6,7 @@ const { NotFoundError, BadRequestError } = require('../utils/errors');
 const logger = require('../config/logger');
 const { isSchemaMismatchError } = require('../utils/dbErrors');
 
-const RETURN_WINDOW_DAYS = 7;
+const RETURN_WINDOW_DAYS = 3;
 
 // Generate request number like RET20260303001
 async function generateRequestNumber() {
