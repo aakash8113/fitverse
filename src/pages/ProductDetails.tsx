@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import {
@@ -436,34 +436,81 @@ export default function ProductDetails() {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="aspect-[3/4] bg-secondary rounded-lg overflow-hidden relative group">
-              <div
-                className="w-full h-full"
-                onTouchStart={(e) => {
-                  const touch = e.touches[0];
-                  (e.currentTarget as HTMLDivElement).dataset.touchStartX = String(touch.clientX);
-                }}
-                onTouchEnd={(e) => {
-                  const startX = parseFloat((e.currentTarget as HTMLDivElement).dataset.touchStartX || "0");
-                  const endX = e.changedTouches[0].clientX;
-                  const diff = startX - endX;
-                  if (Math.abs(diff) < 50) return;
-                  if (diff > 0) {
-                    setSelectedImage((prev) => Math.min(prev + 1, productImages.length - 1));
-                  } else {
-                    setSelectedImage((prev) => Math.max(prev - 1, 0));
-                  }
-                }}
-              >
-                {productImages[selectedImage] ? (
-                  <img
-                    src={productImages[selectedImage]}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
-                )}
-              </div>
+              {(() => {
+                const ImageSwiper = () => {
+                  const containerRef = useRef<HTMLDivElement>(null);
+                  const [swipeOffset, setSwipeOffset] = useState(0);
+                  const [swiping, setSwiping] = useState(false);
+                  const startXRef = useRef(0);
+                  const lastOffsetRef = useRef(0);
+                  const imageWidthRef = useRef(0);
+
+                  const handleTouchStart = (e: React.TouchEvent) => {
+                    startXRef.current = e.touches[0].clientX;
+                    lastOffsetRef.current = swipeOffset;
+                    setSwiping(true);
+                    if (containerRef.current) {
+                      imageWidthRef.current = containerRef.current.offsetWidth;
+                    }
+                  };
+
+                  const handleTouchMove = (e: React.TouchEvent) => {
+                    const deltaX = e.touches[0].clientX - startXRef.current;
+                    setSwipeOffset(lastOffsetRef.current + deltaX);
+                  };
+
+                  const handleTouchEnd = () => {
+                    setSwiping(false);
+                    const threshold = imageWidthRef.current * 0.25;
+                    if (swipeOffset < -threshold && selectedImage < productImages.length - 1) {
+                      // Swiped left far enough → next
+                      setSelectedImage((prev) => prev + 1);
+                      setSwipeOffset(0);
+                    } else if (swipeOffset > threshold && selectedImage > 0) {
+                      // Swiped right far enough → previous
+                      setSelectedImage((prev) => prev - 1);
+                      setSwipeOffset(0);
+                    } else {
+                      // Snap back to current
+                      setSwipeOffset(0);
+                    }
+                  };
+
+                  return (
+                    <div
+                      ref={containerRef}
+                      className="w-full h-full"
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                    >
+                      <div
+                        className="flex h-full"
+                        style={{
+                          width: `${productImages.length * 100}%`,
+                          transform: `translateX(calc(-${(selectedImage / productImages.length) * 100}% + ${swiping ? swipeOffset : 0}px))`,
+                          transition: swiping ? 'none' : 'transform 0.3s ease-out',
+                        }}
+                      >
+                        {productImages.length > 0 ? (
+                          productImages.map((img, idx) => (
+                            <div
+                              key={idx}
+                              className="h-full flex-shrink-0"
+                              style={{ width: `${100 / productImages.length}%` }}
+                            >
+                              <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-cover" />
+                            </div>
+                          ))
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                };
+                return <ImageSwiper />;
+              })()}
               {/* Action buttons */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
                 <button
