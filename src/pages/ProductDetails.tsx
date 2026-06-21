@@ -441,48 +441,55 @@ export default function ProductDetails() {
                   const containerRef = useRef<HTMLDivElement>(null);
                   const [swipeOffset, setSwipeOffset] = useState(0);
                   const [swiping, setSwiping] = useState(false);
-                  const startXRef = useRef(0);
-                  const lastOffsetRef = useRef(0);
-                  const imageWidthRef = useRef(0);
+                  const swipeState = useRef({ startX: 0, imageWidth: 0, currentOffset: 0 });
 
-                  const handleTouchStart = (e: React.TouchEvent) => {
-                    startXRef.current = e.touches[0].clientX;
-                    lastOffsetRef.current = swipeOffset;
-                    setSwiping(true);
-                    if (containerRef.current) {
-                      imageWidthRef.current = containerRef.current.offsetWidth;
-                    }
-                  };
+                  // Manual non-passive touch handlers so e.preventDefault() works
+                  useEffect(() => {
+                    const el = containerRef.current;
+                    if (!el) return;
+                    const state = swipeState.current;
 
-                  const handleTouchMove = (e: React.TouchEvent) => {
-                    const deltaX = e.touches[0].clientX - startXRef.current;
-                    setSwipeOffset(lastOffsetRef.current + deltaX);
-                  };
+                    const moveHandler = (e: TouchEvent) => {
+                      const deltaX = e.touches[0].clientX - state.startX;
+                      swipeState.current.currentOffset = deltaX;
+                      if (Math.abs(deltaX) > 10) {
+                        e.preventDefault();
+                      }
+                      setSwipeOffset(deltaX);
+                    };
 
-                  const handleTouchEnd = () => {
-                    setSwiping(false);
-                    const threshold = imageWidthRef.current * 0.25;
-                    if (swipeOffset < -threshold && selectedImage < productImages.length - 1) {
-                      // Swiped left far enough → next
-                      setSelectedImage((prev) => prev + 1);
+                    const endHandler = () => {
+                      const offset = swipeState.current.currentOffset;
+                      setSwiping(false);
+                      const threshold = swipeState.current.imageWidth * 0.25;
+                      if (offset < -threshold) {
+                        setSelectedImage((prev) => Math.min(prev + 1, productImages.length - 1));
+                      } else if (offset > threshold) {
+                        setSelectedImage((prev) => Math.max(prev - 1, 0));
+                      }
                       setSwipeOffset(0);
-                    } else if (swipeOffset > threshold && selectedImage > 0) {
-                      // Swiped right far enough → previous
-                      setSelectedImage((prev) => prev - 1);
-                      setSwipeOffset(0);
-                    } else {
-                      // Snap back to current
-                      setSwipeOffset(0);
-                    }
-                  };
+                    };
+
+                    el.addEventListener('touchmove', moveHandler, { passive: false });
+                    el.addEventListener('touchend', endHandler);
+                    return () => {
+                      el.removeEventListener('touchmove', moveHandler);
+                      el.removeEventListener('touchend', endHandler);
+                    };
+                  }, [selectedImage, productImages.length]);
 
                   return (
                     <div
                       ref={containerRef}
                       className="w-full h-full"
-                      onTouchStart={handleTouchStart}
-                      onTouchMove={handleTouchMove}
-                      onTouchEnd={handleTouchEnd}
+                      onTouchStart={(e) => {
+                        swipeState.current.startX = e.touches[0].clientX;
+                        swipeState.current.currentOffset = 0;
+                        setSwiping(true);
+                        if (containerRef.current) {
+                          swipeState.current.imageWidth = containerRef.current.offsetWidth;
+                        }
+                      }}
                     >
                       <div
                         className="flex h-full"
@@ -693,7 +700,7 @@ export default function ProductDetails() {
                         {isDisabled && (
                           <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
                             <span className="w-[120%] h-px bg-muted-foreground/40 rotate-45 absolute" />
-                          </span>
+                    +      </span>
                         )}
                       </button>
                     );
