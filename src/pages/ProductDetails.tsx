@@ -436,15 +436,34 @@ export default function ProductDetails() {
           <div className="space-y-4">
             {/* Main Image */}
             <div className="aspect-[3/4] bg-secondary rounded-lg overflow-hidden relative group">
-              {productImages[selectedImage] ? (
-                <img
-                  src={productImages[selectedImage]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
-              )}
+              <div
+                className="w-full h-full"
+                onTouchStart={(e) => {
+                  const touch = e.touches[0];
+                  (e.currentTarget as HTMLDivElement).dataset.touchStartX = String(touch.clientX);
+                }}
+                onTouchEnd={(e) => {
+                  const startX = parseFloat((e.currentTarget as HTMLDivElement).dataset.touchStartX || "0");
+                  const endX = e.changedTouches[0].clientX;
+                  const diff = startX - endX;
+                  if (Math.abs(diff) < 50) return;
+                  if (diff > 0) {
+                    setSelectedImage((prev) => Math.min(prev + 1, productImages.length - 1));
+                  } else {
+                    setSelectedImage((prev) => Math.max(prev - 1, 0));
+                  }
+                }}
+              >
+                {productImages[selectedImage] ? (
+                  <img
+                    src={productImages[selectedImage]}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-muted-foreground">No image</div>
+                )}
+              </div>
               {/* Action buttons */}
               <div className="absolute top-4 right-4 flex flex-col gap-2">
                 <button

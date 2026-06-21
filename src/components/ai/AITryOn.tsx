@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Download, ImagePlus, Loader2, Plus, Share2, Sparkles, Trash2 } from "lucide-react";
+import { AlertCircle, CheckCircle2, Download, ImagePlus, Loader2, Lock, Plus, Share2, Sparkles, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -55,6 +55,33 @@ type AITryOnProps = {
   prefill?: TryOnPrefill | null;
 };
 
+
+// ── Resolution check hook ────────────────────────────────────────────────
+function useResolutionCheck(file: File | null) {
+  const [isLowRes, setIsLowRes] = useState(false);
+
+  useEffect(() => {
+    if (!file) {
+      setIsLowRes(false);
+      return;
+    }
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      setIsLowRes(img.width < 800 || img.height < 800);
+      URL.revokeObjectURL(url);
+    };
+    img.onerror = () => {
+      setIsLowRes(false);
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  }, [file]);
+
+  return isLowRes;
+}
+
 export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOnProps) {
   const [models, setModels] = useState<ModelSlot[]>([]);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -83,6 +110,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const isBusy = taskStatus === "CREATED" || taskStatus === "PROCESSING";
 
   const newModelPreview = useObjectPreview(newModelFile);
+  const isLowRes = useResolutionCheck(newModelFile);
   const mustCreateModel = models.length === 0;
 
   const pollRef = useRef<number | null>(null);
@@ -567,6 +595,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
 
   return (
     <>
+      {/* ─── Create Model Dialog ─── */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
         <DialogContent className={cn("max-w-2xl")}>
           <DialogHeader>
@@ -577,9 +606,10 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
           </DialogHeader>
 
           <div className="grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
+            {/* ── Left: Dropzone ── */}
             <div className="space-y-2">
               <Label>Model photo</Label>
-              <label className="rounded-2xl border border-dashed border-border/70 bg-secondary/40 flex items-center justify-center overflow-hidden cursor-pointer">
+              <label className="relative rounded-2xl border border-dashed border-border/70 bg-secondary/40 flex items-center justify-center overflow-hidden cursor-pointer group hover:border-foreground/40 transition-colors">
                 <input
                   type="file"
                   accept="image/*"
@@ -592,20 +622,24 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
                     }
                   }}
                 />
-                <div className={cn("w-full", DEFAULT_FRAME_HEIGHT)}>
+                <div className={cn("relative w-full", DEFAULT_FRAME_HEIGHT)}>
                   {newModelPreview ? (
-                    <img src={newModelPreview} alt="New model" className="h-full w-full object-contain" />
+                    <img src={newModelPreview} alt="New model" className="h-full w-full object-contain relative z-10" />
                   ) : (
-                    <div className="flex flex-col items-center text-center text-muted-foreground">
-                      <ImagePlus className="w-8 h-8 mb-2" />
-                      <p className="font-medium">Upload a full-body photo</p>
-                      <p className="text-xs">Front-facing, good lighting, 2048px recommended</p>
-                    </div>
+                    <>
+                      {/* Centered text overlay */}
+                      <div className="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none">
+                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
+                        <p className="font-semibold text-foreground">Upload Full Body Picture</p>
+                        <p className="text-xs text-muted-foreground mt-1">Drag & drop or click to browse</p>
+                      </div>
+                    </>
                   )}
                 </div>
               </label>
             </div>
 
+            {/* ── Right: Form fields + Requirements + Privacy ── */}
             <div className="flex flex-col gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="model-name">Model name</Label>
@@ -640,9 +674,36 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
                 </Select>
               </div>
 
-              <div className="text-xs text-muted-foreground">
-                Photo tips: stand straight, full body in frame, neutral background, no heavy shadows.
+              {/* ── Generation Requirements ── */}
+              <div className="text-xs">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-foreground/80 mb-2">Generation Requirements</p>
+                <ul className="space-y-1.5 text-foreground/70">
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground/50 mt-0.5">•</span>
+                    <span>Full Body Stance: Capture yourself facing forward, standing straight.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground/50 mt-0.5">•</span>
+                    <span>All Limbs Clear: Keep arms slightly out and legs uncrossed.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground/50 mt-0.5">•</span>
+                    <span>Bright Lighting: Ensure your surroundings are sharp and well-lit.</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-foreground/50 mt-0.5">•</span>
+                    <span>Fitted Apparel: Wear simple, tighter clothes for the best AI accuracy.</span>
+                  </li>
+                </ul>
               </div>
+
+              {/* ── Low resolution warning ── */}
+              {isLowRes && (
+                <div className="flex items-start gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>Low resolution image detected. Using images smaller than 800×800px may cause blurry or distorted try-on results.</span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -652,6 +713,14 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
               <span>{newModelMessage}</span>
             </div>
           )}
+
+          {/* ── Privacy Banner ── */}
+          <div className="flex items-start gap-2.5 bg-secondary/50 border border-border/60 rounded-lg px-3.5 py-2.5">
+            <Lock className="w-3.5 h-3.5 text-foreground/60 shrink-0 mt-0.5" />
+            <p className="text-xs leading-relaxed text-foreground/80">
+              <span className="font-semibold text-foreground">Privacy Guarantee:</span> Your uploaded images are entirely private, processed over encrypted tunnels, and can be completely and permanently purged from your profile at any moment via your account settings.
+            </p>
+          </div>
 
           <DialogFooter>
             <Button
@@ -676,6 +745,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
         </DialogContent>
       </Dialog>
 
+      {/* ─── Main Layout ─── */}
       <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_1fr_1.4fr] gap-6 cursor-default">
       {/* Column 1: Model */}
       <div className="rounded-3xl border border-border/60 bg-card p-6 shadow-soft flex flex-col gap-4">
@@ -743,17 +813,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
             <span>{activeModel.name} - {formatGender(activeModel.gender)}</span>
           </div>
         )}
-
-        {/* <div className="text-xs text-muted-foreground">
-          {modelNotice || "Create and verify a model to start"}
-        </div> */}
-
-        {/* {activeModel && (
-          <div className="text-xs text-muted-foreground">
-            Status: {activeModel.status === "checking" ? "Verifying" : activeModel.status === "verified" ? "Verified" : "Rejected"}
-            {activeModel.note ? ` • ${activeModel.note}` : ""}
-          </div>
-        )} */}
       </div>
 
       {/* Column 2: Outfit */}

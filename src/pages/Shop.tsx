@@ -117,6 +117,35 @@ export default function Shop() {
     });
   };
 
+  // ── Carousel touch swipe (mobile only) ──
+  const carouselTouchStartX = useRef(0);
+  const carouselTouchEndX = useRef(0);
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    carouselTouchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleCarouselTouchMove = (e: React.TouchEvent) => {
+    carouselTouchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleCarouselTouchEnd = () => {
+    const diff = carouselTouchStartX.current - carouselTouchEndX.current;
+    if (Math.abs(diff) < 50) return; // swipe threshold
+
+    if (diff > 0) {
+      // Swipe left → next slide
+      setTransitioning(true);
+      setCarouselIndex((i) => (i >= lastLoopIndex ? i : i + 1));
+    } else {
+      // Swipe right → previous slide
+      setTransitioning(true);
+      setCarouselIndex((i) => (i <= 0 ? 0 : i - 1));
+    }
+    // Restart auto-play timer
+    startCarouselTimer();
+  };
+
   const limit = 16;
 
   const { data, isLoading, isError, error, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -180,6 +209,9 @@ export default function Shop() {
           <div
             className="flex h-full"
             onTransitionEnd={handleCarouselTransitionEnd}
+            onTouchStart={handleCarouselTouchStart}
+            onTouchMove={handleCarouselTouchMove}
+            onTouchEnd={handleCarouselTouchEnd}
             style={{
               width: `${slides.length * 100}%`,
               transform: `translateX(-${(carouselIndex / slides.length) * 100}%)`,
