@@ -111,8 +111,8 @@ export interface ApiErrorResponse {
 export type Gender = 'MENS' | 'WOMENS';
 export type WearType = 'TOPWEAR' | 'BOTTOMWEAR';
 export type ClothingCategory =
-  | 'TSHIRT' | 'SHIRT' | 'HOODIE' | 'JACKET'
-  | 'JEANS' | 'TROUSER' | 'TRACKPANT' | 'CARGO';
+  | 'TSHIRT' | 'SHIRT' | 'HOODIE' | 'JACKET' | 'KURTI' | 'GOWN'
+  | 'JEANS' | 'TROUSER' | 'TRACKPANT' | 'CARGO' | 'SLAX';
 export type ClothingSubCategory =
   | 'OVERSIZED' | 'POLO' | 'DROP_SHOULDER' | 'V_NECK' | 'SHORT_SLEEVED' | 'LONG_SLEEVED'
   | 'PRINTED' | 'PLAIN' | 'TEXTURED'

@@ -544,11 +544,11 @@ export default function ProductDetails() {
             )}
             <div>
               <h3 className="font-semibold mb-2">Description:</h3>
-              <p className="text-muted-foreground leading-relaxed">
+              <div className="text-muted-foreground leading-relaxed whitespace-pre-line">
                 {showFullDescription
                   ? product.description
                   : product.description?.slice(0, 150) + (product.description?.length > 150 ? "..." : "")}
-              </p>
+              </div>
               {product.description?.length > 150 && (
                 <button onClick={() => setShowFullDescription(!showFullDescription)} className="text-sm text-primary hover:underline mt-1">
                   {showFullDescription ? "See Less..." : "See More..."}

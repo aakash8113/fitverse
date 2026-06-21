@@ -37,6 +37,8 @@ const TOPWEAR_CATEGORIES = [
   { value: 'SHIRT', label: 'Shirt' },
   { value: 'HOODIE', label: 'Hoodie' },
   { value: 'JACKET', label: 'Jacket' },
+  { value: 'KURTI', label: 'Kurti' },
+  { value: 'GOWN', label: 'Gown' },
 ];
 
 const BOTTOMWEAR_CATEGORIES = [
@@ -44,6 +46,7 @@ const BOTTOMWEAR_CATEGORIES = [
   { value: 'TROUSER', label: 'Trouser' },
   { value: 'TRACKPANT', label: 'Trackpant' },
   { value: 'CARGO', label: 'Cargo' },
+  { value: 'SLAX', label: 'Slax' },
 ];
 
 const SUB_CATEGORIES: Record<string, { value: string; label: string }[]> = {

@@ -319,16 +319,20 @@ enum WearType {
   BOTTOMWEAR
 }
 
-// 4 Topwear + 4 Bottomwear categories
+// Topwear: TSHIRT, SHIRT, HOODIE, JACKET, KURTI, GOWN
+// Bottomwear: JEANS, TROUSER, TRACKPANT, CARGO, SLAX
 enum ClothingCategory {
   TSHIRT
   SHIRT
   HOODIE
   JACKET
+  KURTI
+  GOWN
   JEANS
   TROUSER
   TRACKPANT
   CARGO
+  SLAX
 }
 
 // Sub-categories (nullable — only some categories have subs)

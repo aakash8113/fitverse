@@ -27,10 +27,12 @@ const WEAR_TYPES = [{ value: 'TOPWEAR', label: 'Topwear' }, { value: 'BOTTOMWEAR
 const TOPWEAR_CATS = [
   { value: 'TSHIRT', label: 'T-Shirt' }, { value: 'SHIRT', label: 'Shirt' },
   { value: 'HOODIE', label: 'Hoodie' }, { value: 'JACKET', label: 'Jacket' },
+  { value: 'KURTI', label: 'Kurti' }, { value: 'GOWN', label: 'Gown' },
 ];
 const BOTTOMWEAR_CATS = [
   { value: 'JEANS', label: 'Jeans' }, { value: 'TROUSER', label: 'Trouser' },
   { value: 'TRACKPANT', label: 'Trackpant' }, { value: 'CARGO', label: 'Cargo' },
+  { value: 'SLAX', label: 'Slax' },
 ];
 const SUB_CATS: Record<string, { value: string; label: string }[]> = {
   TSHIRT: [

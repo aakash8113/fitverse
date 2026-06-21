@@ -14,10 +14,13 @@ const CATEGORY_DIMENSIONS = {
   SHIRT:      { weight: 250,  length: 30, breadth: 25, height: 4  },
   HOODIE:     { weight: 400,  length: 35, breadth: 28, height: 8  },
   JACKET:     { weight: 500,  length: 40, breadth: 30, height: 10 },
+  KURTI:      { weight: 350,  length: 35, breadth: 25, height: 8  },
+  GOWN:       { weight: 600,  length: 45, breadth: 30, height: 12 },
   JEANS:      { weight: 500,  length: 35, breadth: 25, height: 6  },
   TROUSER:    { weight: 400,  length: 35, breadth: 25, height: 5  },
   TRACKPANT:  { weight: 350,  length: 30, breadth: 25, height: 5  },
   CARGO:      { weight: 450,  length: 35, breadth: 25, height: 6  },
+  SLAX:       { weight: 400,  length: 35, breadth: 25, height: 5  },
 };
 
 /**
