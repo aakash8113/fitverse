@@ -48,6 +48,7 @@ const convertProduct = (apiProduct: ApiProduct) => {
     images: (apiProduct.images || []).map(getImageUrl),
     sizes: apiProduct.availableSizes || [],
     category: apiProduct.gender?.toLowerCase() || '',
+    clothingCategory: apiProduct.category,  // Actual clothing category (TSHIRT, KURTI, etc.)
     wearType: apiProduct.wearType,
     isNew: false,
     isThrift: apiProduct.isThrift,
@@ -117,34 +118,49 @@ export default function Shop() {
     });
   };
 
-  // ── Carousel touch swipe (mobile only) ──
-  const carouselTouchStartX = useRef(0);
-  const carouselTouchEndX = useRef(0);
+  // ── Carousel touch swipe (mobile only) — smooth follow-finger ──
+  const carouselSwipeRef = useRef({ startX: 0, offset: 0, swiping: false });
+  const [carouselSwipeOffset, setCarouselSwipeOffset] = useState(0);
+  const [carouselSwiping, setCarouselSwiping] = useState(false);
 
-  const handleCarouselTouchStart = (e: React.TouchEvent) => {
-    carouselTouchStartX.current = e.touches[0].clientX;
-  };
+  const carouselContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleCarouselTouchMove = (e: React.TouchEvent) => {
-    carouselTouchEndX.current = e.touches[0].clientX;
-  };
+  useEffect(() => {
+    const el = carouselContainerRef.current;
+    if (!el) return;
+    const state = carouselSwipeRef.current;
 
-  const handleCarouselTouchEnd = () => {
-    const diff = carouselTouchStartX.current - carouselTouchEndX.current;
-    if (Math.abs(diff) < 50) return; // swipe threshold
+    const moveHandler = (e: TouchEvent) => {
+      const deltaX = e.touches[0].clientX - state.startX;
+      state.offset = deltaX;
+      if (Math.abs(deltaX) > 10) e.preventDefault();
+      setCarouselSwipeOffset(deltaX);
+    };
 
-    if (diff > 0) {
-      // Swipe left → next slide
-      setTransitioning(true);
-      setCarouselIndex((i) => (i >= lastLoopIndex ? i : i + 1));
-    } else {
-      // Swipe right → previous slide
-      setTransitioning(true);
-      setCarouselIndex((i) => (i <= 0 ? 0 : i - 1));
-    }
-    // Restart auto-play timer
-    startCarouselTimer();
-  };
+    const endHandler = () => {
+      const delta = state.offset;
+      setCarouselSwiping(false);
+      setCarouselSwipeOffset(0);
+      const threshold = 80;
+      if (delta < -threshold) {
+        // Swipe left → next
+        setTransitioning(true);
+        setCarouselIndex((i) => (i >= lastLoopIndex ? i : i + 1));
+      } else if (delta > threshold) {
+        // Swipe right → previous
+        setTransitioning(true);
+        setCarouselIndex((i) => (i <= 0 ? 0 : i - 1));
+      }
+      startCarouselTimer();
+    };
+
+    el.addEventListener('touchmove', moveHandler, { passive: false });
+    el.addEventListener('touchend', endHandler);
+    return () => {
+      el.removeEventListener('touchmove', moveHandler);
+      el.removeEventListener('touchend', endHandler);
+    };
+  }, [lastLoopIndex]);
 
   const limit = 16;
 
@@ -207,15 +223,18 @@ export default function Shop() {
         {/* Sliding Background */}
         <div className="absolute inset-0 z-0">
           <div
+            ref={carouselContainerRef}
             className="flex h-full"
             onTransitionEnd={handleCarouselTransitionEnd}
-            onTouchStart={handleCarouselTouchStart}
-            onTouchMove={handleCarouselTouchMove}
-            onTouchEnd={handleCarouselTouchEnd}
+            onTouchStart={(e) => {
+              carouselSwipeRef.current.startX = e.touches[0].clientX;
+              carouselSwipeRef.current.offset = 0;
+              setCarouselSwiping(true);
+            }}
             style={{
               width: `${slides.length * 100}%`,
-              transform: `translateX(-${(carouselIndex / slides.length) * 100}%)`,
-              transition: transitioning ? `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)` : "none",
+              transform: `translateX(calc(-${(carouselIndex / slides.length) * 100}% + ${carouselSwiping ? carouselSwipeOffset : 0}px))`,
+              transition: transitioning && !carouselSwiping ? `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)` : carouselSwiping ? 'none' : `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)`,
             }}
           >
             {slides.map((src, i) => (

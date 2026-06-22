@@ -374,6 +374,7 @@ export default function ProductDetails() {
       wearType: product.wearType,
       productId: product.id,
       source: product.isThrift ? "thrift" : "shop",
+      category: product.category,
     };
 
     sessionStorage.setItem("fitverse_tryon_prefill", JSON.stringify(prefill));

@@ -15,6 +15,7 @@ export interface Product {
   image: string;
   sizes: string[];
   category: string;
+  clothingCategory?: string;
   wearType?: WearType;
   stock?: number;
   isNew?: boolean;
@@ -71,11 +72,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
       return;
     }
 
+    // Use clothingCategory for KURTI detection; fallback to category
+    const tryOnCategory = product.clothingCategory || product.category;
     const prefill = {
       imageUrl: product.image,
       wearType: product.wearType,
       productId: product.id,
       source: product.isThrift ? "thrift" : "shop",
+      category: tryOnCategory,
     };
 
     sessionStorage.setItem("fitverse_tryon_prefill", JSON.stringify(prefill));

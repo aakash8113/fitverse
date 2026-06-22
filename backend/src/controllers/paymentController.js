@@ -100,6 +100,22 @@ const verifyPayment = asyncHandler(async (req, res) => {
   const razorpayOrder = await rzpClient.orders.fetch(razorpayOrderId);
   const notes = razorpayOrder.notes || {};
 
+  // Check if order was already created for this payment (webhook may have fired first)
+  const existingOrder = await prisma.order.findFirst({
+    where: { paymentId: razorpayPaymentId },
+  });
+
+  if (existingOrder) {
+    logger.info(`Order already exists for payment ${razorpayPaymentId}, returning existing order`);
+    return ApiResponse.success(res, 200, {
+      orderId: existingOrder.id,
+      orderNumber: existingOrder.orderNumber,
+      status: existingOrder.status,
+      paymentStatus: existingOrder.paymentStatus,
+      total: existingOrder.total,
+    }, 'Payment already processed');
+  }
+
   // Reconstruct the prepaid data from notes
   const userId = req.user.id;
   const addressId = notes.addressId;
@@ -115,7 +131,33 @@ const verifyPayment = asyncHandler(async (req, res) => {
     where: { userId },
     include: { items: { include: { product: true } } },
   });
-  if (!cart || cart.items.length === 0) throw new BadRequestError('Cart is empty');
+
+  // If cart is empty but no existing order found — webhook may have created it and cart was cleared
+  if (!cart || cart.items.length === 0) {
+    // Try finding order by razorpayOrderId (which is stored as paymentId before webhook updates it)
+    const fallbackOrder = await prisma.order.findFirst({
+      where: { paymentId: razorpayOrderId },
+    });
+    if (fallbackOrder) {
+      // Webhook created the order and updated paymentId to razorpayPaymentId
+      logger.info(`Order found via razorpayOrderId ${razorpayOrderId} for payment ${razorpayPaymentId}`);
+      // Update paymentId if webhook hasn't done it yet
+      if (fallbackOrder.paymentId === razorpayOrderId) {
+        await prisma.order.update({
+          where: { id: fallbackOrder.id },
+          data: { paymentId: razorpayPaymentId },
+        });
+      }
+      return ApiResponse.success(res, 200, {
+        orderId: fallbackOrder.id,
+        orderNumber: fallbackOrder.orderNumber,
+        status: fallbackOrder.status,
+        paymentStatus: fallbackOrder.paymentStatus,
+        total: fallbackOrder.total,
+      }, 'Payment already processed via webhook');
+    }
+    throw new BadRequestError('Cart is empty and no order found for this payment');
+  }
 
   const itemsToOrder = productIds?.length
     ? cart.items.filter((item) => productIds.includes(item.productId))

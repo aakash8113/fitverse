@@ -144,10 +144,21 @@ const AdminOrders: React.FC = () => {
     });
   };
 
-  const updateDim = (orderId: string, field: string, value: string) => {
+  // Store dimension values as strings so decimals and dots can be typed freely
+  const [dimStr, setDimStr] = useState<Record<string, Record<string, string>>>({});
+
+  const updateDim = (orderId: string, field: string, rawValue: string) => {
+    // Allow empty string, digits, and single dot for decimal input
+    if (rawValue !== '' && !/^\d*\.?\d*$/.test(rawValue)) return;
+    setDimStr(prev => ({
+      ...prev,
+      [orderId]: { ...(prev[orderId] || {}), [field]: rawValue }
+    }));
+    // Also sync to the numeric dimensions for the send handler
+    const num = rawValue === '' ? undefined : parseFloat(rawValue);
     setDimensions(prev => ({
       ...prev,
-      [orderId]: { ...(prev[orderId] || {}), [field]: value ? Number(value) : undefined }
+      [orderId]: { ...(prev[orderId] || {}), [field]: isNaN(num as number) ? undefined : num }
     }));
   };
 
@@ -280,25 +291,25 @@ const AdminOrders: React.FC = () => {
                                   <Input
                                     placeholder="Wt kg"
                                     className="h-6 w-14 text-[10px]"
-                                    value={dimensions[order.id]?.weight ?? ''}
+                                    value={dimStr[order.id]?.weight ?? dimensions[order.id]?.weight ?? ''}
                                     onChange={e => updateDim(order.id, 'weight', e.target.value)}
                                   />
                                   <Input
                                     placeholder="L cm"
                                     className="h-6 w-12 text-[10px]"
-                                    value={dimensions[order.id]?.length ?? ''}
+                                    value={dimStr[order.id]?.length ?? dimensions[order.id]?.length ?? ''}
                                     onChange={e => updateDim(order.id, 'length', e.target.value)}
                                   />
                                   <Input
                                     placeholder="B cm"
                                     className="h-6 w-12 text-[10px]"
-                                    value={dimensions[order.id]?.breadth ?? ''}
+                                    value={dimStr[order.id]?.breadth ?? dimensions[order.id]?.breadth ?? ''}
                                     onChange={e => updateDim(order.id, 'breadth', e.target.value)}
                                   />
                                   <Input
                                     placeholder="H cm"
                                     className="h-6 w-12 text-[10px]"
-                                    value={dimensions[order.id]?.height ?? ''}
+                                    value={dimStr[order.id]?.height ?? dimensions[order.id]?.height ?? ''}
                                     onChange={e => updateDim(order.id, 'height', e.target.value)}
                                   />
                                   <Button

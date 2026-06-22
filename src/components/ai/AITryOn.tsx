@@ -33,6 +33,7 @@ export type TryOnPrefill = {
   wearType: WearType;
   productId?: string;
   source?: "shop" | "thrift";
+  category?: string;
 };
 
 const TRY_ON_LABELS: Record<FitverseAiTryOnType, string> = {
@@ -225,14 +226,20 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
       setResultTaskId(null);
       setResultPreviewUrl(null);
 
-      const nextType: FitverseAiTryOnType = prefill.wearType === "BOTTOMWEAR" ? "lower" : "upper";
+      // KURTI category → use full_set (not upper)
+      const nextType: FitverseAiTryOnType = prefill.category === 'KURTI'
+        ? "full_set"
+        : prefill.wearType === "BOTTOMWEAR" ? "lower" : "upper";
       setTryOnType(nextType);
 
       try {
         const file = await fetchClothFile(prefill.imageUrl, prefill.productId || "product");
         if (canceled) return;
 
-        if (nextType === "upper") {
+        if (nextType === "full_set") {
+          setFullFile(file);
+          setFullCheck({ status: "ready", message: "Selected from product", detectedType: "full" });
+        } else if (nextType === "upper") {
           setTopFile(file);
           setTopCheck({ status: "ready", message: "Selected from product", detectedType: "upper" });
         } else {
