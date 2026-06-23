@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, CheckCircle2, Download, ImagePlus, Loader2, Lock, Plus, Share2, Sparkles, Trash2, Upload } from "lucide-react";
+import { AlertCircle, BarChart3, CheckCircle2, Download, ImagePlus, Loader2, Lock, Plus, Share2, Sparkles, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { fitverseAiApi, FitverseAiClothesType, FitverseAiModel, FitverseAiTryOnType, WearType } from "@/services/api";
+import { getTrendScore, TrendScoreResult } from "@/services/geminiTrendScore";
 
 type ModelSlotStatus = "checking" | "verified" | "rejected";
 
@@ -108,6 +109,9 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const [resultPreviewUrl, setResultPreviewUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
+  const [trendScore, setTrendScore] = useState<TrendScoreResult | null>(null);
+  const [trendScoreLoading, setTrendScoreLoading] = useState(false);
+  const [trendScoreError, setTrendScoreError] = useState<string | null>(null);
   const isBusy = taskStatus === "CREATED" || taskStatus === "PROCESSING";
 
   const newModelPreview = useObjectPreview(newModelFile);
@@ -405,6 +409,32 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
     }
   };
 
+  const handleGetTrendScore = async () => {
+    if (!resultTaskId && !resultPreviewUrl) return;
+    setTrendScoreLoading(true);
+    setTrendScoreError(null);
+    setTrendScore(null);
+
+    try {
+      let imageBlob: Blob;
+      if (resultPreviewUrl) {
+        const response = await fetch(resultPreviewUrl);
+        imageBlob = await response.blob();
+      } else if (resultTaskId) {
+        imageBlob = await fitverseAiApi.getTryOnResult(resultTaskId);
+      } else {
+        throw new Error("No result image available");
+      }
+
+      const score = await getTrendScore(imageBlob);
+      setTrendScore(score);
+    } catch (err: any) {
+      setTrendScoreError(err?.message || "Failed to get trend score. Please try again.");
+    } finally {
+      setTrendScoreLoading(false);
+    }
+  };
+
   const handleDownloadResult = async () => {
     if (resultPreviewUrl) {
       const link = document.createElement("a");
@@ -456,6 +486,8 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
     setResultUrl(null);
     setResultTaskId(null);
     setResultPreviewUrl(null);
+    setTrendScore(null);
+    setTrendScoreError(null);
     setTaskStatus("CREATED");
     setProgress(0);
 
@@ -914,6 +946,89 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
         {error && (
           <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg p-2">{error}</div>
         )}
+
+        {resultPreviewUrl && (
+          <>
+            <Button
+              onClick={handleGetTrendScore}
+              disabled={trendScoreLoading || isBusy}
+              variant="outline"
+              className="w-full"
+            >
+              {trendScoreLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <BarChart3 className="w-4 h-4" />
+                  Get TrendScore
+                </>
+              )}
+            </Button>
+
+            {trendScoreError && (
+              <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg p-2">{trendScoreError}</div>
+            )}
+
+            {trendScore && (
+              <div className="rounded-2xl border border-border/60 bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-950/20 dark:to-indigo-950/20 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-semibold">TrendScore</h4>
+                  <span className={cn(
+                    "text-2xl font-bold",
+                    trendScore.trendScore >= 80 ? "text-emerald-600" : trendScore.trendScore >= 60 ? "text-amber-600" : "text-red-500"
+                  )}>
+                    {trendScore.trendScore}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Color Harmony</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-1.5 bg-white dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-violet-400 to-violet-600"
+                          style={{ width: `${trendScore.colorHarmony}%` }}
+                        />
+                      </div>
+                      <span className="font-medium">{trendScore.colorHarmony}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Silhouette Fit</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-1.5 bg-white dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-indigo-400 to-indigo-600"
+                          style={{ width: `${trendScore.silhouetteFit}%` }}
+                        />
+                      </div>
+                      <span className="font-medium">{trendScore.silhouetteFit}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs">
+                    <span>Overall Aesthetic</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-24 h-1.5 bg-white dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-purple-400 to-purple-600"
+                          style={{ width: `${trendScore.overallAesthetic}%` }}
+                        />
+                      </div>
+                      <span className="font-medium">{trendScore.overallAesthetic}</span>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground italic border-t border-border/40 pt-2">
+                  {trendScore.summary}
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
         <Button
           onClick={handleGenerate}
           disabled={!requiredReady || isBusy || modelLoading}
