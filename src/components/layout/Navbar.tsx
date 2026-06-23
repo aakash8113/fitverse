@@ -255,7 +255,7 @@ export function Navbar() {
           </form>
 
           {/* ── Right side icons ── */}
-          <div className="sm:translate-x-[120px] flex items-center gap-2">
+          <div className="sm:translate-x-[12  0px] flex items-center gap-1 sm:gap-4">
             {/* Search icon toggles (desktop); becomes X when open */}
             <Button
               variant="ghost"
