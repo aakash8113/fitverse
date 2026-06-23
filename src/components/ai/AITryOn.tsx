@@ -947,7 +947,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
           <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg p-2">{error}</div>
         )}
 
-        {resultPreviewUrl && (
+        {(resultPreviewUrl || resultUrl) && (
           <>
             <Button
               onClick={handleGetTrendScore}

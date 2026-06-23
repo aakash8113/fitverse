@@ -19,6 +19,7 @@ import {
 import { thriftApi, ThriftItemFormData } from '@/services/api';
 import { AddressSelector } from '@/components/shared/AddressSelector';
 import { cn } from '@/lib/utils';
+import { compressImages } from '@/lib/imageCompress';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -107,12 +108,14 @@ interface ImageUploaderProps {
 function ImageUploader({ previews, onChange }: ImageUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFiles = (newFiles: FileList | null) => {
+  const handleFiles = async (newFiles: FileList | null) => {
     if (!newFiles) return;
-    const arr = Array.from(newFiles).slice(0, 5 - previews.length);
-    const urls = arr.map((f) => URL.createObjectURL(f));
+    const raw = Array.from(newFiles).slice(0, 5 - previews.length);
+    // Compress images client-side before adding them
+    const compressed = await compressImages(raw, { maxDimension: 1600, quality: 0.7 });
+    const urls = compressed.map((f) => URL.createObjectURL(f));
     // Pass complete list so parent can diff correctly
-    onChange(arr, [...previews, ...urls]);
+    onChange(compressed, [...previews, ...urls]);
   };
 
   const removeImage = (idx: number) => {

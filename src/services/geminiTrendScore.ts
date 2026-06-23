@@ -24,16 +24,19 @@ export async function getTrendScore(imageBlob: Blob): Promise<TrendScoreResult> 
     thinkingConfig: {
       thinkingLevel: ThinkingLevel.MINIMAL,
     },
-  };
+    systemInstruction: [
+      {
+        text: `You are an expert AI Fashion Stylist and image consultant for FitVerse. Your job is to provide an honest, highly accurate, and professional aesthetic evaluation of how well an outfit suits the user. Do not be overly polite; prioritize accuracy.
 
-  const systemInstruction = `You are an expert AI Fashion Stylist and image consultant for FitVerse. Your job is to analyze the generated virtual try-on image and provide an honest, professional, yet encouraging aesthetic evaluation of how well the outfit suits the user.
+You must strictly evaluate the look based on these three metrics on a scale of 40 to 100:
+1. colorHarmony: Does the garment color complement their skin tone and undertones?
+2. silhouetteFit: Does the drape, cut, style category, and tailoring of the apparel flatter their physical frame and match their gender presentation/anatomy?
+3. overallAesthetic: Is the outfit visually striking, cohesive, and culturally/stylistically appropriate for the person wearing it?
 
-Evaluate the look by assigning an individual numerical score between 40 and 100 for each of the following three metrics (strictly avoid scores below 40 or above 100 to maintain a constructive and balanced tone):
-1. colorHarmony: Assessment of how the garment color complements the user's skin tone, undertones, and hair color.
-2. silhouetteFit: Assessment of how the drape, cut, and fit of the apparel flatter their physical frame.
-3. overallAesthetic: Assessment of how visually striking, coordinated, and cohesive the final look appears.
+CRITICAL ANATOMY & CATEGORY CHECK:
+If the garment style profile fundamentally mismatches the person's physical gender appearance (for example: a masculine frame wearing an explicitly female-cut kurti, or severe tailoring distortions where the shoulders/chest do not fit), you must penalize the score accordingly. For such severe mismatches, assign the absolute minimum floor score of 50 to silhouetteFit and overallAesthetic, regardless of how good the color harmony is.
 
-Calculate the final TrendScore as the exact mathematical average of these three components. Provide a high-level, 1-2 sentence concise styling summary explaining your professional feedback.
+Calculate the finalOverallScore as the exact mathematical average of these three components. Provide a direct, professional 1-2 sentence styling summary explaining why the fit succeeded or failed.
 
 You MUST respond with valid JSON only, in the following format (no markdown, no code blocks, just raw JSON):
 {
@@ -42,13 +45,18 @@ You MUST respond with valid JSON only, in the following format (no markdown, no 
   "overallAesthetic": number,
   "trendScore": number,
   "summary": "string"
-}`;
+}`,
+      },
+    ],
+  };
 
   const contents = [
     {
       role: 'user',
       parts: [
-        { text: 'Analyze this virtual try-on image and provide a trend score evaluation in JSON format.' },
+        {
+          text: 'Analyze this virtual try-on image and provide a trend score evaluation in JSON format.',
+        },
         {
           inlineData: {
             mimeType: imageBlob.type || 'image/jpeg',
@@ -61,10 +69,7 @@ You MUST respond with valid JSON only, in the following format (no markdown, no 
 
   const response = await ai.models.generateContent({
     model: 'gemini-3.1-flash-lite',
-    config: {
-      ...config,
-      systemInstruction: systemInstruction,
-    },
+    config,
     contents,
   });
 
