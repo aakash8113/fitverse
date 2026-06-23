@@ -26,67 +26,18 @@ const navLinks = [
   { href: "/thrift", label: "Thrift" },
 ];
 
-export function Navbar() {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-
-  // Auto-focus when search opens
-  useEffect(() => {
-    if (isSearchOpen) {
-      setTimeout(() => searchInputRef.current?.focus(), 50);
-    }
-  }, [isSearchOpen]);
-
-  const openSearch = () => setIsSearchOpen(true);
-  const closeSearch = () => {
-    setIsSearchOpen(false);
-    setSearchQuery("");
-  };
-
-  const { data: cartData } = useQuery({
-    queryKey: ["cart"],
-    queryFn: cartApi.getCart,
-    enabled: isAuthenticated,
-  });
-
-  const cartCount = cartData?.data?.items?.reduce(
-    (sum: number, item: { quantity: number }) => sum + item.quantity,
-    0
-  ) ?? 0;
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      closeSearch();
-    }
-  };
-
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  // Determine active nav
-  const isActive = (href: string) => {
-    if (href === "/shop") return location.pathname.startsWith("/shop") || location.pathname.startsWith("/search") || location.pathname.startsWith("/product");
-    if (href === "/thrift") return location.pathname.startsWith("/thrift");
-    if (href === "/fitverse-ai") return location.pathname.startsWith("/fitverse-ai");
-    return location.pathname === href;
-  };
-
-  // ── Shared dropdown content for both mobile and desktop ──
-  const AccountDropdownContent = ({ isMobile }: { isMobile?: boolean }) => (
+// ── Shared dropdown content (used on both desktop & mobile) ──
+function AccountDropdownContent({ user, isAuthenticated, handleLogout }: {
+  user: any;
+  isAuthenticated: boolean;
+  handleLogout: () => void;
+}) {
+  return (
     <>
       {isAuthenticated && user && (
         <DropdownMenuLabel>
           <div className="flex flex-col">
-            <span className={isMobile ? "text-sm" : ""}>{user?.name}</span>
+            <span>{user?.name}</span>
             <span className="text-xs text-muted-foreground font-normal">
               {user?.email}
             </span>
@@ -185,52 +136,111 @@ export function Navbar() {
       )}
     </>
   );
+}
+
+export function Navbar() {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
+
+  // Auto-focus when search opens
+  useEffect(() => {
+    if (isSearchOpen) {
+      setTimeout(() => searchInputRef.current?.focus(), 50);
+    }
+  }, [isSearchOpen]);
+
+  const openSearch = () => setIsSearchOpen(true);
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+  };
+
+  const { data: cartData } = useQuery({
+    queryKey: ["cart"],
+    queryFn: cartApi.getCart,
+    enabled: isAuthenticated,
+  });
+
+  const cartCount = cartData?.data?.items?.reduce(
+    (sum: number, item: { quantity: number }) => sum + item.quantity,
+    0
+  ) ?? 0;
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      closeSearch();
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  // Determine active nav (for mobile tabs)
+  const isActive = (href: string) => {
+    if (href === "/shop") return location.pathname.startsWith("/shop") || location.pathname.startsWith("/search") || location.pathname.startsWith("/product");
+    if (href === "/thrift") return location.pathname.startsWith("/thrift");
+    if (href === "/fitverse-ai") return location.pathname.startsWith("/fitverse-ai");
+    return location.pathname === href;
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 w-full glass border-b border-border/50">
       <div className="section-container">
-        {/* ── Top bar: Logo + icons ── */}
-        <nav className="flex h-14 sm:h-16 items-center justify-between">
-          <Link to="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <nav className="flex h-16 items-center justify-between lg:h-20">
+          {/* ── Logo ── */}
+          <Link to="/" className="flex items-center gap-3">
             <img 
               src={theme === "dark" ? logoWhite : logoImage}
               alt="Fitverse Logo" 
-              className="h-7 w-7 sm:h-9 sm:w-9 object-contain"
+              className="translate-y-[1px] h-8 w-8 sm:h-10 sm:w-10 object-contain sm:translate-y-[-1px] sm:translate-x-[-120px]"
             />
             <span
-              className="text-lg sm:text-2xl font-bold tracking-wider leading-none"
+              className="translate-y-[4px] text-[20px] sm:text-[26px] font-bold tracking-wider leading-none sm:translate-y-[4.5px] sm:translate-x-[-120px]"
               style={{ fontFamily: 'Mokoto, sans-serif' }}
             >
               FITVERSE
             </span>
           </Link>
 
-          {/* Desktop Nav links */}
-          <div className="hidden lg:flex items-center gap-12 xl:gap-20">
+          {/* ── Desktop Nav links — hidden when search is open ── */}
+          <div className={cn(
+            "hidden lg:flex items-center gap-24 transition-all duration-200 sm:translate-x-[140px]",
+            isSearchOpen && "!hidden"
+          )}>
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
                 className={cn(
-                  "nav-link text-sm font-medium transition-colors whitespace-nowrap",
-                  isActive(link.href) && "nav-link-active",
+                  "nav-link text-sm sm:text-base font-medium transition-colors",
+                  location.pathname === link.href && "nav-link-active",
                   link.isAI && "gradient-ai-text font-semibold"
                 )}
               >
+                {link.isAI}
                 {link.label}
               </Link>
             ))}
           </div>
 
-          {/* Search bar (desktop inline) */}
+          {/* ── Inline expanding search bar (desktop) — shown at all sizes when open ── */}
           <form
             onSubmit={handleSearch}
             className={cn(
               "hidden lg:flex items-center gap-2 transition-all duration-300 overflow-hidden",
-              isSearchOpen ? "flex-1 mx-8 opacity-100" : "w-0 opacity-0 pointer-events-none mx-0"
+              isSearchOpen ? "flex flex-1 mx-4 lg:mx-8 opacity-100" : "hidden opacity-0 pointer-events-none mx-0"
             )}
           >
-            <div className="relative w-full">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 ref={searchInputRef}
@@ -244,28 +254,29 @@ export function Navbar() {
             </div>
           </form>
 
-          <div className="flex items-center gap-1 sm:gap-2">
-            {/* Search icon — desktop only */}
+          {/* ── Right side icons ── */}
+          <div className="sm:translate-x-[120px] flex items-center gap-2">
+            {/* Search icon toggles (desktop); becomes X when open */}
             <Button
               variant="ghost"
               size="icon"
-              className="hidden lg:flex hover:bg-secondary hover:text-foreground"
+              className="hidden sm:flex hover:bg-secondary hover:text-foreground"
               onClick={isSearchOpen ? closeSearch : openSearch}
             >
-              {isSearchOpen ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
+              {isSearchOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Search className="h-5 w-5 sm:h-6 sm:w-6" />}
             </Button>
 
-            {/* Mobile search icon */}
+            {/* Mobile search icon (always visible on mobile, separate from desktop) */}
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden hover:bg-secondary hover:text-foreground"
+              className="sm:hidden hover:bg-secondary hover:text-foreground"
               onClick={openSearch}
             >
               <Search className="h-5 w-5" />
             </Button>
-
-            {/* Theme toggle — visible on all screen sizes */}
+            
+            {/* Dark Mode Toggle — visible on all screen sizes */}
             <Button
               variant="ghost"
               size="icon"
@@ -274,15 +285,15 @@ export function Navbar() {
               title={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
             >
               {theme === "light" ? (
-                <Moon className="h-5 w-5" />
+                <Moon className="h-5 w-5 sm:h-6 sm:w-6" />
               ) : (
-                <Sun className="h-5 w-5" />
+                <Sun className="h-5 w-5 sm:h-6 sm:w-6" />
               )}
             </Button>
             
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="relative hover:bg-secondary hover:text-foreground">
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="translate-y-[1px] h-5 w-5 sm:h-6 sm:w-6" />
                 {isAuthenticated && cartCount > 0 && (
                   <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-white flex items-center justify-center dark:bg-white dark:text-black">
                     {cartCount > 99 ? "99+" : cartCount}
@@ -291,21 +302,25 @@ export function Navbar() {
               </Button>
             </Link>
             
-            {/* Account dropdown — same for mobile + desktop but different triggers */}
+            {/* Account dropdown — visible on ALL screen sizes (desktop + mobile) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="hover:bg-secondary hover:text-foreground">
-                  <User className="h-5 w-5" />
+                  <User className="h-5 w-5 sm:h-6 sm:w-6" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <AccountDropdownContent />
+                <AccountDropdownContent
+                  user={user}
+                  isAuthenticated={isAuthenticated}
+                  handleLogout={handleLogout}
+                />
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </nav>
 
-        {/* ── Mobile: Nav tabs below logo ── */}
+        {/* ── Mobile: 3 nav tabs below the logo row (visible on mobile only) ── */}
         <div className="lg:hidden flex items-center border-t border-border/40">
           {navLinks.map((link) => (
             <Link
@@ -324,7 +339,7 @@ export function Navbar() {
           ))}
         </div>
 
-        {/* ── Mobile search bar (expands below tabs) ── */}
+        {/* ── Mobile search bar (expands below tabs when active) ── */}
         {isSearchOpen && (
           <div className="lg:hidden pb-2 animate-fade-in">
             <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -346,16 +361,19 @@ export function Navbar() {
           </div>
         )}
 
+        {/* ── Email verification banner ── */}
         {isAuthenticated && user && !user.isEmailVerified && (
-          <div className="mb-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
-            <div className="flex items-center justify-between gap-2 text-xs text-amber-700 dark:text-amber-300">
-              <div className="flex items-center gap-2">
+          <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-amber-700 dark:text-amber-300">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>Email not verified.</span>
+                <span>
+                  Email not verified. Some actions like checkout and thrift submissions are disabled until you verify.
+                </span>
               </div>
               <Link
                 to="/settings?verify=email"
-                className="font-semibold underline underline-offset-2 shrink-0"
+                className="text-xs sm:text-sm font-semibold underline underline-offset-2 text-amber-800 hover:text-amber-900 dark:text-amber-200 dark:hover:text-amber-100"
               >
                 Verify now
               </Link>
@@ -363,6 +381,7 @@ export function Navbar() {
           </div>
         )}
       </div>
+
     </header>
   );
 }
