@@ -16,7 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from '@/components/ui/use-toast';
 import {
-  Plus, Search, Edit2, Trash2, Loader2, ImagePlus, X,
+  Plus, Search, Edit2, Trash2, Loader2, ImagePlus, ChevronLeft, ChevronRight, X,
 } from 'lucide-react';
 
 const GENDERS = [{ value: 'MENS', label: "Men's" }, { value: 'WOMENS', label: "Women's" }];
@@ -48,6 +48,8 @@ const SUB_CATS: Record<string, { value: string; label: string }[]> = {
 const TOPWEAR_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL'];
 const BOTTOMWEAR_SIZES = ['26', '28', '30', '32', '34', '36', '38', '40', '42'];
 
+const PAGE_SIZE = 12;
+
 interface ProductFormData {
   name: string;
   description: string;
@@ -69,6 +71,7 @@ const emptyForm: ProductFormData = {
 const SellerProducts: React.FC = () => {
   const qc = useQueryClient();
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -81,11 +84,14 @@ const SellerProducts: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['seller', 'products', search],
-    queryFn: () => sellerApi.getProducts({ search: search || undefined, limit: 100 }),
+    queryKey: ['seller', 'products', search, page],
+    queryFn: () => sellerApi.getProducts({ search: search || undefined, page, limit: PAGE_SIZE }),
+    placeholderData: (previousData) => previousData,
   });
 
-  const products = productsData?.data || [];
+  const paginatedResponse = productsData as any;
+  const products: Product[] = paginatedResponse?.data || [];
+  const totalPages = paginatedResponse?.pagination?.totalPages || 1;
 
   const getErrorDescription = (e: any): string => {
     const data = e?.response?.data;
@@ -229,7 +235,7 @@ const SellerProducts: React.FC = () => {
 
         <div className="relative max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input placeholder="Search products..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
+          <Input placeholder="Search products..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className="pl-9 h-9 text-sm" />
         </div>
 
         <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -280,6 +286,19 @@ const SellerProducts: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm text-gray-600 dark:text-gray-300">Page {page} of {totalPages}</span>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

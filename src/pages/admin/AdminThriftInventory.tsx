@@ -102,9 +102,9 @@ const AdminThriftInventory: React.FC = () => {
     placeholderData: (previousData) => previousData,
   });
 
-  const rawData = data?.data as any;
-  const products: Product[] = rawData?.products || rawData || [];
-  const totalPages = rawData?.pagination?.totalPages || 1;
+  const paginatedResponse = data as any;
+  const products: Product[] = paginatedResponse?.data || [];
+  const totalPages = paginatedResponse?.pagination?.totalPages || 1;
 
   const getErrorDescription = (e: any): string => {
     const errData = e?.response?.data;
