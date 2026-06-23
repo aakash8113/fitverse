@@ -130,7 +130,7 @@ export default function SearchResults() {
                     Filters
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-80 p-0">
+                <SheetContent side="left" className="w-80 p-0 overflow-y-auto">
                   <div className="p-6">
                     <FilterSidebar />
                   </div>

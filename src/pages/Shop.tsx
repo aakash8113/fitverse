@@ -296,7 +296,7 @@ export default function Shop() {
                       Filters
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left" className="w-80 p-6">
+                  <SheetContent side="left" className="w-80 p-6 overflow-y-auto">
                     <FilterSidebar
                       currentFilters={filters}
                       onClose={() => setIsFilterOpen(false)}

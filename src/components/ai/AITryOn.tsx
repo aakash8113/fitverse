@@ -636,7 +636,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
     <>
       {/* ─── Create Model Dialog ─── */}
       <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-        <DialogContent className={cn("max-w-2xl")}>
+        <DialogContent className={cn("max-w-2xl max-h-[90vh] overflow-y-auto")}>
           <DialogHeader>
             <DialogTitle>Create a model</DialogTitle>
             <DialogDescription>
