@@ -1,13 +1,15 @@
 import { Sparkles, Shield, Zap, Eye } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { creditsApi } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AITryOn, TryOnPrefill } from "../components/ai/AITryOn.tsx";
+import { CreditPurchaseDialog } from "../components/ai/CreditPurchaseDialog";
 
 const benefits = [
   {
@@ -30,6 +32,7 @@ const benefits = [
 export default function FitverseAI() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const { data: creditsData, isLoading: creditsLoading, refetch } = useQuery({
     queryKey: ["credits", "balance"],
     queryFn: creditsApi.getBalance,
@@ -73,8 +76,8 @@ export default function FitverseAI() {
                   </span>
                   <span className="text-xs text-muted-foreground">credits</span>
                 </div>
-                <Button size="sm" asChild>
-                  <Link to="/credits/buy">Buy credits</Link>
+                <Button size="sm" onClick={() => setCreditDialogOpen(true)}>
+                  Buy credits
                 </Button>
               </div>
             </div>
@@ -168,6 +171,13 @@ export default function FitverseAI() {
       </section>
 
       <Footer />
+
+      {/* ─── Credit Purchase Dialog ─── */}
+      <CreditPurchaseDialog
+        open={creditDialogOpen}
+        onOpenChange={setCreditDialogOpen}
+        onSuccess={refetch}
+      />
     </div>
   );
 }

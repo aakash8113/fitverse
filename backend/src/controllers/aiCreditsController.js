@@ -10,9 +10,9 @@ const config = require('../config/env');
 const logger = require('../config/logger');
 
 const CREDIT_PACKS = [
-  { id: 'pack_10', credits: 10, amountInPaise: 19900, label: '10 Credits', subtitle: 'Starter pack' },
-  { id: 'pack_25', credits: 25, amountInPaise: 39900, label: '25 Credits', subtitle: 'Most popular' },
-  { id: 'pack_50', credits: 50, amountInPaise: 69900, label: '50 Credits', subtitle: 'Best value' },
+  { id: 'pack_10', credits: 10, amountInPaise: 6000, label: '10 Credits', subtitle: 'Starter pack' },
+  { id: 'pack_50', credits: 50, amountInPaise: 25000, label: '50 Credits', subtitle: 'Most popular' },
+  { id: 'pack_100', credits: 100, amountInPaise: 45000, label: '100 Credits', subtitle: 'Best value' },
 ];
 
 const findPack = (id) => CREDIT_PACKS.find((pack) => pack.id === id);

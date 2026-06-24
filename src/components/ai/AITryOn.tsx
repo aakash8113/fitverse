@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { fitverseAiApi, FitverseAiClothesType, FitverseAiModel, FitverseAiTryOnType, WearType } from "@/services/api";
 import { getTrendScore, TrendScoreResult } from "@/services/geminiTrendScore";
+import { CreditPurchaseDialog } from "@/components/ai/CreditPurchaseDialog";
 
 type ModelSlotStatus = "checking" | "verified" | "rejected";
 
@@ -112,6 +113,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const [trendScore, setTrendScore] = useState<TrendScoreResult | null>(null);
   const [trendScoreLoading, setTrendScoreLoading] = useState(false);
   const [trendScoreError, setTrendScoreError] = useState<string | null>(null);
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const isBusy = taskStatus === "CREATED" || taskStatus === "PROCESSING";
 
   const newModelPreview = useObjectPreview(newModelFile);
@@ -145,15 +147,14 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const requiredReady = useMemo(() => {
     if (!activeModel || activeModel.status !== "verified") return false;
     if (!modelSupportsSelection) return false;
-    if (!hasCredits) return false;
 
     if (tryOnType === "combo") {
-      return !!topFile && !!bottomFile;
+      return !!topFile && !!bottomFile && topCheck.status === "ready" && bottomCheck.status === "ready";
     }
-    if (tryOnType === "upper") return !!topFile;
-    if (tryOnType === "lower") return !!bottomFile;
-    return !!fullFile;
-  }, [activeModel, modelSupportsSelection, hasCredits, tryOnType, topFile, bottomFile, fullFile]);
+    if (tryOnType === "upper") return !!topFile && topCheck.status === "ready";
+    if (tryOnType === "lower") return !!bottomFile && bottomCheck.status === "ready";
+    return !!fullFile && fullCheck.status === "ready";
+  }, [activeModel, modelSupportsSelection, tryOnType, topFile, bottomFile, fullFile, topCheck.status, bottomCheck.status, fullCheck.status]);
 
   useEffect(() => {
     if (tryOnType === "upper") {
@@ -479,7 +480,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const handleGenerate = async () => {
     if (!activeModel || !requiredReady) return;
     if (availableCredits != null && availableCredits < creditCost) {
-      setError(`Not enough credits. ${creditCost} credits required.`);
+      setCreditDialogOpen(true);
       return;
     }
     setError(null);
@@ -1040,6 +1041,15 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
         </Button>
       </div>
     </div>
+
+      {/* ─── Credit Purchase Dialog ─── */}
+      <CreditPurchaseDialog
+        open={creditDialogOpen}
+        onOpenChange={setCreditDialogOpen}
+        onSuccess={() => {
+          onCreditsRefresh?.();
+        }}
+      />
     </>
   );
 }

@@ -119,48 +119,40 @@ export default function Shop() {
   };
 
   // ── Carousel touch swipe (mobile only) — smooth follow-finger ──
-  const carouselSwipeRef = useRef({ startX: 0, offset: 0, swiping: false });
+  const carouselSwipeRef = useRef({ startX: 0, offset: 0 });
   const [carouselSwipeOffset, setCarouselSwipeOffset] = useState(0);
   const [carouselSwiping, setCarouselSwiping] = useState(false);
 
   const carouselContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const el = carouselContainerRef.current;
-    if (!el) return;
-    const state = carouselSwipeRef.current;
+  // All touch handlers in JSX (no split between JSX + useEffect)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    carouselSwipeRef.current = { startX: e.touches[0].clientX, offset: 0 };
+    setCarouselSwiping(true);
+    if (carouselTimerRef.current) clearInterval(carouselTimerRef.current);
+  };
 
-    const moveHandler = (e: TouchEvent) => {
-      const deltaX = e.touches[0].clientX - state.startX;
-      state.offset = deltaX;
-      if (Math.abs(deltaX) > 10) e.preventDefault();
-      setCarouselSwipeOffset(deltaX);
-    };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    const deltaX = e.touches[0].clientX - carouselSwipeRef.current.startX;
+    carouselSwipeRef.current.offset = deltaX;
+    if (Math.abs(deltaX) > 10) e.preventDefault();
+    setCarouselSwipeOffset(deltaX);
+  };
 
-    const endHandler = () => {
-      const delta = state.offset;
-      setCarouselSwiping(false);
-      setCarouselSwipeOffset(0);
-      const threshold = 80;
-      if (delta < -threshold) {
-        // Swipe left → next
-        setTransitioning(true);
-        setCarouselIndex((i) => (i >= lastLoopIndex ? i : i + 1));
-      } else if (delta > threshold) {
-        // Swipe right → previous
-        setTransitioning(true);
-        setCarouselIndex((i) => (i <= 0 ? 0 : i - 1));
-      }
-      startCarouselTimer();
-    };
-
-    el.addEventListener('touchmove', moveHandler, { passive: false });
-    el.addEventListener('touchend', endHandler);
-    return () => {
-      el.removeEventListener('touchmove', moveHandler);
-      el.removeEventListener('touchend', endHandler);
-    };
-  }, [lastLoopIndex]);
+  const handleTouchEnd = () => {
+    const delta = carouselSwipeRef.current.offset;
+    setCarouselSwiping(false);
+    setCarouselSwipeOffset(0);
+    const threshold = 80;
+    if (delta < -threshold) {
+      setTransitioning(true);
+      setCarouselIndex((i) => (i >= lastLoopIndex ? i : i + 1));
+    } else if (delta > threshold) {
+      setTransitioning(true);
+      setCarouselIndex((i) => (i <= 0 ? 0 : i - 1));
+    }
+    startCarouselTimer();
+  };
 
   const limit = 16;
 
@@ -226,11 +218,9 @@ export default function Shop() {
             ref={carouselContainerRef}
             className="flex h-full"
             onTransitionEnd={handleCarouselTransitionEnd}
-            onTouchStart={(e) => {
-              carouselSwipeRef.current.startX = e.touches[0].clientX;
-              carouselSwipeRef.current.offset = 0;
-              setCarouselSwiping(true);
-            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             style={{
               width: `${slides.length * 100}%`,
               transform: `translateX(calc(-${(carouselIndex / slides.length) * 100}% + ${carouselSwiping ? carouselSwipeOffset : 0}px))`,

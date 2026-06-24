@@ -621,7 +621,8 @@ export const creditsApi = {
   getPacks: async () => { const r = await api.get<ApiResponse<AiCreditPack[]>>('/credits/packs'); return r.data; },
   getBalance: async () => { const r = await api.get<ApiResponse<{ aiCredits: number; aiTryOnCount: number }>>('/credits/balance'); return r.data; },
   getPurchaseHistory: async () => { const r = await api.get<ApiResponse<AiCreditPurchase[]>>('/credits/purchases'); return r.data; },
-  initiatePurchase: async (packId: string) => { const r = await api.post<ApiResponse<{ purchaseId: string; credits: number; amount: number; redirectUrl: string }>>('/credits/purchase/initiate', { packId }); return r.data; },
+  initiatePurchase: async (packId: string) => { const r = await api.post<ApiResponse<{ purchaseId: string; credits: number; amount: number; razorpayOrderId: string }>>('/credits/purchase/initiate', { packId }); return r.data; },
+  verifyPurchase: async (data: { purchaseId: string; razorpayOrderId: string; razorpayPaymentId: string; razorpaySignature: string }) => { const r = await api.post<ApiResponse<{ purchase: AiCreditPurchase; aiCredits: number }>>('/credits/purchase/verify', data); return r.data; },
   getPurchaseStatus: async (purchaseId: string) => { const r = await api.get<ApiResponse<{ purchase: AiCreditPurchase; aiCredits: number }>>(`/credits/purchase/status/${purchaseId}`); return r.data; },
 };
 
