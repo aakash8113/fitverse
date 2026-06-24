@@ -149,7 +149,7 @@ function ImageUploader({ previews, onChange }: ImageUploaderProps) {
           </button>
         )}
       </div>
-      <p className="text-xs text-gray-400">Up to 5 photos per item. Clear, well-lit photos get better offers.</p>
+      <p className="text-xs text-gray-400">Up to 5 photos per item (max ~500KB each recommended). Clear, well-lit photos get better offers.</p>
       <input
         ref={inputRef}
         type="file"

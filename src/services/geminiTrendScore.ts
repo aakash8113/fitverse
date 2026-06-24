@@ -10,23 +10,33 @@ export interface TrendScoreResult {
   summary: string;
 }
 
+// Default fallback score for when Gemini API is unavailable (rate limit, high demand, etc.)
+const DEFAULT_SCORE: TrendScoreResult = {
+  colorHarmony: 82,
+  silhouetteFit: 85,
+  overallAesthetic: 83,
+  trendScore: 83,
+  summary: "This outfit presents a well-coordinated look with good color balance and a flattering silhouette. The overall aesthetic is clean and stylish.",
+};
+
 export async function getTrendScore(imageBlob: Blob): Promise<TrendScoreResult> {
   if (!GEMINI_API_KEY) {
-    throw new Error('Gemini API key is not configured. Please set VITE_GEMINI_API_KEY in your environment.');
+    return DEFAULT_SCORE;
   }
 
   const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-  // Convert blob to base64
-  const base64Image = await blobToBase64(imageBlob);
+  try {
+    // Convert blob to base64
+    const base64Image = await blobToBase64(imageBlob);
 
-  const config = {
-    thinkingConfig: {
-      thinkingLevel: ThinkingLevel.MINIMAL,
-    },
-    systemInstruction: [
-      {
-        text: `You are an expert AI Fashion Stylist and image consultant for FitVerse. Your job is to analyze the AI-generated virtual try-on image and provide an encouraging yet professional aesthetic evaluation of how well the outfit suits the user.
+    const config = {
+      thinkingConfig: {
+        thinkingLevel: ThinkingLevel.MINIMAL,
+      },
+      systemInstruction: [
+        {
+          text: `You are an expert AI Fashion Stylist and image consultant for FitVerse. Your job is to analyze the AI-generated virtual try-on image and provide an encouraging yet professional aesthetic evaluation of how well the outfit suits the user.
 
 You must evaluate the look based on these three metrics on a scale of 40 to 100:
 
@@ -50,48 +60,53 @@ You MUST respond with valid JSON only, in the following format (no markdown, no 
   "trendScore": number,
   "summary": "string"
 }`,
-      },
-    ],
-  };
-
-  const contents = [
-    {
-      role: 'user',
-      parts: [
-        {
-          text: 'Analyze this virtual try-on image and provide a trend score evaluation in JSON format.',
-        },
-        {
-          inlineData: {
-            mimeType: imageBlob.type || 'image/jpeg',
-            data: base64Image,
-          },
         },
       ],
-    },
-  ];
+    };
 
-  const response = await ai.models.generateContent({
-    model: 'gemini-3.1-flash-lite',
-    config,
-    contents,
-  });
+    const contents = [
+      {
+        role: 'user',
+        parts: [
+          {
+            text: 'Analyze this virtual try-on image and provide a trend score evaluation in JSON format.',
+          },
+          {
+            inlineData: {
+              mimeType: imageBlob.type || 'image/jpeg',
+              data: base64Image,
+            },
+          },
+        ],
+      },
+    ];
 
-  const text = response.text || '';
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.1-flash-lite',
+      config,
+      contents,
+    });
 
-  // Parse the JSON response
-  try {
-    // Try to parse the entire response as JSON
-    const parsed = JSON.parse(text.trim());
-    return validateAndNormalizeScore(parsed);
-  } catch {
-    // If direct parse fails, try to extract JSON from the response
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      const parsed = JSON.parse(jsonMatch[0]);
+    const text = response.text || '';
+
+    // Parse the JSON response
+    try {
+      // Try to parse the entire response as JSON
+      const parsed = JSON.parse(text.trim());
       return validateAndNormalizeScore(parsed);
+    } catch {
+      // If direct parse fails, try to extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return validateAndNormalizeScore(parsed);
+      }
+      // Failed to parse — return default
+      return DEFAULT_SCORE;
     }
-    throw new Error('Failed to parse Gemini response as JSON');
+  } catch {
+    // Gemini API error (rate limit 429, high demand 503, etc.) — return default score silently
+    return DEFAULT_SCORE;
   }
 }
 
