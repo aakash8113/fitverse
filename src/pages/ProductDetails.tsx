@@ -767,7 +767,7 @@ export default function ProductDetails() {
 
               <Button
                 size="sm"
-                className="sm:hidden w-full bg-[#d1ebdb] text-black h-12 hover:bg-[#c7e4d3] transition-colors duration-200"
+                className="w-full bg-[#d1ebdb] text-black h-12 hover:bg-[#c7e4d3] transition-colors duration-200"
                 onClick={handleTryOn}
               >
                 <Sparkles className="h-3.5 w-3.5 mr-1.5" />

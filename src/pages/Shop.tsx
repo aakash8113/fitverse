@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
-import { SlidersHorizontal, Grid3X3, LayoutGrid, Loader2 } from "lucide-react";
+import { SlidersHorizontal, Grid3X3, LayoutGrid, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
@@ -239,6 +239,32 @@ export default function Shop() {
           </div>
           <div className="absolute inset-0 bg-black/20" />
         </div>
+
+        {/* Arrow navigation — visible on all sizes */}
+        <button
+          onClick={() => {
+            setTransitioning(true);
+            setCarouselIndex((i) => (i <= 0 ? lastLoopIndex - 1 : i - 1));
+            if (carouselTimerRef.current) clearInterval(carouselTimerRef.current);
+            startCarouselTimer();
+          }}
+          className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/80 dark:bg-gray-900/80 flex items-center justify-center shadow-md hover:bg-white dark:hover:bg-gray-900 transition-colors"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <button
+          onClick={() => {
+            setTransitioning(true);
+            setCarouselIndex((i) => (i >= lastLoopIndex - 1 ? 0 : i + 1));
+            if (carouselTimerRef.current) clearInterval(carouselTimerRef.current);
+            startCarouselTimer();
+          }}
+          className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-10 h-10 w-10 rounded-full bg-white/80 dark:bg-gray-900/80 flex items-center justify-center shadow-md hover:bg-white dark:hover:bg-gray-900 transition-colors"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
 
         {/* Slide dots */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex gap-2">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertCircle, BarChart3, CheckCircle2, Download, ImagePlus, Loader2, Lock, Plus, Share2, Sparkles, Trash2, Upload } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { AlertCircle, BarChart3, CheckCircle2, Download, ImagePlus, Loader2, Lock, Plus, Share2, ShoppingCart, Sparkles, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -86,6 +87,7 @@ function useResolutionCheck(file: File | null) {
 }
 
 export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOnProps) {
+  const navigate = useNavigate();
   const [models, setModels] = useState<ModelSlot[]>([]);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
   const [modelNotice, setModelNotice] = useState<string | null>(null);
@@ -115,6 +117,14 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const [trendScoreError, setTrendScoreError] = useState<string | null>(null);
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const isBusy = taskStatus === "CREATED" || taskStatus === "PROCESSING";
+
+  // Check if the cloth was selected from a product (has productId in prefill)
+  const clothSelectedFromProduct = !!(
+    prefill?.productId &&
+    (topCheck.message === "Selected from product" || 
+     fullCheck.message === "Selected from product" || 
+     bottomCheck.message === "Selected from product")
+  );
 
   const newModelPreview = useObjectPreview(newModelFile);
   const isLowRes = useResolutionCheck(newModelFile);
@@ -1026,6 +1036,18 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
                   {trendScore.summary}
                 </p>
               </div>
+            )}
+
+            {/* View Product button — only shown when cloth was selected from a product */}
+            {clothSelectedFromProduct && prefill?.productId && (
+              <Button
+                onClick={() => navigate(`/shop/${prefill.productId}`)}
+                variant="outline"
+                className="w-full"
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                View Product
+              </Button>
             )}
           </>
         )}
