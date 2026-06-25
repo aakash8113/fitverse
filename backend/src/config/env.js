@@ -144,6 +144,11 @@ const config = {
     password: process.env.SHIPROCKET_PASSWORD,
     webhookToken: process.env.SHIPROCKET_WEBHOOK_TOKEN || '',
   },
+
+  google: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  },
 };
 
 module.exports = config;

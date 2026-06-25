@@ -7,6 +7,7 @@ const prisma = require('../config/database');
 const config = require('../config/env');
 const otpService = require('./otpService');
 const emailService = require('./emailService');
+const { fetchGoogleUserInfo } = require('../config/googleAuth');
 const { ConflictError, UnauthorizedError, BadRequestError, NotFoundError } = require('../utils/errors');
 const { sanitizeUser, isOTPExpired } = require('../utils/helpers');
 const logger = require('../config/logger');
@@ -545,6 +546,82 @@ class AuthService {
 
     logger.info(`Password changed for user: ${userId}`);
     return { message: 'Password updated successfully' };
+  }
+
+  /**
+   * Authenticate or register user via Google OAuth
+   * @param {String} idToken - Google ID token from client
+   * @returns {Promise<Object>} User data and JWT token
+   */
+  async googleAuth(accessToken) {
+    // Fetch user info from Google using the access token
+    const googlePayload = await fetchGoogleUserInfo(accessToken);
+    const { googleId, email, name } = googlePayload;
+
+    // Check if user already exists
+    let user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (user) {
+      // User exists - check if they registered with email/password
+      if (user.authProvider === 'EMAIL') {
+        if (user.password) {
+          // Link Google account to existing email/password user
+          user = await prisma.user.update({
+            where: { email },
+            data: {
+              googleId,
+              authProvider: 'GOOGLE',
+              isEmailVerified: true,
+            },
+          });
+          logger.info(`Google account linked to existing user: ${email}`);
+        } else {
+          throw new ConflictError('This email is already registered with another method');
+        }
+      } else if (user.authProvider === 'GOOGLE') {
+        // Already a Google user - update googleId if needed
+        if (user.googleId !== googleId) {
+          user = await prisma.user.update({
+            where: { email },
+            data: { googleId },
+          });
+        }
+      }
+    } else {
+      // Create new user with Google auth
+      user = await prisma.user.create({
+        data: {
+          name,
+          email,
+          googleId,
+          authProvider: 'GOOGLE',
+          isEmailVerified: true, // Google already verified the email
+          password: null, // No password for Google users
+        },
+      });
+      logger.info(`New Google user registered: ${email}`);
+
+      // Fire-and-forget welcome email
+      emailService
+        .sendWelcomeEmail(email, name)
+        .catch((err) => logger.error(`Welcome email failed for Google user: ${err.message}`));
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
+    );
+
+    logger.info(`User logged in via Google: ${email}`);
+
+    return {
+      user: sanitizeUser(user),
+      token,
+    };
   }
 }
 

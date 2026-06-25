@@ -9,6 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (accessToken: string) => Promise<void>;
   signup: (name: string, email: string, password: string, phone?: string) => Promise<void>;
   verifyEmail: (email: string, otp: string) => Promise<void>;
   resendOtp: (email: string) => Promise<void>;
@@ -70,8 +71,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     const syncAuthState = () => {
-      setHasToken(authApi.isAuthenticated());
-      if (!authApi.isAuthenticated()) {
+      const isAuth = authApi.isAuthenticated();
+      setHasToken(isAuth);
+      if (isAuth) {
+        // Read the user from localStorage that was stored by the API
+        const storedUser = authApi.getStoredUser();
+        if (storedUser) {
+          setUser(storedUser);
+        }
+      } else {
         setUser(null);
       }
     };
@@ -189,6 +197,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const googleLogin = async (accessToken: string) => {
+    try {
+      const response = await authApi.googleLogin(accessToken);
+      
+      if (response.success && response.data) {
+        setUser(response.data.user);
+        setHasToken(true);
+        toast({
+          title: 'Login successful',
+          description: `Welcome back, ${response.data.user.name}!`,
+        });
+      } else {
+        throw new Error(response.message || 'Google login failed');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Google login failed';
+      toast({
+        title: 'Google login failed',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   const logout = () => {
     authApi.logout();
     setUser(null);
@@ -216,6 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isAuthenticated: !!user && hasToken,
     isLoading,
     login,
+    googleLogin,
     signup,
     verifyEmail,
     resendOtp,

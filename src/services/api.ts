@@ -290,6 +290,15 @@ export const authApi = {
     localStorage.removeItem('user');
     emitAuthStateChanged();
   },
+  googleLogin: async (accessToken: string) => {
+    const response = await api.post<ApiResponse<LoginResponse>>('/auth/google', { accessToken });
+    if (response.data.success && response.data.data) {
+      localStorage.setItem('token', response.data.data.token);
+      localStorage.setItem('user', JSON.stringify(response.data.data.user));
+      emitAuthStateChanged();
+    }
+    return response.data;
+  },
   getStoredUser: (): User | null => {
     const userStr = localStorage.getItem('user');
     if (userStr) { try { return JSON.parse(userStr); } catch { return null; } }

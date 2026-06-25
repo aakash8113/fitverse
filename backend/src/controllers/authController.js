@@ -148,6 +148,23 @@ const changePassword = asyncHandler(async (req, res) => {
   return ApiResponse.success(res, 200, null, result.message);
 });
 
+/**
+ * @route   POST /api/auth/google
+ * @desc    Authenticate with Google OAuth
+ * @access  Public
+ */
+const googleLogin = asyncHandler(async (req, res) => {
+  const { accessToken } = req.body;
+  const result = await authService.googleAuth(accessToken);
+  
+  return ApiResponse.success(
+    res,
+    200,
+    result,
+    'Google login successful'
+  );
+});
+
 module.exports = {
   signup,
   verifyEmail,
@@ -158,4 +175,5 @@ module.exports = {
   getMe,
   updateProfile,
   changePassword,
+  googleLogin,
 };

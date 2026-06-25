@@ -24,6 +24,11 @@ enum ShippingMethod {
 // USER & AUTHENTICATION
 // ============================================
 
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+}
+
 enum UserRole {
   USER
   ADMIN
@@ -74,8 +79,12 @@ model User {
   name      String
   email     String   @unique
   phone     String?  @unique
-  password  String   // Hashed with bcrypt
+  password  String?  // Hashed with bcrypt — null for OAuth users
   role      UserRole @default(USER)
+  
+  // Auth provider
+  authProvider AuthProvider @default(EMAIL)
+  googleId     String?     @unique
   
   // Email/Phone Verification
   isEmailVerified Boolean  @default(false)
