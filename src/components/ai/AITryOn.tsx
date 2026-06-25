@@ -60,32 +60,6 @@ type AITryOnProps = {
 };
 
 
-// ── Resolution check hook ────────────────────────────────────────────────
-function useResolutionCheck(file: File | null) {
-  const [isLowRes, setIsLowRes] = useState(false);
-
-  useEffect(() => {
-    if (!file) {
-      setIsLowRes(false);
-      return;
-    }
-
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      setIsLowRes(img.width < 800 || img.height < 800);
-      URL.revokeObjectURL(url);
-    };
-    img.onerror = () => {
-      setIsLowRes(false);
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
-  }, [file]);
-
-  return isLowRes;
-}
-
 export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOnProps) {
   const navigate = useNavigate();
   const [models, setModels] = useState<ModelSlot[]>([]);
@@ -127,7 +101,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   );
 
   const newModelPreview = useObjectPreview(newModelFile);
-  const isLowRes = useResolutionCheck(newModelFile);
   const mustCreateModel = models.length === 0;
 
   const pollRef = useRef<number | null>(null);
@@ -747,13 +720,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
                 </ul>
               </div>
 
-              {/* ── Low resolution warning ── */}
-              {isLowRes && (
-                <div className="flex items-start gap-2 text-xs text-amber-500 bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5">
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                  <span>Low resolution image detected. Using images smaller than 800×800px may cause blurry or distorted try-on results.</span>
-                </div>
-              )}
             </div>
           </div>
 
