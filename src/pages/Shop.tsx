@@ -14,6 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import { productsApi, Product as ApiProduct, getTotalStock, carouselApi } from "@/services/api";
 import heroStore from "@/assets/about/shop_carousel3.jpeg";
+import verticalHeroStore from "@/assets/about/vertical_shop_carousel_1.jpeg";
+import verticalCarousel1 from "@/assets/about/vertical_shop_carousel_2.jpeg";
 import carousel1 from "@/assets/about/shop_carousel4.jpeg";
 import carousel2 from "@/assets/about/carousel_1.png";
 import carousel3 from "@/assets/about/hero-store.jpg";
@@ -56,6 +58,11 @@ const convertProduct = (apiProduct: ApiProduct) => {
     description: apiProduct.description,
     stock: getTotalStock(apiProduct.sizeStock),
   };
+};
+
+const VERTICAL_MOBILE_SLIDES: Record<number, string> = {
+  0: verticalHeroStore,
+  1: verticalCarousel1,
 };
 
 export default function Shop() {
@@ -227,15 +234,25 @@ export default function Shop() {
               transition: transitioning && !carouselSwiping ? `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)` : carouselSwiping ? 'none' : `transform ${TRANSITION_MS}ms cubic-bezier(0.77,0,0.18,1)`,
             }}
           >
-            {slides.map((src, i) => (
-              <div
-                key={i}
-                className="h-full flex-shrink-0"
-                style={{ width: `${100 / slides.length}%` }}
-              >
-                <img src={src} alt="" className="w-full h-full object-cover" />
-              </div>
-            ))}
+            {slides.map((src, i) => {
+              const verticalSrc = VERTICAL_MOBILE_SLIDES[i];
+              return (
+                <div
+                  key={i}
+                  className="h-full flex-shrink-0"
+                  style={{ width: `${100 / slides.length}%` }}
+                >
+                  {verticalSrc ? (
+                    <>
+                      <img src={src} alt="" className="hidden sm:block w-full h-full object-cover" />
+                      <img src={verticalSrc} alt="" className="block sm:hidden w-full h-full object-cover" />
+                    </>
+                  ) : (
+                    <img src={src} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              );
+            })}
           </div>
           <div className="absolute inset-0 bg-black/20" />
         </div>
