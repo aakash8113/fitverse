@@ -78,7 +78,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
   const [topCheck, setTopCheck] = useState<ClothesCheckState>({ status: "idle" });
   const [bottomCheck, setBottomCheck] = useState<ClothesCheckState>({ status: "idle" });
   const [fullCheck, setFullCheck] = useState<ClothesCheckState>({ status: "idle" });
-  const [hdMode, setHdMode] = useState(false);
   const [taskStatus, setTaskStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState<number>(0);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
@@ -124,8 +123,7 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
     return activeModel.goodTypes.includes(tryOnType);
   }, [activeModel, tryOnType]);
 
-  const creditCost = hdMode ? 2 : 1;
-  const hasCredits = availableCredits == null || availableCredits >= creditCost;
+  const creditCost = 1;
 
   const requiredReady = useMemo(() => {
     if (!activeModel || activeModel.status !== "verified") return false;
@@ -501,7 +499,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
             ? bottomFile || undefined
             : fullFile || undefined,
         lowerClothImage: tryOnType === "combo" ? bottomFile || undefined : undefined,
-        hdMode,
       });
 
       const taskId = response.data?.task_id;
@@ -873,12 +870,6 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
           renderUploadFrame("Bottom", bottomFile, bottomPreview, (file) => handleClothUpload(file, "bottom"), bottomCheck, !activeModel)
         )}
 
-        <label className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-          <span>HD mode (slower, better quality)</span>
-          <input type="checkbox" checked={hdMode} onChange={(event) => setHdMode(event.target.checked)} />
-        </label>
-
-        
       </div>
 
       {/* Column 3: Output */}

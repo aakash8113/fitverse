@@ -122,7 +122,7 @@ export function FeaturesSection() {
                   <span className="text-xs uppercase tracking-[0.2em] font-semibold">Special Feature</span>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold mb-4">
-                  TrendScore™
+                  TrendScore
                 </h3>
                 <p className="text-muted-foreground leading-relaxed max-w-xl mb-6">
                   Our AI-powered outfit rating system evaluates styling harmony, color balance,

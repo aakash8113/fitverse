@@ -7,7 +7,7 @@ import { adminApi, productsApi } from '@/services/api';
 import {
   Users,
   ShoppingBag,
-  DollarSign,
+  IndianRupee,
   Recycle,
   Bot,
   TrendingUp,
@@ -145,7 +145,7 @@ const AdminDashboard: React.FC = () => {
             <MetricCard
               label="Monthly Revenue"
               value={stats?.monthlyRevenue != null ? `₹${stats.monthlyRevenue.toLocaleString()}` : '—'}
-              icon={DollarSign}
+              icon={IndianRupee}
             />
             <MetricCard
               label="Thrift Requests"
