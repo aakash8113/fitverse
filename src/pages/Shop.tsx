@@ -13,10 +13,10 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { productsApi, Product as ApiProduct, getTotalStock, carouselApi } from "@/services/api";
-import heroStore from "@/assets/about/hero-store.jpg";
-import carousel1 from "@/assets/about/carousel_1.png";
-import carousel2 from "@/assets/about/carousel_2.jpeg";
-import carousel3 from "@/assets/about/carousel_3.jpeg";
+import heroStore from "@/assets/about/shop_carousel3.jpeg";
+import carousel1 from "@/assets/about/shop_carousel4.jpeg";
+import carousel2 from "@/assets/about/carousel_1.png";
+import carousel3 from "@/assets/about/hero-store.jpg";
 
 // Carousel configuration
 const FALLBACK_SLIDES = [heroStore, carousel1, carousel2, carousel3];

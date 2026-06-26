@@ -196,8 +196,8 @@ export function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 w-full glass border-b border-border/50">
       <div className="section-container">
         <nav className="flex h-16 items-center justify-between lg:h-20">
-          {/* ── Logo ── */}
-          <Link to="/" className="flex items-center gap-3">
+          {/* ── Logo (desktop) ── */}
+          <Link to="/" className="hidden sm:flex items-center gap-3">
             <img 
               src={theme === "dark" ? logoWhite : logoImage}
               alt="Fitverse Logo" 
@@ -205,6 +205,21 @@ export function Navbar() {
             />
             <span
               className="translate-y-[4px] text-[20px] sm:text-[26px] font-bold tracking-wider leading-none sm:translate-y-[4.5px] sm:translate-x-[-120px]"
+              style={{ fontFamily: 'Mokoto, sans-serif' }}
+            >
+              FITVERSE
+            </span>
+          </Link>
+
+          {/* ── Logo (mobile-only, no translate offsets) ── */}
+          <Link to="/" className="sm:hidden flex items-center gap-1 shrink-0">
+            <img 
+              src={theme === "dark" ? logoWhite : logoImage}
+              alt="Fitverse Logo" 
+              className="h-6 w-6 object-contain"
+            />
+            <span
+              className="text-[16px] font-bold tracking-wider leading-none"
               style={{ fontFamily: 'Mokoto, sans-serif' }}
             >
               FITVERSE
@@ -254,26 +269,16 @@ export function Navbar() {
             </div>
           </form>
 
-          {/* ── Right side icons ── */}
-          <div className="sm:translate-x-[120px] flex items-center gap-1 sm:gap-4">
+          {/* ── Right side icons (desktop) ── */}
+          <div className="hidden sm:flex sm:translate-x-[120px] items-center gap-3 sm:gap-4">
             {/* Search icon toggles (desktop); becomes X when open */}
             <Button
               variant="ghost"
               size="icon"
-              className="hidden sm:flex hover:bg-secondary hover:text-foreground"
+              className="hover:bg-secondary hover:text-foreground"
               onClick={isSearchOpen ? closeSearch : openSearch}
             >
               {isSearchOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Search className="h-5 w-5 sm:h-6 sm:w-6" />}
-            </Button>
-
-            {/* Mobile search icon (always visible on mobile, separate from desktop) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="sm:hidden hover:bg-secondary hover:text-foreground"
-              onClick={openSearch}
-            >
-              <Search className="h-5 w-5" />
             </Button>
             
             {/* Dark Mode Toggle — visible on all screen sizes */}
@@ -307,6 +312,60 @@ export function Navbar() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="hover:bg-secondary hover:text-foreground">
                   <User className="h-5 w-5 sm:h-6 sm:w-6" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <AccountDropdownContent
+                  user={user}
+                  isAuthenticated={isAuthenticated}
+                  handleLogout={handleLogout}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
+          {/* ── Right side icons (mobile-only, no translate offsets) ── */}
+          <div className="sm:hidden flex items-center gap-1">
+            {/* Mobile search icon */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-secondary hover:text-foreground"
+              onClick={openSearch}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+
+            {/* Mobile dark mode */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-secondary hover:text-foreground"
+              onClick={toggleTheme}
+            >
+              {theme === "light" ? (
+                <Moon className="h-4 w-4" />
+              ) : (
+                <Sun className="h-4 w-4" />
+              )}
+            </Button>
+
+            <Link to="/cart">
+              <Button variant="ghost" size="icon" className="relative hover:bg-secondary hover:text-foreground">
+                <ShoppingBag className="h-5 w-5" />
+                {isAuthenticated && cartCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-black text-[10px] font-medium text-white flex items-center justify-center dark:bg-white dark:text-black">
+                    {cartCount > 99 ? "99+" : cartCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
+
+            {/* Mobile user dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="hover:bg-secondary hover:text-foreground">
+                  <User className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
