@@ -110,11 +110,11 @@ const config = {
   },
 
   server: {
-    requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS, 10) || 30000,
-    headersTimeoutMs: parseInt(process.env.HEADERS_TIMEOUT_MS, 10) || 35000,
-    keepAliveTimeoutMs: parseInt(process.env.KEEP_ALIVE_TIMEOUT_MS, 10) || 20000,
-    routeTimeoutMs: parseInt(process.env.ROUTE_TIMEOUT_MS, 10) || 20000,
-    slowRequestMs: parseInt(process.env.SLOW_REQUEST_MS, 10) || 2000,
+    requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS, 10) || 120000,
+    headersTimeoutMs: parseInt(process.env.HEADERS_TIMEOUT_MS, 10) || 125000,
+    keepAliveTimeoutMs: parseInt(process.env.KEEP_ALIVE_TIMEOUT_MS, 10) || 60000,
+    routeTimeoutMs: parseInt(process.env.ROUTE_TIMEOUT_MS, 10) || 120000,
+    slowRequestMs: parseInt(process.env.SLOW_REQUEST_MS, 10) || 5000,
   },
 
   email: {

@@ -59,14 +59,15 @@ const ensureConfig = () => {
   return { apiKey, baseUrl };
 };
 
-const toBlob = (file) => new Blob([file.buffer], { type: file.mimetype || 'application/octet-stream' });
+const toFile = (file) => new File([file.buffer], file.originalname || 'image.jpg', { type: file.mimetype || 'image/jpeg' });
 
 const postForm = async (path, form) => {
   const { apiKey, baseUrl } = ensureConfig();
   let response;
+
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
     
     response = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
@@ -80,14 +81,17 @@ const postForm = async (path, form) => {
     if (error.name === 'AbortError') {
       throw new BadRequestError('Fitverse AI request timed out — please try again');
     }
-    throw new BadRequestError('Fitverse AI request failed');
+    throw new BadRequestError(`Fitverse AI request failed: ${error.message}`);
   }
 
-  const data = await response.json().catch(() => ({}));
   if (!response.ok) {
+    const text = await response.text().catch(() => '');
+    const data = (() => { try { return JSON.parse(text); } catch { return {}; } })();
     const errMsg = data?.error || `Fitverse AI returned status ${response.status}`;
     throw new BadRequestError(errMsg);
   }
+  
+  const data = await response.json().catch(() => ({}));
   return sanitizePayload(data);
 };
 
@@ -218,7 +222,7 @@ const checkModel = asyncHandler(async (req, res) => {
   }
 
   const form = new FormData();
-  form.append('input_image', toBlob(req.file), req.file.originalname || 'model.jpg');
+  form.append('input_image', toFile(req.file));
 
   const data = await postForm('/tryon/input_check/v1/model', form);
   return ApiResponse.success(res, 200, data, 'Model check complete');
@@ -240,7 +244,7 @@ const createModel = asyncHandler(async (req, res) => {
   }
 
   const form = new FormData();
-  form.append('input_image', toBlob(req.file), req.file.originalname || 'model.jpg');
+  form.append('input_image', toFile(req.file));
 
   const check = await postForm('/tryon/input_check/v1/model', form);
   if (!check?.is_good) {
@@ -277,7 +281,7 @@ const checkClothes = asyncHandler(async (req, res) => {
   }
 
   const form = new FormData();
-  form.append('input_image', toBlob(req.file), req.file.originalname || 'clothes.jpg');
+  form.append('input_image', toFile(req.file));
 
   const data = await postForm('/tryon/input_check/v1/clothes', form);
   return ApiResponse.success(res, 200, data, 'Clothes check complete');
@@ -353,10 +357,10 @@ const createTryOn = asyncHandler(async (req, res) => {
     form.append('hd_mode', 'true');
   }
 
-  form.append('model_image', toBlob(modelFile), modelFile.originalname || 'model.jpg');
-  form.append('cloth_image', toBlob(clothFile), clothFile?.originalname || 'cloth.jpg');
+  form.append('model_image', toFile(modelFile));
+  form.append('cloth_image', toFile(clothFile));
   if (lowerFile) {
-    form.append('lower_cloth_image', toBlob(lowerFile), lowerFile.originalname || 'lower.jpg');
+    form.append('lower_cloth_image', toFile(lowerFile));
   }
 
   const data = await postForm('/tryon/v2/tasks', form);
