@@ -302,7 +302,8 @@ export function AITryOn({ availableCredits, onCreditsRefresh, prefill }: AITryOn
       const model = payload?.model;
 
       if (!check?.is_good || !model) {
-        setNewModelMessage("Model rejected. Please upload a clearer full-body photo.");
+        const reason = payload?.rejectionReason || "Model rejected. Please upload a clearer full-body photo.";
+        setNewModelMessage(reason);
         setIsCreatingModel(false);
         return;
       }

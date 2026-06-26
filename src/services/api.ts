@@ -665,7 +665,7 @@ export interface FitverseAiModel { id: string; name: string; gender: 'MALE' | 'F
 
 export const fitverseAiApi = {
   getModels: async () => { const r = await api.get<ApiResponse<FitverseAiModel[]>>('/fitverse-ai/models'); return r.data; },
-  createModel: async (file: File, name: string, gender: FitverseAiModel['gender']) => { const fd = new FormData(); fd.append('name', name); fd.append('gender', gender); fd.append('model_image', file); const r = await api.post<ApiResponse<{ check: FitverseAiModelCheck; model: FitverseAiModel | null }>>('/fitverse-ai/models', fd, { headers: { 'Content-Type': 'multipart/form-data' } }); return r.data; },
+  createModel: async (file: File, name: string, gender: FitverseAiModel['gender']) => { const fd = new FormData(); fd.append('name', name); fd.append('gender', gender); fd.append('model_image', file); const r = await api.post<ApiResponse<{ check: FitverseAiModelCheck; model: FitverseAiModel | null; rejectionReason?: string }>>('/fitverse-ai/models', fd, { headers: { 'Content-Type': 'multipart/form-data' } }); return r.data; },
   deleteModel: async (id: string) => { const r = await api.delete<ApiResponse<null>>(`/fitverse-ai/models/${id}`); return r.data; },
   checkModel: async (file: File) => { const fd = new FormData(); fd.append('input_image', file); const r = await api.post<ApiResponse<FitverseAiModelCheck>>('/fitverse-ai/model/check', fd, { headers: { 'Content-Type': 'multipart/form-data' } }); return r.data; },
   checkClothes: async (file: File) => { const fd = new FormData(); fd.append('input_image', file); const r = await api.post<ApiResponse<FitverseAiClothesCheck>>('/fitverse-ai/clothes/check', fd, { headers: { 'Content-Type': 'multipart/form-data' } }); return r.data; },

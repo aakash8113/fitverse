@@ -20,6 +20,21 @@ const sanitizeText = (value) => {
   return FORBIDDEN_TERMS.reduce((acc, pattern) => acc.replace(pattern, 'AI provider'), String(value));
 };
 
+// Human-readable descriptions for model check error codes
+const MODEL_ERROR_DESCRIPTIONS = {
+  '400001': 'No person detected in the photo. Please upload a clear full-body image.',
+  '400002': 'More than one person detected. Please upload a photo with only yourself.',
+  '400003': 'Face is not visible or not facing forward. Please face the camera directly.',
+  '400004': 'You appear too small in the image. Please crop or move closer to the camera.',
+  '410001': 'Warning: Person appears slightly small in the image. Cropping may improve results.',
+  '410002': 'Warning: Pose could not be fully determined. Try standing straight facing forward.',
+  '410003': 'Warning: Pose may not be fully supported. Please ensure you are standing straight.',
+};
+
+const getModelErrorDescription = (code) => {
+  return MODEL_ERROR_DESCRIPTIONS[code] || `Model verification failed (code: ${code}). Please try a different photo.`;
+};
+
 const sanitizePayload = (value) => {
   if (typeof value === 'string') return sanitizeText(value);
   if (Array.isArray(value)) return value.map((item) => sanitizePayload(item));
@@ -50,18 +65,28 @@ const postForm = async (path, form) => {
   const { apiKey, baseUrl } = ensureConfig();
   let response;
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
+    
     response = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey },
       body: form,
+      signal: controller.signal,
     });
+    
+    clearTimeout(timeoutId);
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new BadRequestError('Fitverse AI request timed out — please try again');
+    }
     throw new BadRequestError('Fitverse AI request failed');
   }
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new BadRequestError('Fitverse AI request failed');
+    const errMsg = data?.error || `Fitverse AI returned status ${response.status}`;
+    throw new BadRequestError(errMsg);
   }
   return sanitizePayload(data);
 };
@@ -219,7 +244,8 @@ const createModel = asyncHandler(async (req, res) => {
 
   const check = await postForm('/tryon/input_check/v1/model', form);
   if (!check?.is_good) {
-    return ApiResponse.success(res, 200, { check, model: null }, 'Model rejected');
+    const rejectionReason = check?.error_code ? getModelErrorDescription(check.error_code) : 'Image does not meet requirements';
+    return ApiResponse.success(res, 200, { check, model: null, rejectionReason }, rejectionReason);
   }
 
   const rawImageUrl = await uploadModelImage(req.file, req.user.id);
